@@ -449,10 +449,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init('6IMS-__GtrZoH0Rrh');</script>
+
 </head>
 <body>
 <!-- TELA DE REDEFINIÇÃO DE SENHA (MULTI-STEP) -->
@@ -502,11 +499,11 @@
             style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;padding:0 12px 0 34px;height:42px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%;outline:none;box-sizing:border-box;transition:border-color .2s,background .2s"
             onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'"
             onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'"
-            onkeydown="if(event.key==='Enter')sendResetCode()"/>
+            onkeydown="if(event.key==='Enter')sendResetLink()"/>
         </div>
       </div>
       <div id="reset-err-1" style="display:none;font-size:12px;color:var(--danger);margin-top:8px;text-align:center;padding:6px 10px;background:var(--danger-bg);border-radius:8px;border:0.5px solid rgba(248,113,113,.2)"></div>
-      <button onclick="sendResetCode()" id="reset-btn-1" style="
+      <button onclick="sendResetLink()" id="reset-btn-1" style="
         margin-top:14px;width:100%;
         background: linear-gradient(135deg, #ff2020 0%, #cc0000 100%);
         color:#fff;border:none;height:44px;border-radius:10px;
@@ -524,91 +521,13 @@
       </button>
     </div>
 
-    <!-- STEP 2: OTP code verification -->
+    <!-- STEP 2: confirmação -->
     <div id="reset-step-sent" style="display:none">
-      <div style="text-align:center;margin-bottom:14px">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">código enviado!</div>
-        <div id="reset-sent-info" style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5"></div>
+      <div style="text-align:center;padding:10px 0 6px">
+        <div style="font-size:32px;margin-bottom:10px">📧</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">link enviado!</div>
+        <div id="reset-sent-info" style="font-size:12px;color:var(--muted);line-height:1.6"></div>
       </div>
-      <!-- OTP inputs -->
-      <div style="display:flex;gap:8px;margin-bottom:14px" id="otp-inputs">
-        <input type="text" maxlength="1" inputmode="numeric" style="flex:1;text-align:center;font-size:20px;font-family:'Syne',sans-serif;font-weight:700;height:48px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;outline:none;transition:border-color .2s,background .2s" onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'" onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'" oninput="otpMove(this,0)" onkeydown="otpBack(event,0)"/>
-        <input type="text" maxlength="1" inputmode="numeric" style="flex:1;text-align:center;font-size:20px;font-family:'Syne',sans-serif;font-weight:700;height:48px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;outline:none;transition:border-color .2s,background .2s" onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'" onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'" oninput="otpMove(this,1)" onkeydown="otpBack(event,1)"/>
-        <input type="text" maxlength="1" inputmode="numeric" style="flex:1;text-align:center;font-size:20px;font-family:'Syne',sans-serif;font-weight:700;height:48px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;outline:none;transition:border-color .2s,background .2s" onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'" onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'" oninput="otpMove(this,2)" onkeydown="otpBack(event,2)"/>
-        <input type="text" maxlength="1" inputmode="numeric" style="flex:1;text-align:center;font-size:20px;font-family:'Syne',sans-serif;font-weight:700;height:48px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;outline:none;transition:border-color .2s,background .2s" onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'" onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'" oninput="otpMove(this,3)" onkeydown="otpBack(event,3)"/>
-        <input type="text" maxlength="1" inputmode="numeric" style="flex:1;text-align:center;font-size:20px;font-family:'Syne',sans-serif;font-weight:700;height:48px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;outline:none;transition:border-color .2s,background .2s" onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'" onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'" oninput="otpMove(this,4)" onkeydown="otpBack(event,4)"/>
-        <input type="text" maxlength="1" inputmode="numeric" style="flex:1;text-align:center;font-size:20px;font-family:'Syne',sans-serif;font-weight:700;height:48px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;outline:none;transition:border-color .2s,background .2s" onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'" onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'" oninput="otpMove(this,5)" onkeydown="otpBack(event,5)"/>
-      </div>
-      <div id="reset-err-otp" style="display:none;font-size:12px;color:var(--danger);margin-bottom:8px;text-align:center;padding:6px 10px;background:var(--danger-bg);border-radius:8px;border:0.5px solid rgba(248,113,113,.2)"></div>
-      <button onclick="verifyOtpCode()" id="reset-btn-otp" style="
-        width:100%;
-        background: linear-gradient(135deg, #ff2020 0%, #cc0000 100%);
-        color:#fff;border:none;height:44px;border-radius:10px;
-        font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;
-        cursor:pointer;letter-spacing:.5px;
-        box-shadow: 0 4px 18px rgba(255,32,32,.4);
-        transition: opacity .15s, transform .1s, box-shadow .15s;
-        position:relative;overflow:hidden;"
-        onmouseover="this.style.boxShadow='0 6px 24px rgba(255,32,32,.6)';this.style.transform='translateY(-1px)'"
-        onmouseout="this.style.boxShadow='0 4px 18px rgba(255,32,32,.4)';this.style.transform=''"
-        onmousedown="this.style.transform='scale(.97)'"
-        onmouseup="this.style.transform='translateY(-1px)'">
-        <span style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%);background-size:200% 100%;animation:discord-shimmer 2s infinite linear;pointer-events:none"></span>
-        verificar código
-      </button>
-      <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--muted)">
-        não recebeu? <button id="reset-resend-btn" onclick="resendOtpCode()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;text-underline-offset:3px;display:none">reenviar</button>
-        <span id="otp-timer">reenviar em <strong id="otp-countdown" style="color:var(--accent)">60</strong>s</span>
-      </div>
-    </div>
-
-    <!-- STEP 3: Nova senha -->
-    <div id="reset-step-3" style="display:none">
-      <div id="reset-email-info" style="font-size:12px;color:var(--muted);margin-bottom:12px;text-align:center"></div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="position:relative">
-          <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <input type="password" id="reset-pass" placeholder="nova senha"
-            style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;padding:0 40px 0 34px;height:42px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%;outline:none;box-sizing:border-box;transition:border-color .2s,background .2s"
-            onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'"
-            onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'"
-            oninput="checkPassStrength()" onkeydown="if(event.key==='Enter')document.getElementById('reset-pass2').focus()"/>
-          <button onclick="toggleResetPass('reset-pass','eye-1')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:0" id="eye-1">👁</button>
-        </div>
-        <!-- Password strength bar -->
-        <div id="pass-strength-wrap" style="display:none">
-          <div style="height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden">
-            <div id="pass-strength-bar" style="height:100%;width:0%;transition:width .3s,background .3s;border-radius:2px"></div>
-          </div>
-          <div id="pass-strength-label" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
-        </div>
-        <div style="position:relative">
-          <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <input type="password" id="reset-pass2" placeholder="confirmar nova senha"
-            style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;padding:0 40px 0 34px;height:42px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%;outline:none;box-sizing:border-box;transition:border-color .2s,background .2s"
-            onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'"
-            onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'"
-            onkeydown="if(event.key==='Enter')doResetConfirm()"/>
-          <button onclick="toggleResetPass('reset-pass2','eye-2')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:0" id="eye-2">👁</button>
-        </div>
-      </div>
-      <div id="reset-error" style="display:none;font-size:12px;margin-top:8px;text-align:center;color:var(--danger);padding:6px 10px;background:var(--danger-bg);border-radius:8px;border:0.5px solid rgba(248,113,113,.2)"></div>
-      <button onclick="doResetConfirm()" id="reset-btn" style="
-        margin-top:14px;width:100%;
-        background: linear-gradient(135deg, #ff2020 0%, #cc0000 100%);
-        color:#fff;border:none;height:44px;border-radius:10px;
-        font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;
-        cursor:pointer;letter-spacing:.5px;
-        box-shadow: 0 4px 18px rgba(255,32,32,.4);
-        transition: opacity .15s, transform .1s, box-shadow .15s;
-        position:relative;overflow:hidden;"
-        onmouseover="this.style.boxShadow='0 6px 24px rgba(255,32,32,.6)';this.style.transform='translateY(-1px)'"
-        onmouseout="this.style.boxShadow='0 4px 18px rgba(255,32,32,.4)';this.style.transform=''"
-        onmousedown="this.style.transform='scale(.97)'"
-        onmouseup="this.style.transform='translateY(-1px)'">
-        <span style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%);background-size:200% 100%;animation:discord-shimmer 2s infinite linear;pointer-events:none"></span>
-        salvar nova senha
-      </button>
     </div>
 
     <!-- Voltar ao login -->
@@ -1224,7 +1143,7 @@ let resetVerifiedEmail = null;
 let _pendingNewPassword = null;
 
 function showResetSection(sectionId) {
-  ['reset-step-1','reset-step-sent','reset-step-3'].forEach(id => {
+  ['reset-step-1','reset-step-sent'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -1237,17 +1156,9 @@ function setResetStep(step) {
   if (step === 1) {
     if (subtitle) subtitle.textContent = 'recuperar senha';
     showResetSection('reset-step-1');
-  } else if (step === 1.5) {
-    if (subtitle) subtitle.textContent = 'verifique seu email';
-    showResetSection('reset-step-sent');
-    setTimeout(() => { const i = document.querySelector('#otp-inputs input'); if(i) i.focus(); }, 80);
-    startOtpTimer();
-  } else if (step === 2) {
-    if (subtitle) subtitle.textContent = 'criar nova senha';
-    showResetSection('reset-step-3');
-    setTimeout(() => document.getElementById('reset-pass').focus(), 80);
   }
 }
+
 
 function openForgotFlow() {
   document.getElementById('login-screen').style.display = 'none';
@@ -1282,7 +1193,7 @@ function traduzirErroAuth(code, message) {
     'auth/missing-email': 'digite seu email',
     'auth/requires-recent-login': 'faça login novamente para continuar',
   };
-  return msgs[code] || 'email ou senha incorretos';
+  return msgs[code] || (message ? message : 'ocorreu um erro inesperado. tente novamente.');
 }
 
 let _resetCooldown = 0;
@@ -1299,139 +1210,14 @@ function startResetCooldown(seconds) {
     if (_resetCooldown <= 0) {
       clearInterval(_resetCooldownTimer);
       btn.disabled = false;
-      btn.textContent = 'enviar código';
+      btn.textContent = 'enviar link';
     } else {
       btn.textContent = 'aguarde ' + _resetCooldown + 's...';
     }
   }, 1000);
 }
 
-// ── OTP helpers ──────────────────────────────────────────────────────────────
-let _generatedOtp = '';
-let _otpTimerInterval = null;
-let _resetEmail = '';
-let _otpExpiry = 0;
-
-function generateOtp() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function startOtpTimer() {
-  let secs = 60;
-  const countdown = document.getElementById('otp-countdown');
-  const timerEl = document.getElementById('otp-timer');
-  const resendBtn = document.getElementById('reset-resend-btn');
-  if (timerEl) timerEl.style.display = 'inline';
-  if (resendBtn) resendBtn.style.display = 'none';
-  if (countdown) countdown.textContent = secs;
-  clearInterval(_otpTimerInterval);
-  _otpTimerInterval = setInterval(() => {
-    secs--;
-    if (countdown) countdown.textContent = secs;
-    if (secs <= 0) {
-      clearInterval(_otpTimerInterval);
-      if (timerEl) timerEl.style.display = 'none';
-      if (resendBtn) resendBtn.style.display = 'inline';
-    }
-  }, 1000);
-}
-
-function otpMove(input, idx) {
-  input.value = input.value.replace(/[^0-9]/g, '');
-  const inputs = document.querySelectorAll('#otp-inputs input');
-  if (input.value && idx < 5) inputs[idx + 1].focus();
-}
-
-function otpBack(e, idx) {
-  const inputs = document.querySelectorAll('#otp-inputs input');
-  if (e.key === 'Backspace' && !inputs[idx].value && idx > 0) {
-    inputs[idx - 1].focus();
-  }
-}
-
-async function resendOtpCode() {
-  _generatedOtp = generateOtp();
-  _otpExpiry = Date.now() + 5 * 60 * 1000;
-
-  const resendBtn = document.getElementById('reset-resend-btn');
-  if (resendBtn) { resendBtn.textContent = 'enviando...'; resendBtn.disabled = true; }
-
-  try {
-    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
-        user_id: EMAILJS_PUBLIC_KEY,
-        template_params: {
-          email: _resetEmail,
-          passcode: _generatedOtp,
-        }
-      })
-    });
-    if (!res.ok) console.error('[EmailJS resend error]', res.status, await res.text());
-  } catch(e) {
-    console.error('[EmailJS resend error]', e);
-  }
-
-  if (resendBtn) { resendBtn.textContent = 'reenviar'; resendBtn.disabled = false; }
-
-  const masked = _resetEmail.replace(/(.{2}).+(@.+)/, '$1•••$2');
-  document.getElementById('reset-sent-info').innerHTML =
-    'código reenviado para<br><strong style="color:var(--text)">' + masked + '</strong>';
-  document.querySelectorAll('#otp-inputs input').forEach(i => i.value = '');
-  const errEl = document.getElementById('reset-err-otp');
-  if (errEl) errEl.style.display = 'none';
-  startOtpTimer();
-  setTimeout(() => { const i = document.querySelector('#otp-inputs input'); if(i) i.focus(); }, 80);
-}
-
-function verifyOtpCode() {
-  const inputs = document.querySelectorAll('#otp-inputs input');
-  const entered = Array.from(inputs).map(i => i.value).join('');
-  const errEl = document.getElementById('reset-err-otp');
-  const btn = document.getElementById('reset-btn-otp');
-  if (errEl) errEl.style.display = 'none';
-  if (entered.length < 6) {
-    if (errEl) { errEl.textContent = 'digite os 6 dígitos do código'; errEl.style.display = 'block'; }
-    return;
-  }
-  // Verifica expiração
-  if (_otpExpiry && Date.now() > _otpExpiry) {
-    if (errEl) { errEl.textContent = 'código expirado. clique em reenviar para gerar um novo.'; errEl.style.display = 'block'; }
-    inputs.forEach(i => { i.value = ''; i.style.borderColor = 'var(--danger)'; });
-    setTimeout(() => inputs.forEach(i => i.style.borderColor = 'var(--border2)'), 1500);
-    return;
-  }
-  btn.textContent = 'verificando...'; btn.disabled = true;
-  setTimeout(() => {
-    btn.textContent = 'verificar código'; btn.disabled = false;
-    if (entered === _generatedOtp) {
-      playUiSound();
-      clearInterval(_otpTimerInterval);
-      // OTP verificado — vai para tela de nova senha (sem oobCode, usará reauthentication via email/pass)
-      setResetStep(2);
-    } else {
-      if (errEl) { errEl.textContent = 'código incorreto. tente novamente.'; errEl.style.display = 'block'; }
-      inputs.forEach(i => { i.value = ''; i.style.borderColor = 'var(--danger)'; });
-      setTimeout(() => inputs.forEach(i => i.style.borderColor = 'var(--border2)'), 1500);
-      inputs[0].focus();
-    }
-  }, 600);
-}
-
-// ── EMAILJS CONFIG ────────────────────────────────────────────────────────────
-// Crie sua conta gratuita em https://www.emailjs.com/
-// Substitua os valores abaixo com suas credenciais do EmailJS:
-const EMAILJS_PUBLIC_KEY  = '6IMS-__GtrZoH0Rrh';
-const EMAILJS_SERVICE_ID  = 'service_5m4sna4';
-const EMAILJS_TEMPLATE_ID = 'wge5mfl';
-
-// Inicializa EmailJS uma única vez
-emailjs.init(EMAILJS_PUBLIC_KEY);
-
-async function sendResetCode() {
+async function sendResetLink() {
   const email = document.getElementById('reset-email-input').value.trim();
   const errEl = document.getElementById('reset-err-1');
   const btn = document.getElementById('reset-btn-1');
@@ -1446,71 +1232,32 @@ async function sendResetCode() {
 
   btn.textContent = 'enviando...'; btn.disabled = true;
 
-  // 1. Verifica se o email existe tentando enviar reset pelo Firebase
-  // Se o email não existir, vai lançar auth/user-not-found
-  // Se existir, vamos ignorar o link enviado (usaremos OTP via EmailJS)
   try {
     await auth.sendPasswordResetEmail(email);
-    // Email existe — continua para enviar OTP
+    // Sucesso — mostra tela de confirmação
+    playUiSound();
+    const masked = email.replace(/(.{2}).+(@.+)/, '$1•••$2');
+    document.getElementById('reset-sent-info').innerHTML =
+      'enviamos um link para<br><strong style="color:var(--text)">' + masked + '</strong><br>' +
+      '<span style="font-size:11px;opacity:.7">clique no link no email para criar sua nova senha</span>';
+    const subtitle = document.getElementById('reset-subtitle');
+    if (subtitle) subtitle.textContent = 'verifique seu email';
+    document.getElementById('reset-step-1').style.display = 'none';
+    document.getElementById('reset-step-sent').style.display = 'block';
   } catch(e) {
+    btn.textContent = 'enviar link'; btn.disabled = false;
     if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email' || e.code === 'auth/invalid-credential') {
-      btn.textContent = 'enviar código'; btn.disabled = false;
       errEl.textContent = 'esse email não está vinculado a nenhuma conta';
-      errEl.style.display = 'block';
-      return;
     } else if (e.code === 'auth/too-many-requests') {
-      errEl.textContent = 'muitas tentativas. aguarde 60 segundos.';
-      errEl.style.display = 'block';
+      errEl.textContent = 'muitas tentativas. aguarde alguns minutos.';
       startResetCooldown(60);
-      btn.textContent = 'enviar código'; btn.disabled = false;
-      return;
+    } else {
+      errEl.textContent = 'erro ao enviar. tente novamente.';
     }
-    // Outros erros: email provavelmente existe, continua
-  }
-
-  // 2. Gera OTP e envia via EmailJS
-  _resetEmail = email;
-  _generatedOtp = generateOtp();
-  _otpExpiry = Date.now() + 5 * 60 * 1000; // válido por 5 minutos
-
-  try {
-    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
-        user_id: EMAILJS_PUBLIC_KEY,
-        template_params: {
-          email: email,
-          passcode: _generatedOtp,
-        }
-      })
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      throw { status: res.status, text: txt };
-    }
-  } catch(e) {
-    btn.textContent = 'enviar código'; btn.disabled = false;
-    const status = e?.status || e?.text || JSON.stringify(e);
-    errEl.textContent = 'erro ao enviar email: ' + status;
     errEl.style.display = 'block';
-    console.error('[EmailJS error]', e);
-    return;
   }
-
-  btn.textContent = 'enviar código'; btn.disabled = false;
-
-  const masked = email.replace(/(.{2}).+(@.+)/, '$1•••$2');
-  document.getElementById('reset-sent-info').innerHTML =
-    'código enviado para<br><strong style="color:var(--text)">' + masked + '</strong><br>' +
-    '<span style="font-size:11px;opacity:.7">válido por 5 minutos</span>';
-
-  document.querySelectorAll('#otp-inputs input').forEach(i => i.value = '');
-  playUiSound();
-  setResetStep(1.5);
 }
+
 async function checkResetLink() {
   const params = new URLSearchParams(window.location.search);
   const mode = params.get('mode');
@@ -1521,34 +1268,59 @@ async function checkResetLink() {
     try {
       const email = await auth.verifyPasswordResetCode(oobCode);
       resetOobCode = oobCode;
-      resetVerifiedEmail = email;
-      const emailInfoEl = document.getElementById('reset-email-info');
-      if (emailInfoEl) emailInfoEl.textContent = email;
-
-      // Se há senha pendente do fluxo OTP, aplica automaticamente
-      if (_pendingNewPassword) {
-        try {
-          await auth.confirmPasswordReset(oobCode, _pendingNewPassword);
-          _pendingNewPassword = null;
-          resetOobCode = null;
-          window.history.replaceState({}, document.title, window.location.pathname);
-          document.getElementById('reset-screen').style.display = 'none';
-          document.getElementById('login-screen').style.display = 'flex';
-          const loginErr = document.getElementById('auth-error');
-          loginErr.textContent = '✅ senha alterada! faça login com a nova senha.';
-          loginErr.style.color = '#6ee7b7';
-          loginErr.style.display = 'block';
-          return;
-        } catch(e) {
-          _pendingNewPassword = null;
-        }
+      // Mostra tela de nova senha
+      const subtitle = document.getElementById('reset-subtitle');
+      if (subtitle) subtitle.textContent = 'criar nova senha';
+      document.getElementById('reset-step-1').style.display = 'none';
+      document.getElementById('reset-step-sent').style.display = 'none';
+      // Injeta o formulário de nova senha dinamicamente
+      const card = document.getElementById('reset-step-1').parentElement;
+      let passForm = document.getElementById('reset-pass-form');
+      if (!passForm) {
+        passForm = document.createElement('div');
+        passForm.id = 'reset-pass-form';
+        passForm.innerHTML = `
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px;text-align:center">${email}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="position:relative">
+              <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="new-pass" placeholder="nova senha"
+                style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;padding:0 12px 0 34px;height:42px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%;outline:none;box-sizing:border-box;transition:border-color .2s,background .2s"
+                onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'"
+                onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'"
+                onkeydown="if(event.key==='Enter')document.getElementById('new-pass2').focus()"/>
+            </div>
+            <div style="position:relative">
+              <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="new-pass2" placeholder="confirmar nova senha"
+                style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);color:var(--text);border-radius:10px;padding:0 12px 0 34px;height:42px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%;outline:none;box-sizing:border-box;transition:border-color .2s,background .2s"
+                onfocus="this.style.borderColor='rgba(255,32,32,.5)';this.style.background='rgba(255,32,32,.05)'"
+                onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.05)'"
+                onkeydown="if(event.key==='Enter')confirmNewPassword()"/>
+            </div>
+          </div>
+          <div id="new-pass-err" style="display:none;font-size:12px;margin-top:8px;text-align:center;color:var(--danger);padding:6px 10px;background:var(--danger-bg);border-radius:8px;border:0.5px solid rgba(248,113,113,.2)"></div>
+          <button onclick="confirmNewPassword()" id="new-pass-btn" style="
+            margin-top:14px;width:100%;
+            background:linear-gradient(135deg,#ff2020 0%,#cc0000 100%);
+            color:#fff;border:none;height:44px;border-radius:10px;
+            font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;
+            cursor:pointer;letter-spacing:.5px;
+            box-shadow:0 4px 18px rgba(255,32,32,.4);
+            transition:opacity .15s,transform .1s,box-shadow .15s;
+            position:relative;overflow:hidden;"
+            onmouseover="this.style.boxShadow='0 6px 24px rgba(255,32,32,.6)';this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.boxShadow='0 4px 18px rgba(255,32,32,.4)';this.style.transform=''"
+            onmousedown="this.style.transform='scale(.97)'"
+            onmouseup="this.style.transform='translateY(-1px)'">
+            <span style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%);background-size:200% 100%;animation:discord-shimmer 2s infinite linear;pointer-events:none"></span>
+            salvar nova senha
+          </button>`;
+        card.insertBefore(passForm, document.querySelector('#reset-screen .app > div:last-child') || card.lastChild);
       }
-
-      setResetStep(2);
-      setTimeout(() => document.getElementById('reset-pass').focus(), 100);
+      passForm.style.display = 'block';
+      setTimeout(() => document.getElementById('new-pass').focus(), 100);
     } catch(e) {
-      document.getElementById('reset-screen').style.display = 'flex';
-      setResetStep(1);
       const errEl = document.getElementById('reset-err-1');
       errEl.textContent = 'link expirado ou inválido. solicite um novo.';
       errEl.style.display = 'block';
@@ -1557,63 +1329,31 @@ async function checkResetLink() {
   }
 }
 
-async function doResetConfirm() {
-  const pass = document.getElementById('reset-pass').value;
-  const pass2 = document.getElementById('reset-pass2').value;
-  const errEl = document.getElementById('reset-error');
-  const btn = document.getElementById('reset-btn');
+async function confirmNewPassword() {
+  const pass = document.getElementById('new-pass').value;
+  const pass2 = document.getElementById('new-pass2').value;
+  const errEl = document.getElementById('new-pass-err');
+  const btn = document.getElementById('new-pass-btn');
   errEl.style.display = 'none';
-  if (!pass || pass.length < 6) { errEl.textContent = 'senha muito curta (mín. 6 caracteres)'; errEl.style.color = 'var(--danger)'; errEl.style.display = 'block'; return; }
-  if (pass !== pass2) { errEl.textContent = 'as senhas não coincidem ❌'; errEl.style.color = 'var(--danger)'; errEl.style.display = 'block'; return; }
-
-  btn.textContent = '...'; btn.disabled = true;
-
+  if (!pass || pass.length < 6) { errEl.textContent = 'senha muito curta (mín. 6 caracteres)'; errEl.style.display = 'block'; return; }
+  if (pass !== pass2) { errEl.textContent = 'as senhas não coincidem ❌'; errEl.style.display = 'block'; return; }
+  btn.textContent = 'salvando...'; btn.disabled = true;
   try {
-    if (resetOobCode) {
-      // Veio de link de email — troca a senha direto
-      await auth.confirmPasswordReset(resetOobCode, pass);
-    } else {
-      // Veio do fluxo OTP verificado no site
-      // Salva a nova senha temporariamente e envia link de reset
-      // O link vai abrir o site com ?mode=resetPassword&oobCode=...
-      // aí o checkResetLink vai pegar e o usuário clica "salvar nova senha" automaticamente
-      _pendingNewPassword = pass;
-      const continueUrl = window.location.origin + window.location.pathname;
-      try {
-        await auth.sendPasswordResetEmail(_resetEmail, { url: continueUrl });
-      } catch(e) {
-        // Se continueUrl não for autorizada, tenta sem
-        await auth.sendPasswordResetEmail(_resetEmail);
-      }
-      btn.textContent = 'salvar nova senha'; btn.disabled = false;
-      errEl.innerHTML = '📧 <strong>Quase lá!</strong> Enviamos um link final pro seu email.<br><span style="font-size:11px;opacity:.8">Clique no link do email para confirmar a nova senha.</span>';
-      errEl.style.color = '#6ee7b7';
-      errEl.style.display = 'block';
-      return;
-    }
-
+    await auth.confirmPasswordReset(resetOobCode, pass);
     playUiSound();
-    errEl.textContent = '✅ senha alterada com sucesso!';
-    errEl.style.color = '#6ee7b7';
-    errEl.style.display = 'block';
-
-    setTimeout(() => {
-      closeForgotFlow();
-      window.history.replaceState({}, document.title, window.location.pathname);
-      const loginErr = document.getElementById('auth-error');
-      loginErr.textContent = '✅ senha alterada! faça login com a nova senha.';
-      loginErr.style.color = '#6ee7b7';
-      loginErr.style.display = 'block';
-    }, 1800);
+    resetOobCode = null;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    closeForgotFlow();
+    const loginErr = document.getElementById('auth-error');
+    loginErr.textContent = '✅ senha alterada! faça login com a nova senha.';
+    loginErr.style.color = '#6ee7b7';
+    loginErr.style.display = 'block';
   } catch(e) {
     errEl.textContent = traduzirErroAuth(e.code, e.message);
-    errEl.style.color = 'var(--danger)';
     errEl.style.display = 'block';
-    btn.textContent = 'salvar nova senha';
-    btn.disabled = false;
+    btn.textContent = 'salvar nova senha'; btn.disabled = false;
   }
 }
-
 
 
 async function doLogout() {
