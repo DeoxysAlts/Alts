@@ -761,6 +761,7 @@
 </div>
 
 
+
 <!-- modal -->
 <!-- ── GEAR FAB ─────────────────────────────────────────────────── -->
 <button class="gear-fab" onclick="openSettings()" title="configurações">
@@ -1602,7 +1603,7 @@ function renderGlobalBrainrotsView(fc) {
           <div style="display:flex;align-items:center;gap:8px">
             <span class="br-icon">${brIcon}</span>
             <div style="flex:1;min-width:0">
-              <div class="br-name" style="white-space:normal;overflow:visible;word-break:break-word;line-height:1.3;${nameStyle}">${escHtml(b.name)}</div>
+              <div class="br-name" style="white-space:normal;overflow:visible;word-break:break-word;line-height:1.3;${nameStyle}">${wikiLink(b.name)}</div>
               ${b.gen ? `<div style="font-weight:800;color:#fde047;font-size:13px;letter-spacing:0.3px;text-shadow:0 0 8px rgba(253,224,71,0.35);margin-top:1px">${escHtml(b.gen)}</div>` : ''}
             </div>
             <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">${badges}</div>
@@ -1841,7 +1842,7 @@ function render() {
             <div style="display:flex;align-items:center;gap:8px">
               <span class="br-icon">${brIcon2}</span>
               <div style="flex:1;min-width:0">
-                <div class="br-name" style="white-space:normal;overflow:visible;word-break:break-word;line-height:1.3;${name2Style}">${escHtml(b.name)}</div>
+                <div class="br-name" style="white-space:normal;overflow:visible;word-break:break-word;line-height:1.3;${name2Style}">${wikiLink(b.name)}</div>
                 ${b.gen ? `<div style="font-weight:800;color:#fde047;font-size:13px;letter-spacing:0.3px;text-shadow:0 0 8px rgba(253,224,71,0.35);margin-top:1px">${escHtml(b.gen)}</div>` : ''}
               </div>
               <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">${badges}</div>
@@ -1861,9 +1862,8 @@ function render() {
         ${isOpen ? `<span class="badge" style="background:rgba(255,20,20,0.15);color:#ff2020;border:0.5px solid rgba(255,20,20,0.5);text-shadow:0 0 8px rgba(255,20,20,0.7)">${filtered.length} brainrot${filtered.length !== 1 ? 's' : ''}</span>` : ''}
         <svg class="chevron${isOpen ? ' open' : ''}" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
         <div class="acc-actions" onclick="event.stopPropagation()">
-          ${acc.url ? `<button class="icon-btn" onclick="rescanAcc(${ai})" title="atualizar brainrots da API" style="font-size:13px">🔄</button>` : ''}
-          ${acc.url ? `<button class="icon-btn" onclick="copyAccUrl(${ai}, this)" title="copiar URL da API" style="font-size:13px">📋</button>` : ''}
-          <button class="icon-btn" onclick="editAccUrl(${ai})" title="${acc.url ? 'editar URL da API' : 'adicionar URL da API'}" style="font-size:13px">✏️</button>
+          <button class="icon-btn" onclick="pasteJsonAcc(${ai})" title="atualizar colando JSON novo do jogo" style="font-size:13px">📥</button>
+          ${acc.url ? `<button class="icon-btn" onclick="copyAccUrl(${ai}, this)" title="copiar URL/JSON salvo" style="font-size:13px">📋</button>` : ''}
           <button class="icon-btn" onclick="delAcc(${ai})" title="remover conta">🗑</button>
         </div>
       </div>
@@ -1911,6 +1911,17 @@ function render() {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// Gera link clicável pra wiki Fandom do brainrot
+function wikiLink(name) {
+  if (!name) return '';
+  const safe = escHtml(name);
+  // Wiki usa _ em vez de espaços, e mantém capitalização
+  const slug = encodeURIComponent(name.trim().replace(/\s+/g, '_'));
+  const url = 'https://stealabrainrot.fandom.com/wiki/' + slug;
+  return `<a href="${url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="ver na wiki ↗" style="color:inherit;text-decoration:none;border-bottom:1px dotted rgba(255,255,255,0.25);transition:border-color .15s,color .15s" onmouseover="this.style.borderBottomColor='var(--accent)';this.style.color='#ff6060'" onmouseout="this.style.borderBottomColor='rgba(255,255,255,0.25)';this.style.color=''">${safe}</a>`;
+}
+
 
 function toggleAcc(id) { playUiSound(); expanded[id] = !expanded[id]; render(); }
 
@@ -2283,6 +2294,110 @@ function editAccUrl(ai) {
       }, 100);
     }
   }
+}
+
+// ── COLAR JSON NOVO PRA ATUALIZAR BRAINROTS ─────────────────────────────────
+let _pasteJsonTargetAi = null;
+
+function pasteJsonAcc(ai) {
+  _pasteJsonTargetAi = ai;
+  const acc = data.accounts[ai];
+  if (!acc) return;
+
+  // Cria modal se ainda não existe
+  let modal = document.getElementById('modal-paste-json');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-paste-json';
+    modal.className = 'modal-bg';
+    modal.innerHTML = `
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:560px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700">📥 atualizar brainrots</div>
+          <button class="icon-btn" onclick="closePasteJson()" style="font-size:18px">✕</button>
+        </div>
+        <div id="paste-json-acc-info" style="font-size:13px;color:var(--muted);margin-bottom:10px"></div>
+        <textarea id="paste-json-input" placeholder='cole aqui o JSON novo do jogo... ex: [{"name":"...","gen_text":"...",...}]'
+          style="width:100%;min-height:200px;background:var(--surface2);border:0.5px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-family:'DM Sans',monospace;font-size:12px;outline:none;resize:vertical;box-sizing:border-box"></textarea>
+        <div id="paste-json-status" style="font-size:12px;margin-top:8px;min-height:18px"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button onclick="closePasteJson()" style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text);height:36px;padding:0 14px;border-radius:8px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif">cancelar</button>
+          <button onclick="confirmPasteJson()" style="background:#7c3aed;border:none;color:#fff;height:36px;padding:0 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif">atualizar</button>
+        </div>
+      </div>`;
+    modal.onclick = closePasteJson;
+    document.body.appendChild(modal);
+  }
+
+  document.getElementById('paste-json-acc-info').textContent =
+    'conta: ' + acc.name + ' • ' + (acc.brainrots ? acc.brainrots.length : 0) + ' brainrot(s) atual(is)';
+  document.getElementById('paste-json-input').value = '';
+  document.getElementById('paste-json-status').innerHTML = '';
+  modal.classList.add('visible');
+  setTimeout(() => document.getElementById('paste-json-input').focus(), 80);
+}
+
+function closePasteJson() {
+  const modal = document.getElementById('modal-paste-json');
+  if (modal) modal.classList.remove('visible');
+  _pasteJsonTargetAi = null;
+}
+
+function confirmPasteJson() {
+  const ai = _pasteJsonTargetAi;
+  if (ai === null) return;
+  const acc = data.accounts[ai];
+  if (!acc) { closePasteJson(); return; }
+
+  const raw = document.getElementById('paste-json-input').value.trim();
+  const status = document.getElementById('paste-json-status');
+
+  if (!raw) {
+    status.innerHTML = '<span style="color:var(--danger)">✕ cole o JSON antes de atualizar</span>';
+    return;
+  }
+
+  let json;
+  try {
+    json = JSON.parse(raw);
+  } catch(e) {
+    status.innerHTML = '<span style="color:var(--danger)">✕ JSON inválido. verifique se copiou tudo certo.</span>';
+    return;
+  }
+
+  let pets = Array.isArray(json) ? json : json.data || json.pets || json.results || json.items || [];
+  if (!Array.isArray(pets) || pets.length === 0) {
+    status.innerHTML = '<span style="color:var(--danger)">✕ nenhum brainrot encontrado no JSON</span>';
+    return;
+  }
+
+  // Comparar com brainrots atuais pra detectar mudanças
+  const oldNames = (acc.brainrots || []).map(b => (b.name || '').toLowerCase());
+  const newNames = pets.map(p => (p.name || p.pet_name || p.title || p.index || '').toLowerCase());
+  const added = newNames.filter(n => !oldNames.includes(n));
+  const removed = oldNames.filter(n => !newNames.includes(n));
+
+  acc.brainrots = pets.map(pet => ({
+    name: pet.name || pet.pet_name || pet.title || pet.index || 'sem nome',
+    cat: petToCategory(pet),
+    rarity: pet.rarity || '',
+    mutation: pet.mutation || '',
+    gen: pet.gen_text || '',
+    traits: Array.isArray(pet.traits) ? pet.traits : [],
+    slot: pet.slot || '',
+  }));
+
+  // Salva o JSON também em acc.url pra poder copiar/editar depois
+  acc.url = raw;
+
+  save(); render();
+
+  let msg = '✅ ' + acc.brainrots.length + ' brainrot(s) carregado(s)!';
+  if (added.length > 0) msg += ' • 🆕 ' + added.length + ' novo(s)';
+  if (removed.length > 0) msg += ' • ❌ ' + removed.length + ' removido(s)';
+  status.innerHTML = '<span style="color:#6ee7b7">' + msg + '</span>';
+
+  setTimeout(closePasteJson, 1400);
 }
 
 // ── COPIAR URL DA CONTA ─────────────────────────────────────────────────────
