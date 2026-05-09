@@ -4593,11 +4593,13 @@ let _eldVendas    = JSON.parse(localStorage.getItem('eld_vendas') || '[]');
 let _eldPanelOpen = false;
 let _eldPollTimer = null;
 let _eldTab       = 'notifs';
+let _eldPendTotal = 0;
+let _eldPendItems = []; // lista real de pedidos pendentes vinda da API /pendentes
 
 // ── MIGRAÇÃO: limpa seen/dismissed para reprocessar notificações com lógica correta ──
 (function migrateEldStatus() {
   // Versão da migração — se mudar, força reprocessamento
-  const MIGRATION_VER = '3';
+  const MIGRATION_VER = '4';
   if (localStorage.getItem('eld_migration') !== MIGRATION_VER) {
     // Limpa IDs vistos para que o poll reprocesse todas as notificações da API
     localStorage.removeItem('eld_seen');
@@ -4650,10 +4652,11 @@ function startEldPolling() {
 async function pollEldorado() {
   try {
     // Busca notificações e vendas em paralelo
-    const [rNotif, rVendas, rPend] = await Promise.all([
+    const [rNotif, rVendas, rPend, rCancel] = await Promise.all([
       fetch(ELD_WORKER + '/notificacoes'),
       fetch(ELD_WORKER + '/vendas'),
-      fetch(ELD_WORKER + '/pendentes')
+      fetch(ELD_WORKER + '/pendentes'),
+      fetch(ELD_WORKER + '/canceladas').catch(() => null)
     ]);
 
     if (!rNotif.ok || !rVendas.ok) {
@@ -4666,15 +4669,20 @@ async function pollEldorado() {
     const dNotif  = await rNotif.json();
     const dVendas = await rVendas.json();
     const dPend   = rPend.ok ? await rPend.json() : { total: 0 };
+    const dCancel = (rCancel && rCancel.ok) ? await rCancel.json() : null;
 
-    // Atualizar badge de pendentes
-    const pendTotal = dPend.total || 0;
+    // Atualizar badge de pendentes — usa valor REAL da API, não contagem local
+    _eldPendTotal = dPend.total != null ? dPend.total : (dPend.pendentes != null ? dPend.pendentes : 0);
+    // Salva a lista real de pedidos pendentes (pode vir como .pedidos, .orders, .items, etc.)
+    _eldPendItems = dPend.pedidos || dPend.orders || dPend.items || dPend.pendentes_list || [];
+    // Se /pendentes retornou array direto
+    if (Array.isArray(dPend)) { _eldPendItems = dPend; _eldPendTotal = dPend.length; }
     const penbadge = document.getElementById('eld-pending-badge');
     const penbtn   = document.getElementById('eld-pending-btn');
-    if (penbadge) { penbadge.textContent = pendTotal > 9 ? '9+' : String(pendTotal); penbadge.classList.toggle('visible', pendTotal > 0); }
-    if (penbtn)   { penbtn.style.opacity = pendTotal > 0 ? '1' : '0.5'; penbtn.title = `${pendTotal} pedido${pendTotal !== 1 ? 's' : ''} pendente${pendTotal !== 1 ? 's' : ''} de entrega`; }
-    const pEl = document.getElementById('eld-stat-pending');
-    if (pEl) pEl.textContent = pendTotal;
+    const pEl      = document.getElementById('eld-stat-pending');
+    if (penbadge) { penbadge.textContent = _eldPendTotal > 9 ? '9+' : String(_eldPendTotal); penbadge.classList.toggle('visible', _eldPendTotal > 0); }
+    if (penbtn)   { penbtn.style.opacity = _eldPendTotal > 0 ? '1' : '0.5'; penbtn.title = `${_eldPendTotal} pedido${_eldPendTotal !== 1 ? 's' : ''} pendente${_eldPendTotal !== 1 ? 's' : ''} de entrega`; }
+    if (pEl)      { pEl.textContent = _eldPendTotal; }
 
     // ── Processar notificações ──
     const notifResults = dNotif.notificacoes || [];
@@ -4684,9 +4692,10 @@ async function pollEldorado() {
 
     for (const n of notifResults) {
       const id = String(n.id || Math.random());
-      if (dismissedIds.includes(id)) continue;
-
       const ev = getEldEventInfo(n.evento);
+      // Cancelamentos e disputas nunca são ignorados pelo dismissed (são importantes)
+      const isCritical = ev.status === 'cancelled' || ev.status === 'dispute';
+      if (!isCritical && dismissedIds.includes(id)) continue;
       const notif = {
         id,
         icon:      ev.icon,
@@ -4733,6 +4742,40 @@ async function pollEldorado() {
       localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
     }
 
+    // ── Processar canceladas do endpoint /canceladas (se existir no Worker) ──
+    const canceladasEndpoint = dCancel
+      ? (dCancel.canceladas || dCancel.vendas || dCancel.orders || [])
+      : [];
+    // Combina com as canceladas vindas do /vendas
+    const todasCanceladas = [
+      ...canceladasEndpoint,
+      ...vendasResults.filter(v => (v.status || '').toLowerCase().includes('cancel'))
+    ];
+    let cancelChanged = false;
+    for (const v of todasCanceladas) {
+      const id = 'cancel-' + String(v.id || v._id || v.orderId || Math.random());
+      const already = _eldNotifs.find(n => n.id === id);
+      if (!already) {
+        const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : (v.price != null ? parseFloat(v.price) : parseFloat(v.valor) || 0);
+        _eldNotifs.push({
+          id,
+          icon:      '❌',
+          label:     'Pedido cancelado',
+          title:     v.produto || v.title || v.product || v.name || 'Produto',
+          price:     valor ? 'US$' + valor.toFixed(2) : '',
+          status:    'cancelled',
+          comprador: v.comprador || v.buyer || v.buyerName || '',
+          ts:        new Date(v.data || v.createdAt || v.cancelledAt || Date.now()).getTime(),
+          read:      true,
+          evento:    'Cancelled'
+        });
+        cancelChanged = true;
+      }
+    }
+    if (cancelChanged) {
+      localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+    }
+
     renderEldPanel();
     updateEldBell();
 
@@ -4768,9 +4811,10 @@ function normalizeEldStatus(raw) {
   if (s.includes('cancel')) return 'cancelled';
   // Em disputa
   if (s.includes('disput') || s.includes('dispute') || s.includes('review')) return 'dispute';
-  // Pendente = novo pedido aguardando entrega
-  if (s.includes('pendente') || s.includes('pending') || s.includes('aguard') || s.includes('process') || s.includes('novo') || s.includes('new') || s === 'pending' || s === 'other' || s === '') return 'pending';
-  return 'pending'; // default: qualquer coisa desconhecida fica como pendente
+  // Pendente = explicitamente pendente
+  if (s === 'pending' || s === 'pendente' || s.includes('aguard') || s.includes('process')) return 'pending';
+  // Desconhecido — NÃO joga como pending para não inflar a aba
+  return 'other';
 }
 
 // ── TOGGLE PAINEL ─────────────────────────────────────────────────────────────
@@ -4808,9 +4852,56 @@ function renderEldFiltered(tab) {
   const statusMap = { pendentes: 'pending', concluidas: 'completed', canceladas: 'cancelled', disputas: 'dispute' };
   const targetStatus = statusMap[tab];
 
-  // Pendentes: só notificações com status pending (novos pedidos que você ainda não entregou)
-  // Concluídas / Canceladas / Disputas: notificações com o status correspondente
-  const items = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
+  let items = [];
+
+  if (tab === 'pendentes' && _eldPendItems.length > 0) {
+    // Usa a lista REAL da API /pendentes — fonte da verdade
+    items = _eldPendItems.map(v => {
+      const valor = v.valor?.amount != null ? parseFloat(v.valor.amount)
+                  : v.price != null ? parseFloat(v.price)
+                  : parseFloat(v.valor) || 0;
+      return {
+        id:        String(v.id || v._id || v.orderId || Math.random()),
+        icon:      '⚡',
+        label:     'Pendente',
+        title:     v.produto || v.title || v.product || v.name || 'Produto',
+        price:     valor ? 'US$' + valor.toFixed(2) : '',
+        status:    'pending',
+        comprador: v.comprador || v.buyer || v.buyerName || '',
+        ts:        new Date(v.data || v.createdAt || Date.now()).getTime(),
+        read:      true
+      };
+    });
+  } else {
+    // Para as outras abas (ou se /pendentes não retornou lista), usa notificações locais
+    const fromNotifs = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
+
+    // Também busca em _eldVendas para canceladas/concluidas
+    const fromVendas = _eldVendas
+      .filter(v => normalizeEldStatus(v.status || '') === targetStatus)
+      .map(v => {
+        const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
+        const st = normalizeEldStatus(v.status || '');
+        const statusIcon = { completed:'✅', pending:'⚡', cancelled:'❌', dispute:'⚠️' }[st] || '📦';
+        const statusLabel = { completed:'Venda concluída', pending:'Novo pedido', cancelled:'Pedido cancelado', dispute:'Em disputa' }[st] || 'Venda';
+        return {
+          id:        String(v.id || Math.random()),
+          icon:      statusIcon,
+          label:     statusLabel,
+          title:     v.produto || 'Produto',
+          price:     valor ? 'US$' + valor.toFixed(2) : '',
+          status:    st,
+          comprador: v.comprador || '',
+          ts:        new Date(v.data || Date.now()).getTime(),
+          read:      true,
+          _fromVendas: true
+        };
+      });
+
+    const notifIds = new Set(fromNotifs.map(n => String(n.id)));
+    const extra = fromVendas.filter(v => !notifIds.has(v.id));
+    items = [...fromNotifs, ...extra].sort((a, b) => b.ts - a.ts);
+  }
 
   const emptyLabel = { pendentes: 'pedidos pendentes de entrega', concluidas: 'pedidos concluídos', canceladas: 'pedidos cancelados', disputas: 'pedidos em disputa' };
   const emptyIcon  = { pendentes: '⏳', concluidas: '✅', canceladas: '❌', disputas: '⚠️' };
@@ -4855,7 +4946,6 @@ function renderEldPanel() {
 function renderEldStats() {
   const today = new Date(); today.setHours(0,0,0,0);
   const completedToday = _eldNotifs.filter(n => n.status === 'completed' && n.ts >= today.getTime());
-  const pending        = _eldNotifs.filter(n => n.status === 'pending' && !n.read);
   const total          = _eldNotifs.filter(n => n.status === 'completed');
 
   let revenue = 0;
@@ -4867,10 +4957,10 @@ function renderEldStats() {
 
   const rEl = document.getElementById('eld-stat-revenue');
   const tEl = document.getElementById('eld-stat-total');
-  const pEl = document.getElementById('eld-stat-pending');
   if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
   if (tEl) tEl.textContent = total.length;
-  if (pEl) pEl.textContent = pending.length;
+  // PENDENTES: NÃO sobrescrever aqui — o valor real vem da API /pendentes no pollEldorado
+  // e já é escrito diretamente no eld-stat-pending durante o poll.
 }
 
 function renderEldList() {
@@ -4954,15 +5044,17 @@ function showEldConfigError(msg) {
 // ── BELL BADGE ────────────────────────────────────────────────────────────────
 function updateEldBell() {
   const unread  = _eldNotifs.filter(n => !n.read).length;
-  const pending = _eldNotifs.filter(n => n.status === 'pending' && !n.read).length;
-  const badge   = document.getElementById('eld-bell-badge');
-  const pbadge  = document.getElementById('eld-panel-badge');
+  // _eldPendTotal = valor real da API /pendentes; não usar contagem local que pode estar errada
+  const badge    = document.getElementById('eld-bell-badge');
+  const pbadge   = document.getElementById('eld-panel-badge');
   const penbadge = document.getElementById('eld-pending-badge');
   const penbtn   = document.getElementById('eld-pending-btn');
-  if (badge) { badge.textContent = unread > 9 ? '9+' : String(unread); badge.classList.toggle('visible', unread > 0); }
-  if (pbadge) { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
-  if (penbadge) { penbadge.textContent = pending > 9 ? '9+' : String(pending); penbadge.classList.toggle('visible', pending > 0); }
-  if (penbtn) { penbtn.style.opacity = pending > 0 ? '1' : '0.5'; }
+  const pEl      = document.getElementById('eld-stat-pending');
+  if (badge)    { badge.textContent = unread > 9 ? '9+' : String(unread); badge.classList.toggle('visible', unread > 0); }
+  if (pbadge)   { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
+  if (penbadge) { penbadge.textContent = _eldPendTotal > 9 ? '9+' : String(_eldPendTotal); penbadge.classList.toggle('visible', _eldPendTotal > 0); }
+  if (penbtn)   { penbtn.style.opacity = _eldPendTotal > 0 ? '1' : '0.5'; }
+  if (pEl)      { pEl.textContent = _eldPendTotal; }
 }
 
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
