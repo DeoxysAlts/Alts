@@ -1212,6 +1212,10 @@
 
         <!-- ── ELDORADO BELL ─────────────────────────────── -->
         <div class="eld-bell-wrap" id="eld-bell-wrap">
+          <button class="eld-bell-btn" id="eld-pending-btn" onclick="toggleEldPanel();setEldTab('notifs')" title="Pedidos pendentes de entrega" style="margin-right:4px;background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.3);color:#fbbf24;position:relative">
+            ⏳
+            <span class="eld-bell-badge" id="eld-pending-badge" style="background:#fbbf24;color:#000">0</span>
+          </button>
           <button class="eld-bell-btn" id="eld-bell-btn" onclick="toggleEldPanel()" title="Notificações da Eldorado">
             🔔
             <span class="eld-bell-badge" id="eld-bell-badge">0</span>
@@ -1242,12 +1246,21 @@
               </div>
             </div>
 
+            <!-- TABS -->
+            <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);flex-shrink:0">
+              <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">🔔 Notificações</button>
+              <button class="eld-tab-btn" data-tab="vendas" onclick="setEldTab('vendas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">📦 Vendas</button>
+            </div>
+            <style>
+              .eld-tab-btn.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+            </style>
+
             <!-- NOTIF LIST -->
-            <div class="eld-notif-list" id="eld-notif-list">
-              <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
-                <div style="font-size:28px">🔔</div>
-                <div>Instale a extensão do Chrome<br>para ver notificações aqui.</div>
-              </div>
+            <div class="eld-notif-list" id="eld-notif-list" style="display:flex;flex-direction:column">
+            </div>
+
+            <!-- VENDAS LIST -->
+            <div class="eld-notif-list" id="eld-vendas-list" style="display:none;flex-direction:column">
             </div>
 
             <!-- FOOTER ACTIONS -->
@@ -4566,15 +4579,17 @@ function doImport() {
 
 
 <script>
-// ── ELDORADO NOTIFICATION SYSTEM (Cookie-based) ──────────────────────────────
+// ── ELDORADO NOTIFICATION SYSTEM (Worker-based) ─────────────────────────────
 
-const ELD_API = 'https://www.eldorado.gg/api/orders/me/seller/orders?pageSize=20&pageDirection=Next&isAscendingDateOrder=false&ignorePendingReviewOrders=true&displayFilter=DisplaySellingOrders&orderGroup=Regular';
+const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
 const ELD_POLL_MS = 30000;
 
 let _eldNotifs    = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds   = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
+let _eldVendas    = JSON.parse(localStorage.getItem('eld_vendas') || '[]');
 let _eldPanelOpen = false;
 let _eldPollTimer = null;
+let _eldTab       = 'notifs'; // 'notifs' | 'vendas'
 
 // ── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
 (function initEldorado() {
@@ -4582,7 +4597,6 @@ let _eldPollTimer = null;
   updateEldBell();
   startEldPolling();
 
-  // Fecha painel ao clicar fora
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('eld-bell-wrap');
     if (_eldPanelOpen && wrap && !wrap.contains(e.target)) closeEldPanel();
@@ -4597,75 +4611,100 @@ function startEldPolling() {
 }
 
 async function pollEldorado() {
-  const cookie = localStorage.getItem('eld_cookie');
-  if (!cookie) return; // sem cookie configurado, silencioso
-
   try {
-    // Usa um proxy CORS para fazer o fetch com o cookie
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(ELD_API);
-    const resp = await fetch(proxyUrl, {
-      headers: {
-        'Cookie': cookie,
-        'Accept': 'application/json',
-        'x-cors-headers': JSON.stringify({ 'Cookie': cookie })
-      }
-    });
+    // Busca notificações e vendas em paralelo
+    const [rNotif, rVendas, rPend] = await Promise.all([
+      fetch(ELD_WORKER + '/notificacoes'),
+      fetch(ELD_WORKER + '/vendas'),
+      fetch(ELD_WORKER + '/pendentes')
+    ]);
 
-    if (!resp.ok) {
-      console.warn('[Eldorado] fetch falhou:', resp.status);
-      if (resp.status === 401 || resp.status === 403) {
-        showEldConfigError('Cookie expirado. Atualize nas configurações do Eldorado (⚙️).');
+    if (!rNotif.ok || !rVendas.ok) {
+      if (rNotif.status === 401 || rVendas.status === 401) {
+        showEldConfigError('Sessão expirada. Atualize o cookie via PowerShell.');
       }
       return;
     }
 
-    const data = await resp.json();
-    const results = data?.results || [];
-    if (!Array.isArray(results) || results.length === 0) return;
+    const dNotif  = await rNotif.json();
+    const dVendas = await rVendas.json();
+    const dPend   = rPend.ok ? await rPend.json() : { total: 0 };
 
+    // Atualizar badge de pendentes
+    const pendTotal = dPend.total || 0;
+    const penbadge = document.getElementById('eld-pending-badge');
+    const penbtn   = document.getElementById('eld-pending-btn');
+    if (penbadge) { penbadge.textContent = pendTotal > 9 ? '9+' : String(pendTotal); penbadge.classList.toggle('visible', pendTotal > 0); }
+    if (penbtn)   { penbtn.style.opacity = pendTotal > 0 ? '1' : '0.5'; penbtn.title = `${pendTotal} pedido${pendTotal !== 1 ? 's' : ''} pendente${pendTotal !== 1 ? 's' : ''} de entrega`; }
+    const pEl = document.getElementById('eld-stat-pending');
+    if (pEl) pEl.textContent = pendTotal;
+
+    // ── Processar notificações ──
+    const notifResults = dNotif.notificacoes || [];
     const newNotifs = [];
-    for (const o of results) {
-      const id = String(o.id || o._id || Math.random());
-      if (_eldSeenIds.includes(id)) continue;
 
-      const status = normalizeEldStatus(o.status || o.orderStatus || o.state || '');
+    const dismissedIds = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    for (const n of notifResults) {
+      const id = String(n.id || Math.random());
+      if (_eldSeenIds.includes(id)) continue;
+      if (dismissedIds.includes(id)) continue;
+
+      const ev = getEldEventInfo(n.evento);
       const notif = {
         id,
-        icon:  { completed:'✅', pending:'⏳', cancelled:'❌', dispute:'⚠️', other:'📦' }[status] || '📦',
-        label: { completed:'Venda concluída', pending:'Entrega pendente', cancelled:'Pedido cancelado', dispute:'Em disputa', other:'Atualização' }[status] || 'Atualização',
-        title: o.offerTitle || o.title || ('Venda para ' + (o.buyerUsername || 'comprador')),
-        price: o.totalPrice?.amount != null ? 'US$' + parseFloat(o.totalPrice.amount).toFixed(2) : '',
-        status,
-        ts:   Date.now(),
-        read: false
+        icon:   ev.icon,
+        label:  ev.label,
+        title:  n.produto || ev.label,
+        price:  n.valor ? 'US$' + parseFloat(n.valor).toFixed(2) : '',
+        status: ev.status,
+        comprador: n.comprador || '',
+        ts:    new Date(n.data || Date.now()).getTime(),
+        read:  n.lida || false
       };
 
       newNotifs.push(notif);
       _eldSeenIds.push(id);
     }
 
-    if (newNotifs.length === 0) return;
+    if (newNotifs.length > 0) {
+      _eldNotifs = [...newNotifs, ..._eldNotifs].slice(0, 5);
+      _eldSeenIds = _eldSeenIds.slice(-500);
+      localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+      localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
+      newNotifs.filter(n => !n.read).forEach(n => showEldToast(n));
+      typeof playUiSound === 'function' && playUiSound();
+    }
 
-    _eldNotifs = [...newNotifs, ..._eldNotifs].slice(0, 50);
-    _eldSeenIds = _eldSeenIds.slice(-500);
-    localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
-    localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
+    // ── Processar vendas ──
+    const vendasResults = dVendas.vendas || [];
+    if (vendasResults.length > 0) {
+      _eldVendas = vendasResults;
+      localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+    }
 
-    newNotifs.forEach(n => showEldToast(n));
-    playUiSound && playUiSound();
     renderEldPanel();
     updateEldBell();
 
-    console.log('[Eldorado]', newNotifs.length, 'nova(s) detectada(s)');
   } catch(e) {
     console.warn('[Eldorado] erro no poll:', e.message);
   }
 }
 
+function getEldEventInfo(evento) {
+  if (!evento) return { label: 'Pendente', icon: '⏳', status: 'pending' };
+  if (evento.includes('OrderCreated'))   return { label: 'Novo pedido',       icon: '✅', status: 'completed' };
+  if (evento.includes('Disputed'))       return { label: 'Em disputa',        icon: '❌', status: 'cancelled' };
+  if (evento.includes('Cancelled'))      return { label: 'Pedido cancelado',  icon: '❌', status: 'cancelled' };
+  if (evento.includes('Success') || evento.includes('Received')) return { label: 'Venda concluída', icon: '✅', status: 'completed' };
+  if (evento.includes('TalkJs'))         return { label: 'Nova mensagem',     icon: '⏳', status: 'pending' };
+  if (evento.includes('PreSell'))        return { label: 'Entrega pendente',  icon: '⏳', status: 'pending' };
+  return { label: 'Pendente', icon: '⏳', status: 'pending' };
+}
+
 function normalizeEldStatus(raw) {
   const s = (raw || '').toLowerCase();
-  if (s.includes('conclu') || s.includes('complet') || s.includes('entregue') || s.includes('delivered') || s.includes('done') || s.includes('finaliz')) return 'completed';
-  if (s.includes('pendente') || s.includes('pending') || s.includes('aguard') || s.includes('wait') || s.includes('process')) return 'pending';
+  if (s.includes('conclu') || s.includes('complet') || s.includes('delivered') || s.includes('done')) return 'completed';
+  if (s.includes('pendente') || s.includes('pending') || s.includes('aguard') || s.includes('process')) return 'pending';
   if (s.includes('cancel')) return 'cancelled';
   if (s.includes('disput') || s.includes('review')) return 'dispute';
   return 'other';
@@ -4682,16 +4721,25 @@ function closeEldPanel() {
   document.getElementById('eld-panel').classList.remove('open');
 }
 
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function setEldTab(tab) {
+  _eldTab = tab;
+  document.querySelectorAll('.eld-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('eld-tab-notifs').style.display = tab === 'notifs' ? 'flex' : 'none';
+  document.getElementById('eld-tab-vendas').style.display = tab === 'vendas' ? 'flex' : 'none';
+}
+
 // ── RENDER PAINEL ─────────────────────────────────────────────────────────────
 function renderEldPanel() {
   renderEldStats();
   renderEldList();
+  renderEldVendas();
 }
 
 function renderEldStats() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const completedToday = _eldNotifs.filter(n => n.status === 'completed' && new Date(n.ts) >= today);
-  const pending        = _eldNotifs.filter(n => n.status === 'pending');
+  const completedToday = _eldNotifs.filter(n => n.status === 'completed' && n.ts >= today.getTime());
+  const pending        = _eldNotifs.filter(n => n.status === 'pending' && !n.read);
   const total          = _eldNotifs.filter(n => n.status === 'completed');
 
   let revenue = 0;
@@ -4713,21 +4761,6 @@ function renderEldList() {
   const list = document.getElementById('eld-notif-list');
   if (!list) return;
 
-  const hasCookie = !!localStorage.getItem('eld_cookie');
-
-  if (!hasCookie) {
-    list.innerHTML = `
-      <div style="text-align:center;padding:24px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:10px">
-        <div style="font-size:28px">🔑</div>
-        <div style="font-weight:500;color:var(--text)">Configure seu cookie da Eldorado</div>
-        <div style="font-size:11px;opacity:.7">Necessário para buscar suas vendas automaticamente</div>
-        <button onclick="openEldConfig()" style="margin-top:4px;background:var(--accent-bg);border:0.5px solid var(--accent-border);color:var(--accent);padding:7px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500">
-          ⚙️ Configurar agora
-        </button>
-      </div>`;
-    return;
-  }
-
   if (_eldNotifs.length === 0) {
     list.innerHTML = `
       <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
@@ -4747,10 +4780,43 @@ function renderEldList() {
         <div class="eld-notif-body">
           <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || 'Atualização')}</div>
           <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
-          <div class="eld-notif-meta">${ago}</div>
+          <div class="eld-notif-meta">${ago}${n.comprador ? ' · ' + escHtml(n.comprador) : ''}</div>
         </div>
         ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
         <div class="eld-unread-dot"></div>
+      </div>`;
+  }).join('');
+}
+
+function renderEldVendas() {
+  const list = document.getElementById('eld-vendas-list');
+  if (!list) return;
+
+  if (_eldVendas.length === 0) {
+    list.innerHTML = `
+      <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="font-size:28px">📦</div>
+        <div>Nenhuma venda ainda.</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = _eldVendas.map(v => {
+    const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
+    const comprador = v.comprador || 'Comprador';
+    const produto = v.produto || 'Produto';
+    const ago = eldTimeAgo(new Date(v.data || Date.now()).getTime());
+    const status = normalizeEldStatus(v.status || '');
+    const statusIcon = { completed:'✅', pending:'⏳', cancelled:'❌', dispute:'⚠️', other:'📦' }[status] || '📦';
+    return `
+      <div class="eld-notif ${status}" style="cursor:default">
+        <div class="eld-notif-icon ${status}">${statusIcon}</div>
+        <div class="eld-notif-body">
+          <div class="eld-notif-label ${status}">${{ completed:'Concluída', pending:'Pendente', cancelled:'Cancelada', dispute:'Disputa', other:'Venda' }[status] || 'Venda'}</div>
+          <div class="eld-notif-title">${escHtml(produto)}</div>
+          <div class="eld-notif-meta">${ago} · ${escHtml(comprador)}</div>
+        </div>
+        ${valor ? `<div class="eld-notif-price completed">US$${valor.toFixed(2)}</div>` : ''}
       </div>`;
   }).join('');
 }
@@ -4762,69 +4828,58 @@ function showEldConfigError(msg) {
     <div style="text-align:center;padding:20px 16px;color:var(--danger);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
       <div style="font-size:24px">⚠️</div>
       <div>${escHtml(msg)}</div>
-      <button onclick="openEldConfig()" style="margin-top:4px;background:var(--danger-bg);border:0.5px solid rgba(248,113,113,.3);color:var(--danger);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif">
-        Atualizar cookie
-      </button>
+      <div style="font-size:11px;opacity:.7;margin-top:4px">Rode o comando PowerShell para atualizar o cookie.</div>
     </div>`;
 }
 
 // ── BELL BADGE ────────────────────────────────────────────────────────────────
 function updateEldBell() {
-  const unread = _eldNotifs.filter(n => !n.read).length;
-  const badge  = document.getElementById('eld-bell-badge');
-  const pbadge = document.getElementById('eld-panel-badge');
+  const unread  = _eldNotifs.filter(n => !n.read).length;
+  const pending = _eldNotifs.filter(n => n.status === 'pending' && !n.read).length;
+  const badge   = document.getElementById('eld-bell-badge');
+  const pbadge  = document.getElementById('eld-panel-badge');
+  const penbadge = document.getElementById('eld-pending-badge');
+  const penbtn   = document.getElementById('eld-pending-btn');
   if (badge) { badge.textContent = unread > 9 ? '9+' : String(unread); badge.classList.toggle('visible', unread > 0); }
   if (pbadge) { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
+  if (penbadge) { penbadge.textContent = pending > 9 ? '9+' : String(pending); penbadge.classList.toggle('visible', pending > 0); }
+  if (penbtn) { penbtn.style.opacity = pending > 0 ? '1' : '0.5'; }
 }
 
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
 function eldMarkAllRead() {
-  _eldNotifs = _eldNotifs.map(n => ({ ...n, read: true }));
+  // Salva os IDs atuais como descartados permanentemente
+  const dismissedIds = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  _eldNotifs.forEach(n => { if (n.id && !dismissedIds.includes(n.id)) dismissedIds.push(n.id); });
+  localStorage.setItem('eld_dismissed', JSON.stringify(dismissedIds.slice(-500)));
+  _eldNotifs = [];
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   renderEldPanel();
   updateEldBell();
 }
 
-// ── CONFIG MODAL ──────────────────────────────────────────────────────────────
+// ── CONFIG MODAL (mantido para compatibilidade, mas não usa mais) ──────────────
 function openEldConfig() {
   closeEldPanel();
-  const existing = localStorage.getItem('eld_cookie') || '';
-  document.getElementById('eld-cookie-input').value = existing;
-  document.getElementById('eld-config-status').style.display = 'none';
   document.getElementById('eld-config-modal-bg').classList.add('visible');
 }
 function closeEldConfig() {
   document.getElementById('eld-config-modal-bg').classList.remove('visible');
 }
 function saveEldConfig() {
-  const val = document.getElementById('eld-cookie-input').value.trim();
   const status = document.getElementById('eld-config-status');
-  if (!val) {
-    status.style.display = 'block';
-    status.innerHTML = '<span style="color:var(--danger)">Cole o cookie da Eldorado antes de salvar.</span>';
-    return;
-  }
-  localStorage.setItem('eld_cookie', val);
-  // Reset e faz poll imediato
-  _eldNotifs = [];
-  _eldSeenIds = [];
-  localStorage.removeItem('eld_notifs');
-  localStorage.removeItem('eld_seen');
   status.style.display = 'block';
-  status.innerHTML = '<span style="color:#6ee7b7">✓ Salvo! Buscando vendas...</span>';
-  setTimeout(() => {
-    closeEldConfig();
-    startEldPolling();
-    renderEldPanel();
-  }, 1200);
+  status.innerHTML = '<span style="color:#6ee7b7">✓ O cookie agora é gerenciado pelo Worker. Use o PowerShell para atualizar.</span>';
+  setTimeout(closeEldConfig, 2000);
 }
 function clearEldCookie() {
-  if (!confirm('Remover cookie e limpar notificações?')) return;
-  localStorage.removeItem('eld_cookie');
+  if (!confirm('Limpar notificações salvas?')) return;
   localStorage.removeItem('eld_notifs');
   localStorage.removeItem('eld_seen');
+  localStorage.removeItem('eld_vendas');
   _eldNotifs = [];
   _eldSeenIds = [];
+  _eldVendas = [];
   if (_eldPollTimer) clearInterval(_eldPollTimer);
   renderEldPanel();
   updateEldBell();
