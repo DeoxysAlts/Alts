@@ -4665,11 +4665,12 @@ function doImport() {
 // Fallback: worker se extensão não estiver instalada
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 30000;
+const ELD_POLL_MS = 10000;
 
 let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds     = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
 let _eldPending     = JSON.parse(localStorage.getItem('eld_pending') || '[]');
+let _eldCancelled   = JSON.parse(localStorage.getItem('eld_cancelled') || '[]');
 let _eldPanelOpen   = false;
 let _eldPollTimer   = null;
 let _eldTab         = 'notifs';
@@ -4762,6 +4763,13 @@ function processExtensionNotifs(notifs) {
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
 
+  // Salva cancelados em array separado para não sumirem ao marcar lidas
+  const newCancelled = newOnes.filter(n => normalizeEldStatus(n.status) === 'cancelled');
+  if (newCancelled.length > 0) {
+    _eldCancelled = [...newCancelled, ..._eldCancelled].slice(0, 100);
+    localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+  }
+
   // Toasts e som apenas para não lidas
   newOnes.filter(n => !n.read).forEach(n => showEldToast(n));
   if (newOnes.some(n => !n.read)) {
@@ -4789,9 +4797,11 @@ function startEldPolling() {
 
 async function pollEldorado() {
   try {
-    const [rNotif, rPend] = await Promise.all([
+    const [rNotif, rPend, rCancel, rVendas] = await Promise.all([
       fetch(ELD_WORKER + '/notificacoes'),
       fetch(ELD_WORKER + '/pendentes'),
+      fetch(ELD_WORKER + '/canceladas'),
+      fetch(ELD_WORKER + '/vendas'),
     ]);
 
     if (!rNotif.ok) {
@@ -4799,8 +4809,79 @@ async function pollEldorado() {
       return;
     }
 
-    const dNotif = await rNotif.json();
-    const dPend  = rPend.ok ? await rPend.json() : { total: 0, pendentes: [] };
+    const dNotif  = await rNotif.json();
+    const dPend   = rPend.ok   ? await rPend.json()   : { total: 0, pendentes: [] };
+    const dCancel = rCancel.ok ? await rCancel.json() : { total: 0, canceladas: [] };
+    const dVendas = rVendas.ok ? await rVendas.json() : { total: 0, vendas: [] };
+
+    // ── Cancelados + Disputas direto da API ─────────────────────────
+    const canceladasApi = dCancel.canceladas || [];
+    if (canceladasApi.length > 0) {
+      _eldCancelled = canceladasApi.map(c => ({
+        id:        String(c.id),
+        icon:      c.status === 'dispute' ? '⚠️' : '❌',
+        label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+        title:     c.produto || 'Produto',
+        price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+        status:    c.status || 'cancelled',
+        comprador: c.comprador || '',
+        ts:        new Date(c.data || Date.now()).getTime(),
+        read:      true,
+      }));
+      localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+    }
+
+    // ── Vendas sincronizadas da API ────────────────────────────────
+    const vendasApi = dVendas.vendas || [];
+    if (vendasApi.length > 0) {
+      // Detecta vendas novas (não vistas ainda) para toasts
+      const existingVendaIds = new Set((_eldVendas || []).map(v => String(v.id)));
+      const novasVendas = vendasApi.filter(v => !existingVendaIds.has(String(v.id)));
+
+      _eldVendas = vendasApi.map(v => ({
+        id:        String(v.id),
+        icon:      '✅',
+        label:     'Venda concluída',
+        title:     v.produto || 'Produto',
+        price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
+        status:    'completed',
+        comprador: v.comprador || '',
+        ts:        new Date(v.data || Date.now()).getTime(),
+        read:      true,
+      }));
+      localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+
+      // Notifica novas vendas com toast + som
+      novasVendas.forEach(v => {
+        const notif = {
+          id:        String(v.id),
+          icon:      '✅',
+          label:     'Venda concluída',
+          title:     v.produto || 'Produto',
+          price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
+          status:    'completed',
+          comprador: v.comprador || '',
+          ts:        new Date(v.data || Date.now()).getTime(),
+          read:      false,
+        };
+        showEldToast(notif);
+      });
+      if (novasVendas.length > 0) typeof playUiSound === 'function' && playUiSound();
+
+      // Atualiza stat de vendas do dia
+      const today = new Date(); today.setHours(0,0,0,0);
+      const vendasHoje = _eldVendas.filter(v => v.ts >= today.getTime());
+      let revenue = 0;
+      vendasHoje.forEach(v => {
+        const m = (v.price || '').replace(/[^0-9,.]/g,'').replace(',','.');
+        const val = parseFloat(m);
+        if (!isNaN(val)) revenue += val;
+      });
+      const rEl = document.getElementById('eld-stat-revenue');
+      const tEl = document.getElementById('eld-stat-total');
+      if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
+      if (tEl) tEl.textContent = _eldVendas.length;
+    }
 
     // Pendentes
     const pendTotal = dPend.total || (dPend.pendentes || []).length || 0;
@@ -4841,6 +4922,16 @@ async function pollEldorado() {
       _eldSeenIds = _eldSeenIds.slice(-500);
       localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
       localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
+      // Novos cancelados via notificação → adiciona ao topo do array
+      const newCancelled = newNotifs.filter(n => normalizeEldStatus(n.status) === 'cancelled');
+      if (newCancelled.length > 0) {
+        const existingCancelIds = new Set(_eldCancelled.map(c => String(c.id)));
+        const reallyNew = newCancelled.filter(c => !existingCancelIds.has(String(c.id)));
+        if (reallyNew.length > 0) {
+          _eldCancelled = [...reallyNew, ..._eldCancelled].slice(0, 100);
+          localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+        }
+      }
       newNotifs.filter(n => !n.read).forEach(n => showEldToast(n));
       if (newNotifs.some(n => !n.read)) typeof playUiSound === 'function' && playUiSound();
     }
@@ -4932,6 +5023,8 @@ function renderEldList() {
     ? _eldNotifs.filter(n => !n.read)
     : _eldTab === 'pending'
     ? _eldPending
+    : _eldTab === 'cancelled'
+    ? _eldCancelled
     : _eldNotifs.filter(n => normalizeEldStatus(n.status) === _eldTab);
 
   if (filtered.length === 0) {
@@ -4939,7 +5032,7 @@ function renderEldList() {
       <div style="text-align:center;padding:40px 16px;color:#4a4a55;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
         <div style="font-size:28px;opacity:.5">🔔</div>
         <div style="color:#6b6b78;font-weight:600">${_eldTab === 'notifs' ? 'Nenhuma notificação nova.' : 'Nenhuma nessa categoria.'}</div>
-        <div style="font-size:10px">Deixe o Chrome aberto — atualiza a cada 30s.</div>
+        <div style="font-size:10px">Deixe o Chrome aberto — atualiza a cada 10s.</div>
       </div>`;
     return;
   }
@@ -5031,9 +5124,11 @@ function clearEldCookie() {
   localStorage.removeItem('eld_notifs');
   localStorage.removeItem('eld_seen');
   localStorage.removeItem('eld_vendas');
+  localStorage.removeItem('eld_cancelled');
   _eldNotifs = [];
   _eldSeenIds = [];
   _eldVendas = [];
+  _eldCancelled = [];
   if (_eldPollTimer) clearInterval(_eldPollTimer);
   renderEldPanel();
   updateEldBell();
