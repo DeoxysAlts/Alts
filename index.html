@@ -1313,7 +1313,7 @@
             <!-- STATUS BAR -->
             <div class="eld-status-bar">
               <div class="eld-pulse"></div>
-              <span class="eld-status-txt">Monitorando Eldorado · a cada 30s</span>
+              <span class="eld-status-txt">Monitorando Eldorado · a cada 10s</span>
             </div>
 
             <!-- STATS -->
@@ -4717,6 +4717,15 @@ let _eldExtInstalled = false; // detecta se extensão está presente
     const wrap = document.getElementById('eld-bell-wrap');
     if (_eldPanelOpen && wrap && !wrap.contains(e.target)) closeEldPanel();
   });
+
+  // Event delegation para botão ✕
+  document.getElementById('eld-notif-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-dismiss]');
+    if (btn) {
+      e.stopPropagation();
+      dismissEldNotif(btn.dataset.dismiss);
+    }
+  });
 })();
 
 // ── PROCESSA NOTIFICAÇÕES DA EXTENSÃO ────────────────────────────────────────
@@ -4948,7 +4957,7 @@ function renderEldList() {
           <div class="eld-notif-meta">${buyer ? escHtml(buyer) + ' · ' : ''}${ago}</div>
         </div>
         ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
-        <button class="eld-notif-dismiss" onclick="dismissEldNotif('${n.id}')" title="Dispensar">✕</button>
+        <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
         <div class="eld-unread-dot"></div>
       </div>`;
   }).join('');
