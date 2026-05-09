@@ -4853,19 +4853,37 @@ function renderEldFiltered(tab) {
 
   let items = [];
 
-  if (tab === 'pendentes' && _eldPendItems.length > 0) {
-    // Usa a lista REAL da API /pendentes — estrutura: { id, produto, valor: { amount, currency }, comprador }
-    items = _eldPendItems.map(v => ({
-      id:        String(v.id || v._id || Math.random()),
-      icon:      '⚡',
-      label:     'Pendente',
-      title:     v.produto || v.title || v.product || v.name || 'Produto',
-      price:     v.valor?.amount != null ? 'US$' + parseFloat(v.valor.amount).toFixed(2) : '',
-      status:    'pending',
-      comprador: v.comprador || v.buyer || '',
-      ts:        new Date(v.data || v.createdAt || Date.now()).getTime(),
-      read:      true
-    }));
+  if (tab === 'pendentes') {
+    // Sempre usa a lista REAL da API /pendentes
+    if (_eldPendItems.length > 0) {
+      items = _eldPendItems.map(v => ({
+        id:        String(v.id || v._id || Math.random()),
+        icon:      '⚡',
+        label:     'Pendente',
+        title:     v.produto || v.title || v.product || v.name || 'Produto',
+        price:     v.valor?.amount != null ? 'US$' + parseFloat(v.valor.amount).toFixed(2) : '',
+        status:    'pending',
+        comprador: v.comprador || v.buyer || '',
+        ts:        new Date(v.data || v.createdAt || Date.now()).getTime(),
+        read:      true
+      }));
+    } else {
+      // _eldPendItems ainda vazio — busca agora e re-renderiza
+      list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Carregando...</div>`;
+      fetch(ELD_WORKER + '/pendentes')
+        .then(r => r.json())
+        .then(d => {
+          _eldPendItems = d.pendentes || [];
+          _eldPendTotal = d.total ?? _eldPendItems.length;
+          const pEl = document.getElementById('eld-stat-pending');
+          if (pEl) pEl.textContent = _eldPendTotal;
+          renderEldFiltered('pendentes');
+        })
+        .catch(() => {
+          list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Erro ao carregar pendentes.</div>`;
+        });
+      return;
+    }
   } else {
     // Para as outras abas (ou se /pendentes não retornou lista), usa notificações locais
     const fromNotifs = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
