@@ -964,6 +964,17 @@
   .eld-notif-price.dispute   { color: var(--eld-purple); }
   .eld-notif-price.other     { color: var(--eld-blue); }
 
+  .eld-notif-dismiss {
+    position: absolute; top: 6px; right: 10px;
+    background: none; border: none;
+    color: #4a4a55; font-size: 10px; cursor: pointer;
+    padding: 2px 4px; border-radius: 4px;
+    transition: color .15s, background .15s;
+    line-height: 1; display: none;
+  }
+  .eld-notif:hover .eld-notif-dismiss { display: block; }
+  .eld-notif-dismiss:hover { color: var(--text); background: var(--eld-surf3); }
+
   /* FOOTER */
   .eld-panel-footer {
     display: flex; gap: 6px;
@@ -4928,6 +4939,7 @@ function renderEldList() {
           <div class="eld-notif-meta">${buyer ? escHtml(buyer) + ' · ' : ''}${ago}</div>
         </div>
         ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
+        <button class="eld-notif-dismiss" onclick="dismissEldNotif('${n.id}')" title="Dispensar">✕</button>
         <div class="eld-unread-dot"></div>
       </div>`;
   }).join('');
@@ -4956,6 +4968,18 @@ function updateEldBell() {
   if (pbadge) { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
   if (penbadge) { penbadge.textContent = pending > 9 ? '9+' : String(pending); penbadge.classList.toggle('visible', pending > 0); }
   if (penbtn) { penbtn.style.opacity = pending > 0 ? '1' : '0.5'; }
+}
+
+// ── DISPENSAR NOTIFICAÇÃO INDIVIDUAL ─────────────────────────────────────────
+function dismissEldNotif(id) {
+  _eldNotifs = _eldNotifs.filter(n => String(n.id) !== String(id));
+  localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+  // Salva também como dismissed para não voltar no próximo poll
+  const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  if (!dismissed.includes(String(id))) dismissed.push(String(id));
+  localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+  renderEldPanel();
+  updateEldBell();
 }
 
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
