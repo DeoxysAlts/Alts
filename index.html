@@ -4585,7 +4585,7 @@ function doImport() {
 // ── ELDORADO NOTIFICATION SYSTEM (Worker-based) ─────────────────────────────
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 30000;
+const ELD_POLL_MS = 5000;
 
 let _eldNotifs    = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds   = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
@@ -4594,18 +4594,34 @@ let _eldPanelOpen = false;
 let _eldPollTimer = null;
 let _eldTab       = 'notifs';
 
-// ── MIGRAÇÃO: corrige status antigo (OrderCreated era 'completed', agora é 'pending') ──
+// ── MIGRAÇÃO: limpa seen/dismissed para reprocessar notificações com lógica correta ──
 (function migrateEldStatus() {
+  // Versão da migração — se mudar, força reprocessamento
+  const MIGRATION_VER = '3';
+  if (localStorage.getItem('eld_migration') !== MIGRATION_VER) {
+    // Limpa IDs vistos para que o poll reprocesse todas as notificações da API
+    localStorage.removeItem('eld_seen');
+    localStorage.removeItem('eld_dismissed');
+    localStorage.removeItem('eld_notifs');
+    _eldNotifs  = [];
+    _eldSeenIds = [];
+    localStorage.setItem('eld_migration', MIGRATION_VER);
+    return;
+  }
+  // Corrige status incorretos em notifs já salvas
   let changed = false;
   _eldNotifs = _eldNotifs.map(n => {
-    // Se o label é "Novo pedido" mas o status estava como completed por engano, corrige
     if ((n.label === 'Novo pedido' || (n.evento && n.evento.includes('OrderCreated'))) && n.status === 'completed') {
       changed = true;
       return { ...n, status: 'pending', icon: '⚡' };
     }
-    if ((n.label === 'Em disputa' || (n.evento && (n.evento.includes('Disputed') || n.evento.includes('Dispute')))) && n.status === 'cancelled') {
+    if ((n.evento && (n.evento.includes('Disputed') || n.evento.includes('Dispute'))) && n.status === 'cancelled') {
       changed = true;
       return { ...n, status: 'dispute', icon: '⚠️' };
+    }
+    if ((n.evento && (n.evento.includes('Cancelled') || n.evento.includes('Canceled'))) && n.status !== 'cancelled') {
+      changed = true;
+      return { ...n, status: 'cancelled', icon: '❌', label: 'Pedido cancelado' };
     }
     return n;
   });
@@ -4662,38 +4678,52 @@ async function pollEldorado() {
 
     // ── Processar notificações ──
     const notifResults = dNotif.notificacoes || [];
-    const newNotifs = [];
-
     const dismissedIds = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    const newNotifs = [];
+    let hasNew = false;
+
     for (const n of notifResults) {
       const id = String(n.id || Math.random());
-      if (_eldSeenIds.includes(id)) continue;
       if (dismissedIds.includes(id)) continue;
 
       const ev = getEldEventInfo(n.evento);
       const notif = {
         id,
-        icon:   ev.icon,
-        label:  ev.label,
-        title:  n.produto || ev.label,
-        price:  n.valor ? 'US$' + parseFloat(n.valor).toFixed(2) : '',
-        status: ev.status,
+        icon:      ev.icon,
+        label:     ev.label,
+        title:     n.produto || ev.label,
+        price:     n.valor ? 'US$' + parseFloat(n.valor).toFixed(2) : '',
+        status:    ev.status,
         comprador: n.comprador || '',
-        ts:    new Date(n.data || Date.now()).getTime(),
-        read:  n.lida || false
+        ts:        new Date(n.data || Date.now()).getTime(),
+        read:      n.lida || false,
+        evento:    n.evento || ''
       };
 
-      newNotifs.push(notif);
-      _eldSeenIds.push(id);
+      // Se já existe na lista, atualiza o status (ex: pending → cancelled)
+      const existingIdx = _eldNotifs.findIndex(x => x.id === id);
+      if (existingIdx >= 0) {
+        const old = _eldNotifs[existingIdx];
+        // Só atualiza se o status mudou
+        if (old.status !== notif.status) {
+          _eldNotifs[existingIdx] = { ...old, status: notif.status, label: notif.label, icon: notif.icon };
+          hasNew = true;
+        }
+      } else {
+        // Nova notificação
+        newNotifs.push(notif);
+        _eldSeenIds.push(id);
+        hasNew = true;
+      }
     }
 
-    if (newNotifs.length > 0) {
-      _eldNotifs = [...newNotifs, ..._eldNotifs].slice(0, 5);
+    if (hasNew) {
+      _eldNotifs = [...newNotifs, ..._eldNotifs].slice(0, 50);
       _eldSeenIds = _eldSeenIds.slice(-500);
       localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
       localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
       newNotifs.filter(n => !n.read).forEach(n => showEldToast(n));
-      typeof playUiSound === 'function' && playUiSound();
+      if (newNotifs.length > 0) typeof playUiSound === 'function' && playUiSound();
     }
 
     // ── Processar vendas ──
