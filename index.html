@@ -4669,6 +4669,7 @@ const ELD_POLL_MS = 30000;
 
 let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds     = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
+let _eldPending     = JSON.parse(localStorage.getItem('eld_pending') || '[]');
 let _eldPanelOpen   = false;
 let _eldPollTimer   = null;
 let _eldTab         = 'notifs';
@@ -4690,6 +4691,14 @@ let _eldExtInstalled = false; // detecta se extensão está presente
       if (incoming.length > 0) {
         processExtensionNotifs(incoming);
       }
+    }
+
+    if (e.data.type === 'ELDORADO_PENDING') {
+      _eldExtInstalled = true;
+      _eldPending = e.data.payload || [];
+      localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+      renderEldPanel();
+      updateEldBell();
     }
   });
 
@@ -4884,13 +4893,11 @@ function setEldTab(tab) {
 function renderEldPanel() {
   renderEldStats();
   renderEldList();
-  renderEldVendas();
 }
 
 function renderEldStats() {
   const today = new Date(); today.setHours(0,0,0,0);
   const completedToday = _eldNotifs.filter(n => n.status === 'completed' && n.ts >= today.getTime());
-  const pending        = _eldNotifs.filter(n => n.status === 'pending' && !n.read);
   const total          = _eldNotifs.filter(n => n.status === 'completed');
 
   let revenue = 0;
@@ -4905,7 +4912,7 @@ function renderEldStats() {
   const pEl = document.getElementById('eld-stat-pending');
   if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
   if (tEl) tEl.textContent = total.length;
-  if (pEl) pEl.textContent = pending.length;
+  if (pEl) pEl.textContent = _eldPending.length;
 }
 
 function renderEldList() {
@@ -4914,6 +4921,8 @@ function renderEldList() {
 
   const filtered = _eldTab === 'notifs'
     ? _eldNotifs.filter(n => !n.read)
+    : _eldTab === 'pending'
+    ? _eldPending
     : _eldNotifs.filter(n => normalizeEldStatus(n.status) === _eldTab);
 
   if (filtered.length === 0) {
