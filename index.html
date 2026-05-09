@@ -1248,28 +1248,22 @@
 
             <!-- TABS -->
             <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);flex-shrink:0">
-              <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')" style="flex:1;padding:7px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">🔔 Notifs</button>
-              <button class="eld-tab-btn" data-tab="vendas" onclick="setEldTab('vendas')" style="flex:1;padding:7px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">📦 Vendas</button>
-              <button class="eld-tab-btn" data-tab="pendentes" onclick="setEldTab('pendentes')" style="flex:1;padding:7px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">⏳ Pendentes</button>
-              <button class="eld-tab-btn" data-tab="concluidas" onclick="setEldTab('concluidas')" style="flex:1;padding:7px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">✅ Concluídas</button>
+              <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">🔔 Notifs</button>
+              <button class="eld-tab-btn" data-tab="pendentes" onclick="setEldTab('pendentes')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">⏳ Pendentes</button>
+              <button class="eld-tab-btn" data-tab="concluidas" onclick="setEldTab('concluidas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">✅ Concluídas</button>
+              <button class="eld-tab-btn" data-tab="canceladas" onclick="setEldTab('canceladas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">❌ Canceladas</button>
             </div>
             <style>
               .eld-tab-btn.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
             </style>
 
-            <!-- NOTIF LIST -->
+            <!-- NOTIF LIST (aba notifs) -->
             <div class="eld-notif-list" id="eld-notif-list" style="display:flex;flex-direction:column">
             </div>
 
-            <!-- VENDAS LIST -->
-            <div class="eld-notif-list" id="eld-vendas-list" style="display:none;flex-direction:column">
+            <!-- FILTERED LIST (abas pendentes / concluidas / canceladas) -->
+            <div class="eld-notif-list" id="eld-filtered-list" style="display:none;flex-direction:column">
             </div>
-
-            <!-- PENDENTES LIST -->
-            <div class="eld-notif-list" id="eld-pendentes-list" style="display:none;flex-direction:column"></div>
-
-            <!-- CONCLUIDAS LIST -->
-            <div class="eld-notif-list" id="eld-concluidas-list" style="display:none;flex-direction:column"></div>
 
             <!-- FOOTER ACTIONS -->
             <div class="eld-panel-footer">
@@ -4590,7 +4584,7 @@ function doImport() {
 // ── ELDORADO NOTIFICATION SYSTEM (Worker-based) ─────────────────────────────
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 10000;
+const ELD_POLL_MS = 30000;
 
 let _eldNotifs    = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds   = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
@@ -4733,21 +4727,88 @@ function closeEldPanel() {
 function setEldTab(tab) {
   _eldTab = tab;
   document.querySelectorAll('.eld-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.getElementById('eld-tab-notifs').style.display = tab === 'notifs' ? 'flex' : 'none';
-  document.getElementById('eld-tab-vendas').style.display = tab === 'vendas' ? 'flex' : 'none';
-  const pendEl = document.getElementById('eld-pendentes-list');
-  const concEl = document.getElementById('eld-concluidas-list');
-  if (pendEl) pendEl.style.display = tab === 'pendentes' ? 'flex' : 'none';
-  if (concEl) concEl.style.display = tab === 'concluidas' ? 'flex' : 'none';
-  if (tab === 'pendentes') renderEldPendentes();
-  if (tab === 'concluidas') renderEldConcluidas();
+
+  const notifList    = document.getElementById('eld-notif-list');
+  const filteredList = document.getElementById('eld-filtered-list');
+
+  if (tab === 'notifs') {
+    if (notifList)    notifList.style.display    = 'flex';
+    if (filteredList) filteredList.style.display = 'none';
+  } else {
+    if (notifList)    notifList.style.display    = 'none';
+    if (filteredList) { filteredList.style.display = 'flex'; renderEldFiltered(tab); }
+  }
+}
+
+function renderEldFiltered(tab) {
+  const list = document.getElementById('eld-filtered-list');
+  if (!list) return;
+
+  const statusMap = { pendentes: 'pending', concluidas: 'completed', canceladas: 'cancelled' };
+  const targetStatus = statusMap[tab];
+
+  const fromNotifs = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
+  const fromVendas = _eldVendas.filter(v => normalizeEldStatus(v.status || '') === targetStatus);
+
+  if (fromNotifs.length === 0 && fromVendas.length === 0) {
+    const labels = { pendentes: 'pedidos pendentes', concluidas: 'pedidos concluidos', canceladas: 'pedidos cancelados' };
+    const icons  = { pendentes: '\u23f3', concluidas: '\u2705', canceladas: '\u274c' };
+    list.innerHTML = `
+      <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="font-size:28px">${icons[tab]}</div>
+        <div>Nenhum ${labels[tab]} ainda.</div>
+      </div>`;
+    return;
+  }
+
+  const statusIcon  = { completed:'\u2705', pending:'\u23f3', cancelled:'\u274c', dispute:'\u26a0\ufe0f', other:'\ud83d\udce6' };
+  const statusLabel = { completed:'Concluida', pending:'Pendente', cancelled:'Cancelada', dispute:'Disputa', other:'Venda' };
+
+  const notifItems = fromNotifs.map(n => {
+    const ago    = eldTimeAgo(n.ts);
+    const unread = !n.read ? 'unread' : '';
+    return `
+      <div class="eld-notif ${unread} ${n.status || 'other'}">
+        <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '\ud83d\udce6'}</div>
+        <div class="eld-notif-body">
+          <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || statusLabel[targetStatus] || 'Atualizacao')}</div>
+          <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
+          <div class="eld-notif-meta">${ago}${n.comprador ? ' &middot; ' + escHtml(n.comprador) : ''}</div>
+        </div>
+        ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
+        <div class="eld-unread-dot"></div>
+      </div>`;
+  });
+
+  const vendaItems = fromVendas.map(v => {
+    const valor     = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
+    const comprador = v.comprador || 'Comprador';
+    const produto   = v.produto || 'Produto';
+    const ago       = eldTimeAgo(new Date(v.data || Date.now()).getTime());
+    const st        = normalizeEldStatus(v.status || '');
+    return `
+      <div class="eld-notif ${st}" style="cursor:default">
+        <div class="eld-notif-icon ${st}">${statusIcon[st] || '\ud83d\udce6'}</div>
+        <div class="eld-notif-body">
+          <div class="eld-notif-label ${st}">${statusLabel[st] || 'Venda'}</div>
+          <div class="eld-notif-title">${escHtml(produto)}</div>
+          <div class="eld-notif-meta">${ago} &middot; ${escHtml(comprador)}</div>
+        </div>
+        ${valor ? `<div class="eld-notif-price completed">US$${valor.toFixed(2)}</div>` : ''}
+      </div>`;
+  });
+
+  list.innerHTML = [...notifItems, ...vendaItems].join('');
 }
 
 // ── RENDER PAINEL ─────────────────────────────────────────────────────────────
 function renderEldPanel() {
   renderEldStats();
   renderEldList();
-  renderEldVendas();
+  // Se uma aba de filtro estiver ativa, re-renderiza
+  if (_eldTab && _eldTab !== 'notifs') {
+    renderEldFiltered(_eldTab);
+  }
 }
 
 function renderEldStats() {
@@ -4798,58 +4859,6 @@ function renderEldList() {
         </div>
         ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
         <div class="eld-unread-dot"></div>
-      </div>`;
-  }).join('');
-}
-
-function renderEldPendentes() {
-  const list = document.getElementById('eld-pendentes-list');
-  if (!list) return;
-  const pendentes = _eldVendas.filter(v => normalizeEldStatus(v.status || '') === 'pending');
-  if (pendentes.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="font-size:28px">⏳</div><div>Nenhum pedido pendente.</div></div>';
-    return;
-  }
-  list.innerHTML = pendentes.map(v => {
-    const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
-    const comprador = v.comprador || 'Comprador';
-    const produto = v.produto || 'Produto';
-    const ago = eldTimeAgo(new Date(v.data || Date.now()).getTime());
-    return `
-      <div class="eld-notif pending" style="cursor:default">
-        <div class="eld-notif-icon pending">⏳</div>
-        <div class="eld-notif-body">
-          <div class="eld-notif-label pending">Entrega pendente</div>
-          <div class="eld-notif-title">${escHtml(produto)}</div>
-          <div class="eld-notif-meta">${ago} · ${escHtml(comprador)}</div>
-        </div>
-        ${valor ? `<div class="eld-notif-price pending">US$${valor.toFixed(2)}</div>` : ''}
-      </div>`;
-  }).join('');
-}
-
-function renderEldConcluidas() {
-  const list = document.getElementById('eld-concluidas-list');
-  if (!list) return;
-  const concluidas = _eldVendas.filter(v => normalizeEldStatus(v.status || '') === 'completed');
-  if (concluidas.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="font-size:28px">✅</div><div>Nenhuma venda concluída.</div></div>';
-    return;
-  }
-  list.innerHTML = concluidas.map(v => {
-    const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
-    const comprador = v.comprador || 'Comprador';
-    const produto = v.produto || 'Produto';
-    const ago = eldTimeAgo(new Date(v.data || Date.now()).getTime());
-    return `
-      <div class="eld-notif completed" style="cursor:default">
-        <div class="eld-notif-icon completed">✅</div>
-        <div class="eld-notif-body">
-          <div class="eld-notif-label completed">Concluída</div>
-          <div class="eld-notif-title">${escHtml(produto)}</div>
-          <div class="eld-notif-meta">${ago} · ${escHtml(comprador)}</div>
-        </div>
-        ${valor ? `<div class="eld-notif-price completed">US$${valor.toFixed(2)}</div>` : ''}
       </div>`;
   }).join('');
 }
