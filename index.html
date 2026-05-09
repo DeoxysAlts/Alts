@@ -1253,6 +1253,7 @@
             <!-- FOOTER ACTIONS -->
             <div class="eld-panel-footer">
               <button class="eld-footer-btn" onclick="eldMarkAllRead()">Marcar lidas</button>
+              <button class="eld-footer-btn" onclick="openEldConfig()" title="Configurar cookie da Eldorado" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">⚙️</button>
             </div>
           </div>
         </div>
@@ -4531,98 +4532,151 @@ function doImport() {
     </div>
   </div>
 
+<!-- ELDORADO CONFIG MODAL -->
+<div id="eld-config-modal-bg" class="modal-bg" onclick="if(event.target===this)closeEldConfig()">
+  <div class="modal" style="width:420px">
+    <h3>⚙️ Configurar Eldorado</h3>
+
+    <div style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--rad-sm);padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.6">
+      <strong style="color:var(--text);display:block;margin-bottom:6px">Como obter seu cookie:</strong>
+      1. Abra <a href="https://www.eldorado.gg/br/dashboard/orders/sold" target="_blank" style="color:var(--accent)">eldorado.gg → Meus pedidos vendidos</a><br>
+      2. Pressione <strong style="color:var(--text)">F12</strong> → aba <strong style="color:var(--text)">Application</strong> → <strong style="color:var(--text)">Cookies</strong><br>
+      3. Clique no domínio <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">eldorado.gg</code><br>
+      4. Copie o valor do cookie <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">__Secure-next-auth.session-token</code><br>
+      <span style="color:#f87171;margin-top:4px;display:block">⚠️ Nunca compartilhe este cookie com ninguém.</span>
+    </div>
+
+    <label>Cookie de sessão da Eldorado</label>
+    <textarea id="eld-cookie-input" placeholder="Cole aqui o valor do cookie..." style="width:100%;height:80px;background:var(--surface2);border:0.5px solid var(--border);color:var(--text);border-radius:var(--rad-sm);padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:12px;outline:none;resize:vertical;margin-top:4px;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent-border)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+
+    <div id="eld-config-status" style="display:none;font-size:12px;margin-top:8px"></div>
+
+    <div class="modal-btns" style="justify-content:space-between">
+      <button class="btn-ghost" style="color:var(--danger);border-color:rgba(248,113,113,.3)" onclick="clearEldCookie()">Remover</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" onclick="closeEldConfig()">Cancelar</button>
+        <button class="btn-primary" onclick="saveEldConfig()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ELDORADO TOAST CONTAINER -->
 <div class="eld-toast-container" id="eld-toast-container"></div>
 
-<script>
-// ── ELDORADO NOTIFICATION SYSTEM ─────────────────────────────────────────────
-// Escuta mensagens da extensão Chrome e gerencia o painel de notificações
 
-let _eldNotifs   = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
+<script>
+// ── ELDORADO NOTIFICATION SYSTEM (Cookie-based) ──────────────────────────────
+
+const ELD_API = 'https://www.eldorado.gg/api/orders/me/seller/orders?pageSize=20&pageDirection=Next&isAscendingDateOrder=false&ignorePendingReviewOrders=true&displayFilter=DisplaySellingOrders&orderGroup=Regular';
+const ELD_POLL_MS = 30000;
+
+let _eldNotifs    = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
+let _eldSeenIds   = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
 let _eldPanelOpen = false;
+let _eldPollTimer = null;
 
 // ── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
 (function initEldorado() {
   renderEldPanel();
   updateEldBell();
-
-  // Escuta mensagens da extensão via window.postMessage
-  window.addEventListener('message', (e) => {
-    if (e.data && e.data.type === 'ELDORADO_NEW_NOTIFS') {
-      handleNewEldNotifs(e.data.payload);
-    }
-  });
-
-  // Escuta mensagens via chrome.runtime (content script injected)
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener((msg) => {
-      if (msg.type === 'ELDORADO_NEW_NOTIFS') {
-        handleNewEldNotifs(msg.payload);
-      }
-    });
-  }
+  startEldPolling();
 
   // Fecha painel ao clicar fora
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('eld-bell-wrap');
-    if (_eldPanelOpen && wrap && !wrap.contains(e.target)) {
-      closeEldPanel();
-    }
+    if (_eldPanelOpen && wrap && !wrap.contains(e.target)) closeEldPanel();
   });
-
-  // Polling de fallback via storage compartilhado (extensão salva, app lê)
-  setInterval(checkEldoradorStorage, 10000);
-  checkEldoradorStorage();
 })();
 
-// ── VERIFICA STORAGE DA EXTENSÃO ─────────────────────────────────────────────
-function checkEldoradorStorage() {
-  if (typeof chrome === 'undefined' || !chrome.storage) return;
-  try {
-    chrome.storage.local.get(['notifications', 'badge'], (data) => {
-      if (chrome.runtime.lastError) return;
-      if (!data.notifications) return;
-
-      const extNotifs = data.notifications;
-      const localIds  = _eldNotifs.map(n => n.id);
-      const newOnes   = extNotifs.filter(n => !localIds.includes(n.id));
-
-      if (newOnes.length > 0) {
-        handleNewEldNotifs(newOnes);
-      }
-    });
-  } catch(e) {}
+// ── POLLING ───────────────────────────────────────────────────────────────────
+function startEldPolling() {
+  if (_eldPollTimer) clearInterval(_eldPollTimer);
+  pollEldorado();
+  _eldPollTimer = setInterval(pollEldorado, ELD_POLL_MS);
 }
 
-// ── PROCESSA NOVAS NOTIFICAÇÕES ───────────────────────────────────────────────
-function handleNewEldNotifs(newNotifs) {
-  if (!Array.isArray(newNotifs) || newNotifs.length === 0) return;
+async function pollEldorado() {
+  const cookie = localStorage.getItem('eld_cookie');
+  if (!cookie) return; // sem cookie configurado, silencioso
 
-  newNotifs.forEach(n => {
-    if (!_eldNotifs.find(x => x.id === n.id)) {
-      _eldNotifs.unshift({ ...n, read: false });
-      showEldToast(n);
-      playUiSound();
+  try {
+    // Usa um proxy CORS para fazer o fetch com o cookie
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(ELD_API);
+    const resp = await fetch(proxyUrl, {
+      headers: {
+        'Cookie': cookie,
+        'Accept': 'application/json',
+        'x-cors-headers': JSON.stringify({ 'Cookie': cookie })
+      }
+    });
+
+    if (!resp.ok) {
+      console.warn('[Eldorado] fetch falhou:', resp.status);
+      if (resp.status === 401 || resp.status === 403) {
+        showEldConfigError('Cookie expirado. Atualize nas configurações do Eldorado (⚙️).');
+      }
+      return;
     }
-  });
 
-  _eldNotifs = _eldNotifs.slice(0, 50);
-  localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+    const data = await resp.json();
+    const results = data?.results || [];
+    if (!Array.isArray(results) || results.length === 0) return;
 
-  renderEldPanel();
-  updateEldBell();
+    const newNotifs = [];
+    for (const o of results) {
+      const id = String(o.id || o._id || Math.random());
+      if (_eldSeenIds.includes(id)) continue;
+
+      const status = normalizeEldStatus(o.status || o.orderStatus || o.state || '');
+      const notif = {
+        id,
+        icon:  { completed:'✅', pending:'⏳', cancelled:'❌', dispute:'⚠️', other:'📦' }[status] || '📦',
+        label: { completed:'Venda concluída', pending:'Entrega pendente', cancelled:'Pedido cancelado', dispute:'Em disputa', other:'Atualização' }[status] || 'Atualização',
+        title: o.offerTitle || o.title || ('Venda para ' + (o.buyerUsername || 'comprador')),
+        price: o.totalPrice?.amount != null ? 'US$' + parseFloat(o.totalPrice.amount).toFixed(2) : '',
+        status,
+        ts:   Date.now(),
+        read: false
+      };
+
+      newNotifs.push(notif);
+      _eldSeenIds.push(id);
+    }
+
+    if (newNotifs.length === 0) return;
+
+    _eldNotifs = [...newNotifs, ..._eldNotifs].slice(0, 50);
+    _eldSeenIds = _eldSeenIds.slice(-500);
+    localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+    localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
+
+    newNotifs.forEach(n => showEldToast(n));
+    playUiSound && playUiSound();
+    renderEldPanel();
+    updateEldBell();
+
+    console.log('[Eldorado]', newNotifs.length, 'nova(s) detectada(s)');
+  } catch(e) {
+    console.warn('[Eldorado] erro no poll:', e.message);
+  }
+}
+
+function normalizeEldStatus(raw) {
+  const s = (raw || '').toLowerCase();
+  if (s.includes('conclu') || s.includes('complet') || s.includes('entregue') || s.includes('delivered') || s.includes('done') || s.includes('finaliz')) return 'completed';
+  if (s.includes('pendente') || s.includes('pending') || s.includes('aguard') || s.includes('wait') || s.includes('process')) return 'pending';
+  if (s.includes('cancel')) return 'cancelled';
+  if (s.includes('disput') || s.includes('review')) return 'dispute';
+  return 'other';
 }
 
 // ── TOGGLE PAINEL ─────────────────────────────────────────────────────────────
-function toggleEldPanel() {
-  _eldPanelOpen ? closeEldPanel() : openEldPanel();
-}
-
+function toggleEldPanel() { _eldPanelOpen ? closeEldPanel() : openEldPanel(); }
 function openEldPanel() {
   _eldPanelOpen = true;
   document.getElementById('eld-panel').classList.add('open');
 }
-
 function closeEldPanel() {
   _eldPanelOpen = false;
   document.getElementById('eld-panel').classList.remove('open');
@@ -4650,7 +4704,7 @@ function renderEldStats() {
   const rEl = document.getElementById('eld-stat-revenue');
   const tEl = document.getElementById('eld-stat-total');
   const pEl = document.getElementById('eld-stat-pending');
-  if (rEl) rEl.textContent = 'R$' + revenue.toFixed(2).replace('.', ',');
+  if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
   if (tEl) tEl.textContent = total.length;
   if (pEl) pEl.textContent = pending.length;
 }
@@ -4659,18 +4713,33 @@ function renderEldList() {
   const list = document.getElementById('eld-notif-list');
   if (!list) return;
 
+  const hasCookie = !!localStorage.getItem('eld_cookie');
+
+  if (!hasCookie) {
+    list.innerHTML = `
+      <div style="text-align:center;padding:24px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="font-size:28px">🔑</div>
+        <div style="font-weight:500;color:var(--text)">Configure seu cookie da Eldorado</div>
+        <div style="font-size:11px;opacity:.7">Necessário para buscar suas vendas automaticamente</div>
+        <button onclick="openEldConfig()" style="margin-top:4px;background:var(--accent-bg);border:0.5px solid var(--accent-border);color:var(--accent);padding:7px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500">
+          ⚙️ Configurar agora
+        </button>
+      </div>`;
+    return;
+  }
+
   if (_eldNotifs.length === 0) {
     list.innerHTML = `
       <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
         <div style="font-size:28px">🔔</div>
         <div>Nenhuma notificação ainda.</div>
-        <div style="font-size:10px;opacity:.6">Instale a extensão e deixe o Chrome aberto.</div>
+        <div style="font-size:10px;opacity:.6">Aguardando novas vendas...</div>
       </div>`;
     return;
   }
 
   list.innerHTML = _eldNotifs.map(n => {
-    const ago    = eldTimeAgo(n.ts);
+    const ago = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
     return `
       <div class="eld-notif ${unread} ${n.status || 'other'}">
@@ -4686,20 +4755,26 @@ function renderEldList() {
   }).join('');
 }
 
+function showEldConfigError(msg) {
+  const list = document.getElementById('eld-notif-list');
+  if (!list) return;
+  list.innerHTML = `
+    <div style="text-align:center;padding:20px 16px;color:var(--danger);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="font-size:24px">⚠️</div>
+      <div>${escHtml(msg)}</div>
+      <button onclick="openEldConfig()" style="margin-top:4px;background:var(--danger-bg);border:0.5px solid rgba(248,113,113,.3);color:var(--danger);padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif">
+        Atualizar cookie
+      </button>
+    </div>`;
+}
+
 // ── BELL BADGE ────────────────────────────────────────────────────────────────
 function updateEldBell() {
   const unread = _eldNotifs.filter(n => !n.read).length;
   const badge  = document.getElementById('eld-bell-badge');
   const pbadge = document.getElementById('eld-panel-badge');
-
-  if (badge) {
-    badge.textContent = unread > 9 ? '9+' : String(unread);
-    badge.classList.toggle('visible', unread > 0);
-  }
-  if (pbadge) {
-    pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`;
-    pbadge.classList.toggle('visible', unread > 0);
-  }
+  if (badge) { badge.textContent = unread > 9 ? '9+' : String(unread); badge.classList.toggle('visible', unread > 0); }
+  if (pbadge) { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
 }
 
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
@@ -4708,21 +4783,61 @@ function eldMarkAllRead() {
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   renderEldPanel();
   updateEldBell();
+}
 
-  // Avisa a extensão também
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    try { chrome.runtime.sendMessage({ type: 'MARK_ALL_READ' }); } catch(e) {}
+// ── CONFIG MODAL ──────────────────────────────────────────────────────────────
+function openEldConfig() {
+  closeEldPanel();
+  const existing = localStorage.getItem('eld_cookie') || '';
+  document.getElementById('eld-cookie-input').value = existing;
+  document.getElementById('eld-config-status').style.display = 'none';
+  document.getElementById('eld-config-modal-bg').classList.add('visible');
+}
+function closeEldConfig() {
+  document.getElementById('eld-config-modal-bg').classList.remove('visible');
+}
+function saveEldConfig() {
+  const val = document.getElementById('eld-cookie-input').value.trim();
+  const status = document.getElementById('eld-config-status');
+  if (!val) {
+    status.style.display = 'block';
+    status.innerHTML = '<span style="color:var(--danger)">Cole o cookie da Eldorado antes de salvar.</span>';
+    return;
   }
+  localStorage.setItem('eld_cookie', val);
+  // Reset e faz poll imediato
+  _eldNotifs = [];
+  _eldSeenIds = [];
+  localStorage.removeItem('eld_notifs');
+  localStorage.removeItem('eld_seen');
+  status.style.display = 'block';
+  status.innerHTML = '<span style="color:#6ee7b7">✓ Salvo! Buscando vendas...</span>';
+  setTimeout(() => {
+    closeEldConfig();
+    startEldPolling();
+    renderEldPanel();
+  }, 1200);
+}
+function clearEldCookie() {
+  if (!confirm('Remover cookie e limpar notificações?')) return;
+  localStorage.removeItem('eld_cookie');
+  localStorage.removeItem('eld_notifs');
+  localStorage.removeItem('eld_seen');
+  _eldNotifs = [];
+  _eldSeenIds = [];
+  if (_eldPollTimer) clearInterval(_eldPollTimer);
+  renderEldPanel();
+  updateEldBell();
+  closeEldConfig();
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function showEldToast(n) {
   const container = document.getElementById('eld-toast-container');
   if (!container) return;
-
-  const id   = 'toast-' + Date.now();
-  const div  = document.createElement('div');
-  div.id     = id;
+  const id  = 'toast-' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
   div.className = `eld-toast ${n.status || ''}`;
   div.innerHTML = `
     <div class="eld-toast-icon">${n.icon || '📦'}</div>
@@ -4732,13 +4847,9 @@ function showEldToast(n) {
     </div>
     ${n.price ? `<div class="eld-toast-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
     <button class="eld-toast-close" onclick="dismissEldToast('${id}')">✕</button>`;
-
   container.appendChild(div);
-
-  // Remove após 6s
   setTimeout(() => dismissEldToast(id), 6000);
 }
-
 function dismissEldToast(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -4749,13 +4860,14 @@ function dismissEldToast(id) {
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function eldTimeAgo(ts) {
   const diff = Date.now() - ts;
-  const s    = Math.floor(diff / 1000);
+  const s = Math.floor(diff / 1000);
   if (s < 60)    return 'agora mesmo';
   if (s < 3600)  return `há ${Math.floor(s/60)} min`;
   if (s < 86400) return `há ${Math.floor(s/3600)}h`;
   return `há ${Math.floor(s/86400)} dia${Math.floor(s/86400) > 1 ? 's' : ''}`;
 }
 </script>
+
 
 </div><!-- /main-app -->
 </body>
