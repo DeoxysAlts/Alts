@@ -861,7 +861,7 @@
   .eld-notif.unread.completed::before { background: #22c55e; }
   .eld-notif.unread.pending::before   { background: #ca8a04; }
   .eld-notif.unread.cancelled::before { background: #f87171; }
-  .eld-notif.unread.dispute::before   { background: #818cf8; }
+  .eld-notif.unread.dispute::before   { background: #f59e0b; }
   .eld-unread-dot {
     position: absolute; top: 9px; right: 10px;
     width: 6px; height: 6px; border-radius: 50%;
@@ -877,14 +877,14 @@
   .eld-notif-icon.completed { background: rgba(34,197,94,0.12); }
   .eld-notif-icon.pending   { background: rgba(202,138,4,0.12); }
   .eld-notif-icon.cancelled { background: rgba(248,113,113,0.12); }
-  .eld-notif-icon.dispute   { background: rgba(129,140,248,0.12); }
+  .eld-notif-icon.dispute   { background: rgba(245,158,11,0.12); }
   .eld-notif-icon.other     { background: rgba(255,255,255,0.05); }
   .eld-notif-body { flex: 1; min-width: 0; }
   .eld-notif-label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; font-weight: 500; margin-bottom: 2px; }
   .eld-notif-label.completed { color: #22c55e; }
   .eld-notif-label.pending   { color: #ca8a04; }
   .eld-notif-label.cancelled { color: #f87171; }
-  .eld-notif-label.dispute   { color: #818cf8; }
+  .eld-notif-label.dispute   { color: #f59e0b; }
   .eld-notif-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .eld-notif-meta  { font-size: 11px; color: #555560; margin-top: 2px; }
   .eld-notif-price { font-family: 'Press Start 2P', cursive; font-size: 11px; font-weight: 400; flex-shrink: 0; line-height: 1.4; }
@@ -1252,6 +1252,7 @@
               <button class="eld-tab-btn" data-tab="pendentes" onclick="setEldTab('pendentes')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">⏳ Pendentes</button>
               <button class="eld-tab-btn" data-tab="concluidas" onclick="setEldTab('concluidas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">✅ Concluídas</button>
               <button class="eld-tab-btn" data-tab="canceladas" onclick="setEldTab('canceladas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">❌ Canceladas</button>
+              <button class="eld-tab-btn" data-tab="disputas" onclick="setEldTab('disputas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">⚠️ Disputas</button>
             </div>
             <style>
               .eld-tab-btn.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
@@ -4591,7 +4592,25 @@ let _eldSeenIds   = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
 let _eldVendas    = JSON.parse(localStorage.getItem('eld_vendas') || '[]');
 let _eldPanelOpen = false;
 let _eldPollTimer = null;
-let _eldTab       = 'notifs'; // 'notifs' | 'vendas'
+let _eldTab       = 'notifs';
+
+// ── MIGRAÇÃO: corrige status antigo (OrderCreated era 'completed', agora é 'pending') ──
+(function migrateEldStatus() {
+  let changed = false;
+  _eldNotifs = _eldNotifs.map(n => {
+    // Se o label é "Novo pedido" mas o status estava como completed por engano, corrige
+    if ((n.label === 'Novo pedido' || (n.evento && n.evento.includes('OrderCreated'))) && n.status === 'completed') {
+      changed = true;
+      return { ...n, status: 'pending', icon: '⚡' };
+    }
+    if ((n.label === 'Em disputa' || (n.evento && (n.evento.includes('Disputed') || n.evento.includes('Dispute')))) && n.status === 'cancelled') {
+      changed = true;
+      return { ...n, status: 'dispute', icon: '⚠️' };
+    }
+    return n;
+  });
+  if (changed) localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+})();
 
 // ── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
 (function initEldorado() {
@@ -4693,23 +4712,35 @@ async function pollEldorado() {
 }
 
 function getEldEventInfo(evento) {
-  if (!evento) return { label: 'Pendente', icon: '⏳', status: 'pending' };
-  if (evento.includes('OrderCreated'))   return { label: 'Novo pedido',       icon: '✅', status: 'completed' };
-  if (evento.includes('Disputed'))       return { label: 'Em disputa',        icon: '❌', status: 'cancelled' };
-  if (evento.includes('Cancelled'))      return { label: 'Pedido cancelado',  icon: '❌', status: 'cancelled' };
-  if (evento.includes('Success') || evento.includes('Received')) return { label: 'Venda concluída', icon: '✅', status: 'completed' };
-  if (evento.includes('TalkJs'))         return { label: 'Nova mensagem',     icon: '⏳', status: 'pending' };
+  if (!evento) return { label: 'Novo pedido', icon: '⚡', status: 'pending' };
+  // Pedido criado/novo → fica em Notifs e Pendentes (aguardando entrega)
+  if (evento.includes('OrderCreated'))   return { label: 'Novo pedido',       icon: '⚡', status: 'pending' };
+  // Você confirmou a entrega → Concluídas
+  if (evento.includes('Success') || evento.includes('Received') || evento.includes('Delivered') || evento.includes('Completed'))
+                                         return { label: 'Venda concluída',   icon: '✅', status: 'completed' };
+  // Cancelados (por você ou pelo comprador)
+  if (evento.includes('Cancelled') || evento.includes('Canceled'))
+                                         return { label: 'Pedido cancelado',  icon: '❌', status: 'cancelled' };
+  // Em disputa → categoria própria
+  if (evento.includes('Disputed') || evento.includes('Dispute'))
+                                         return { label: 'Em disputa',        icon: '⚠️', status: 'dispute' };
+  // Mensagem / pré-venda → pendentes
+  if (evento.includes('TalkJs'))         return { label: 'Nova mensagem',     icon: '💬', status: 'pending' };
   if (evento.includes('PreSell'))        return { label: 'Entrega pendente',  icon: '⏳', status: 'pending' };
-  return { label: 'Pendente', icon: '⏳', status: 'pending' };
+  return { label: 'Novo pedido', icon: '⚡', status: 'pending' };
 }
 
 function normalizeEldStatus(raw) {
   const s = (raw || '').toLowerCase();
-  if (s.includes('conclu') || s.includes('complet') || s.includes('delivered') || s.includes('done')) return 'completed';
-  if (s.includes('pendente') || s.includes('pending') || s.includes('aguard') || s.includes('process')) return 'pending';
+  // Concluído = você confirmou a entrega
+  if (s.includes('conclu') || s.includes('complet') || s.includes('delivered') || s.includes('done') || s === 'completed') return 'completed';
+  // Cancelado por qualquer parte
   if (s.includes('cancel')) return 'cancelled';
-  if (s.includes('disput') || s.includes('review')) return 'dispute';
-  return 'other';
+  // Em disputa
+  if (s.includes('disput') || s.includes('dispute') || s.includes('review')) return 'dispute';
+  // Pendente = novo pedido aguardando entrega
+  if (s.includes('pendente') || s.includes('pending') || s.includes('aguard') || s.includes('process') || s.includes('novo') || s.includes('new') || s === 'pending' || s === 'other' || s === '') return 'pending';
+  return 'pending'; // default: qualquer coisa desconhecida fica como pendente
 }
 
 // ── TOGGLE PAINEL ─────────────────────────────────────────────────────────────
@@ -4744,61 +4775,41 @@ function renderEldFiltered(tab) {
   const list = document.getElementById('eld-filtered-list');
   if (!list) return;
 
-  const statusMap = { pendentes: 'pending', concluidas: 'completed', canceladas: 'cancelled' };
+  const statusMap = { pendentes: 'pending', concluidas: 'completed', canceladas: 'cancelled', disputas: 'dispute' };
   const targetStatus = statusMap[tab];
 
-  const fromNotifs = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
-  const fromVendas = _eldVendas.filter(v => normalizeEldStatus(v.status || '') === targetStatus);
+  // Pendentes: só notificações com status pending (novos pedidos que você ainda não entregou)
+  // Concluídas / Canceladas / Disputas: notificações com o status correspondente
+  const items = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
 
-  if (fromNotifs.length === 0 && fromVendas.length === 0) {
-    const labels = { pendentes: 'pedidos pendentes', concluidas: 'pedidos concluidos', canceladas: 'pedidos cancelados' };
-    const icons  = { pendentes: '\u23f3', concluidas: '\u2705', canceladas: '\u274c' };
+  const emptyLabel = { pendentes: 'pedidos pendentes de entrega', concluidas: 'pedidos concluídos', canceladas: 'pedidos cancelados', disputas: 'pedidos em disputa' };
+  const emptyIcon  = { pendentes: '⏳', concluidas: '✅', canceladas: '❌', disputas: '⚠️' };
+
+  if (items.length === 0) {
     list.innerHTML = `
       <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
-        <div style="font-size:28px">${icons[tab]}</div>
-        <div>Nenhum ${labels[tab]} ainda.</div>
+        <div style="font-size:28px">${emptyIcon[tab]}</div>
+        <div>Nenhum ${emptyLabel[tab]} ainda.</div>
       </div>`;
     return;
   }
 
-  const statusIcon  = { completed:'\u2705', pending:'\u23f3', cancelled:'\u274c', dispute:'\u26a0\ufe0f', other:'\ud83d\udce6' };
-  const statusLabel = { completed:'Concluida', pending:'Pendente', cancelled:'Cancelada', dispute:'Disputa', other:'Venda' };
-
-  const notifItems = fromNotifs.map(n => {
+  list.innerHTML = items.map(n => {
     const ago    = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
+    const st     = normalizeEldStatus(n.status || '');
     return `
-      <div class="eld-notif ${unread} ${n.status || 'other'}">
-        <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '\ud83d\udce6'}</div>
+      <div class="eld-notif ${unread} ${st}">
+        <div class="eld-notif-icon ${st}">${n.icon || '📦'}</div>
         <div class="eld-notif-body">
-          <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || statusLabel[targetStatus] || 'Atualizacao')}</div>
+          <div class="eld-notif-label ${st}">${escHtml(n.label || 'Pedido')}</div>
           <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
-          <div class="eld-notif-meta">${ago}${n.comprador ? ' &middot; ' + escHtml(n.comprador) : ''}</div>
+          <div class="eld-notif-meta">${ago}${n.comprador ? ' · ' + escHtml(n.comprador) : ''}</div>
         </div>
-        ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
+        ${n.price ? `<div class="eld-notif-price ${st}">${escHtml(n.price)}</div>` : ''}
         <div class="eld-unread-dot"></div>
       </div>`;
-  });
-
-  const vendaItems = fromVendas.map(v => {
-    const valor     = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
-    const comprador = v.comprador || 'Comprador';
-    const produto   = v.produto || 'Produto';
-    const ago       = eldTimeAgo(new Date(v.data || Date.now()).getTime());
-    const st        = normalizeEldStatus(v.status || '');
-    return `
-      <div class="eld-notif ${st}" style="cursor:default">
-        <div class="eld-notif-icon ${st}">${statusIcon[st] || '\ud83d\udce6'}</div>
-        <div class="eld-notif-body">
-          <div class="eld-notif-label ${st}">${statusLabel[st] || 'Venda'}</div>
-          <div class="eld-notif-title">${escHtml(produto)}</div>
-          <div class="eld-notif-meta">${ago} &middot; ${escHtml(comprador)}</div>
-        </div>
-        ${valor ? `<div class="eld-notif-price completed">US$${valor.toFixed(2)}</div>` : ''}
-      </div>`;
-  });
-
-  list.innerHTML = [...notifItems, ...vendaItems].join('');
+  }).join('');
 }
 
 // ── RENDER PAINEL ─────────────────────────────────────────────────────────────
@@ -4836,7 +4847,10 @@ function renderEldList() {
   const list = document.getElementById('eld-notif-list');
   if (!list) return;
 
-  if (_eldNotifs.length === 0) {
+  // Notifs mostra apenas os não-lidos
+  const unreadNotifs = _eldNotifs.filter(n => !n.read);
+
+  if (unreadNotifs.length === 0) {
     list.innerHTML = `
       <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
         <div style="font-size:28px">🔔</div>
@@ -4846,7 +4860,7 @@ function renderEldList() {
     return;
   }
 
-  list.innerHTML = _eldNotifs.map(n => {
+  list.innerHTML = unreadNotifs.map(n => {
     const ago = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
     return `
@@ -4923,11 +4937,20 @@ function updateEldBell() {
 
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
 function eldMarkAllRead() {
-  // Salva os IDs atuais como descartados permanentemente
-  const dismissedIds = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-  _eldNotifs.forEach(n => { if (n.id && !dismissedIds.includes(n.id)) dismissedIds.push(n.id); });
-  localStorage.setItem('eld_dismissed', JSON.stringify(dismissedIds.slice(-500)));
-  _eldNotifs = [];
+  // Notifs mostra TODOS os itens de _eldNotifs sem filtro de status.
+  // As outras abas filtram por status (pending/completed/cancelled/dispute).
+  // Então: remover da lista apenas os itens que NÃO têm status definido ou são "all",
+  // preservando os que têm status específico (pending, completed, cancelled, dispute).
+  // Na prática: a aba Notifs é um inbox geral — limpar = mover para "lido" sem aparecer mais no notifs.
+  // Solução: marcar todos como read=true; a aba Notifs só mostra não-lidos, as outras ignoram o read.
+  // Mas o pedido do usuário é: limpar o notifs. Então filtramos _eldNotifs mantendo apenas
+  // os que têm status específico (ficam nas abas deles), e removemos os sem status / "outros".
+  
+  // Preserva itens com status concreto (aparecem nas abas de filtro)
+  const keepStatuses = ['pending', 'completed', 'cancelled', 'dispute'];
+  _eldNotifs = _eldNotifs.filter(n => keepStatuses.includes(normalizeEldStatus(n.status || '')));
+  // Marca todos como lidos (remove badges)
+  _eldNotifs = _eldNotifs.map(n => ({ ...n, read: true }));
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   renderEldPanel();
   updateEldBell();
