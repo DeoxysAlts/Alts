@@ -728,13 +728,27 @@
   }
 
   /* ── ELDORADO BELL & NOTIFICATION PANEL ── */
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --eld-bg:      #080809;
+    --eld-surf:    #111113;
+    --eld-surf2:   #1a1a1e;
+    --eld-surf3:   #222228;
+    --eld-green:   #1fd679;
+    --eld-yellow:  #f5a623;
+    --eld-red:     #ff5555;
+    --eld-purple:  #9d7dff;
+    --eld-blue:    #4a9eff;
+  }
+
   .eld-bell-wrap {
     position: relative;
     display: inline-flex;
   }
   .eld-bell-btn {
     background: var(--surface2);
-    border: 0.5px solid var(--border2);
+    border: 1px solid var(--border2);
     color: var(--muted);
     width: 34px; height: 34px;
     border-radius: var(--rad-sm);
@@ -751,167 +765,223 @@
     top: -4px; right: -4px;
     background: var(--accent);
     color: #fff;
-    font-size: 9px;
+    font-family: 'Space Mono', monospace;
+    font-size: 8px;
     font-weight: 700;
-    font-family: 'DM Sans', sans-serif;
-    min-width: 16px; height: 16px;
+    min-width: 15px; height: 15px;
     border-radius: 99px;
-    display: flex; align-items: center; justify-content: center;
-    padding: 0 4px;
+    display: none; align-items: center; justify-content: center;
+    padding: 0 3px;
     border: 1.5px solid var(--bg);
-    display: none;
   }
   .eld-bell-badge.visible { display: flex; }
 
-  /* NOTIFICATION DROPDOWN */
+  /* PANEL */
   .eld-panel {
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    width: 340px;
-    background: var(--surface);
-    border: 0.5px solid var(--border2);
+    width: 380px;
+    background: var(--eld-bg);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
-    box-shadow: 0 24px 60px rgba(0,0,0,.65);
+    box-shadow: 0 24px 60px rgba(0,0,0,.8);
     z-index: 500;
     overflow: hidden;
     display: none;
     flex-direction: column;
-    animation: eld-panel-in .18s ease;
+    font-family: 'Manrope', sans-serif;
+    animation: eld-in .18s ease;
   }
   .eld-panel.open { display: flex; }
-  @keyframes eld-panel-in {
+  @keyframes eld-in {
     from { opacity:0; transform: translateY(-8px) scale(.97); }
     to   { opacity:1; transform: none; }
   }
+
+  /* HEADER */
   .eld-panel-header {
     display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 0.5px solid var(--border);
-    background: var(--surface2);
+    padding: 13px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(180deg,#13131a 0%,var(--eld-bg) 100%);
     flex-shrink: 0;
   }
   .eld-panel-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 15px; font-weight: 800;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
     flex: 1;
-    letter-spacing: .3px;
   }
+  .eld-panel-title em { color: var(--text); font-style: normal; }
   .eld-panel-badge {
-    font-size: 10px;
-    background: rgba(255,32,32,0.12);
-    border: 0.5px solid rgba(255,32,32,0.3);
-    color: #f87171;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px; font-weight: 700;
+    background: var(--accent);
+    color: #fff;
     border-radius: 99px;
-    padding: 2px 8px;
-    font-weight: 500;
+    padding: 2px 7px;
     display: none;
   }
   .eld-panel-badge.visible { display: block; }
   .eld-close-btn {
-    background: none; border: none; color: var(--muted);
-    cursor: pointer; font-size: 14px; padding: 2px 5px;
-    border-radius: 5px; transition: color .15s;
-    line-height: 1;
+    width: 26px; height: 26px;
+    background: var(--eld-surf2);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--muted);
+    cursor: pointer; font-size: 12px;
+    border-radius: 7px; transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
   }
-  .eld-close-btn:hover { color: var(--text); }
+  .eld-close-btn:hover { background: var(--eld-surf3); color: var(--text); }
 
-  /* STATS MINI ROW */
+  /* STATUS BAR */
+  .eld-status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 16px;
+    background: var(--eld-surf);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .eld-pulse {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--eld-green); flex-shrink: 0;
+    animation: eld-heartbeat 2s infinite;
+  }
+  @keyframes eld-heartbeat {
+    0%,100% { box-shadow: 0 0 0 0 rgba(31,214,121,.4); }
+    50%      { box-shadow: 0 0 0 4px rgba(31,214,121,0); }
+  }
+  .eld-status-txt { font-size: 10px; color: var(--muted); flex: 1; font-weight: 500; }
+
+  /* STATS */
   .eld-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 10px;
-    border-bottom: 0.5px solid var(--border);
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 1px; background: rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
   }
   .eld-stat {
-    background: var(--surface2);
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 10px;
-    text-align: center;
+    background: var(--eld-bg);
+    padding: 11px 14px;
+    display: flex; flex-direction: column; gap: 3px;
   }
-  .eld-stat-n { font-family: 'Press Start 2P', cursive; font-size: 13px; font-weight: 400; color: var(--text); line-height: 1.3; }
-  .eld-stat-n.green { color: #22c55e; }
-  .eld-stat-l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .eld-stat-n {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px; font-weight: 700;
+    color: var(--text); line-height: 1;
+  }
+  .eld-stat-n.green { color: var(--eld-green); }
+  .eld-stat-l { font-size: 9px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; }
+
+  /* TABS */
+  .eld-tabs {
+    display: flex; gap: 4px;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: var(--eld-surf);
+    flex-shrink: 0;
+  }
+  .eld-tab-btn {
+    flex: 1; padding: 5px 2px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+    cursor: pointer; background: transparent; color: var(--muted);
+    transition: all .15s;
+  }
+  .eld-tab-btn.active { background: var(--eld-surf3); border-color: rgba(255,255,255,0.11); color: var(--text); }
+  .eld-tab-btn:hover:not(.active) { color: var(--text); }
 
   /* NOTIF LIST */
   .eld-notif-list {
-    max-height: 300px;
-    overflow-y: auto;
+    max-height: 340px; overflow-y: auto;
     padding: 8px;
-    display: flex; flex-direction: column; gap: 5px;
+    display: flex; flex-direction: column; gap: 4px;
     scrollbar-width: thin;
+    scrollbar-color: var(--eld-surf3) transparent;
   }
   .eld-notif {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px;
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: 10px;
+    padding: 10px 12px; min-height: 58px;
+    background: var(--eld-surf);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
     position: relative; overflow: hidden;
     transition: border-color .15s, background .15s;
   }
-  .eld-notif:hover { border-color: var(--border2); background: var(--surface2); }
-  .eld-notif.unread::before {
+  .eld-notif:hover { background: var(--eld-surf2); border-color: rgba(255,255,255,0.11); }
+  .eld-notif.unread::after {
     content: '';
-    position: absolute; left:0; top:0; bottom:0;
-    width: 3px; border-radius: 0;
+    position: absolute; left:0; top:0; bottom:0; width: 2px;
   }
-  .eld-notif.unread.completed::before { background: #22c55e; }
-  .eld-notif.unread.pending::before   { background: #ca8a04; }
-  .eld-notif.unread.cancelled::before { background: #f87171; }
-  .eld-notif.unread.dispute::before   { background: #f59e0b; }
+  .eld-notif.unread.completed::after  { background: var(--eld-green); }
+  .eld-notif.unread.pending::after    { background: var(--eld-yellow); }
+  .eld-notif.unread.cancelled::after  { background: var(--eld-red); }
+  .eld-notif.unread.dispute::after    { background: var(--eld-purple); }
+  .eld-notif.unread.other::after      { background: var(--eld-blue); }
   .eld-unread-dot {
-    position: absolute; top: 9px; right: 10px;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent);
-    display: none;
+    position: absolute; top: 8px; right: 8px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); display: none;
   }
   .eld-notif.unread .eld-unread-dot { display: block; }
   .eld-notif-icon {
-    width: 30px; height: 30px; border-radius: 8px;
+    width: 34px; height: 34px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0;
+    font-size: 15px; flex-shrink: 0;
   }
-  .eld-notif-icon.completed { background: rgba(34,197,94,0.12); }
-  .eld-notif-icon.pending   { background: rgba(202,138,4,0.12); }
-  .eld-notif-icon.cancelled { background: rgba(248,113,113,0.12); }
-  .eld-notif-icon.dispute   { background: rgba(245,158,11,0.12); }
-  .eld-notif-icon.other     { background: rgba(255,255,255,0.05); }
+  .eld-notif-icon.completed { background: rgba(31,214,121,0.1); }
+  .eld-notif-icon.pending   { background: rgba(245,166,35,0.1); }
+  .eld-notif-icon.cancelled { background: rgba(255,85,85,0.1); }
+  .eld-notif-icon.dispute   { background: rgba(157,125,255,0.1); }
+  .eld-notif-icon.other     { background: rgba(74,158,255,0.1); }
   .eld-notif-body { flex: 1; min-width: 0; }
-  .eld-notif-label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; font-weight: 500; margin-bottom: 2px; }
-  .eld-notif-label.completed { color: #22c55e; }
-  .eld-notif-label.pending   { color: #ca8a04; }
-  .eld-notif-label.cancelled { color: #f87171; }
-  .eld-notif-label.dispute   { color: #f59e0b; }
-  .eld-notif-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .eld-notif-meta  { font-size: 11px; color: #555560; margin-top: 2px; }
-  .eld-notif-price { font-family: 'Press Start 2P', cursive; font-size: 11px; font-weight: 400; flex-shrink: 0; line-height: 1.4; }
-  .eld-notif-price.completed { color: #22c55e; }
-  .eld-notif-price.pending   { color: #ca8a04; }
-  .eld-notif-price.cancelled { color: #f87171; }
+  .eld-notif-label {
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;
+  }
+  .eld-notif-label.completed { color: var(--eld-green); }
+  .eld-notif-label.pending   { color: var(--eld-yellow); }
+  .eld-notif-label.cancelled { color: var(--eld-red); }
+  .eld-notif-label.dispute   { color: var(--eld-purple); }
+  .eld-notif-label.other     { color: var(--eld-blue); }
+  .eld-notif-title {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
+  }
+  .eld-notif-meta { font-size: 10px; color: #6b6b78; margin-top: 2px; font-weight: 500; display: block; }
+  .eld-notif-price {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; padding-right: 4px;
+  }
+  .eld-notif-price.completed { color: var(--eld-green); }
+  .eld-notif-price.pending   { color: var(--eld-yellow); }
+  .eld-notif-price.cancelled { color: var(--eld-red); opacity:.7; }
+  .eld-notif-price.dispute   { color: var(--eld-purple); }
+  .eld-notif-price.other     { color: var(--eld-blue); }
 
-  /* PANEL FOOTER */
+  /* FOOTER */
   .eld-panel-footer {
     display: flex; gap: 6px;
-    padding: 8px 10px;
-    border-top: 0.5px solid var(--border);
-    background: var(--surface2);
+    padding: 9px 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    background: var(--eld-surf);
     flex-shrink: 0;
   }
   .eld-footer-btn {
-    flex: 1; padding: 8px 0;
-    border: 0.5px solid var(--border2);
+    flex: 1; padding: 7px 0;
+    border: 1px solid rgba(255,255,255,0.11);
     border-radius: 7px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px; font-weight: 600;
-    cursor: pointer;
-    background: var(--surface);
-    color: var(--muted);
-    transition: background .15s, color .15s;
+    font-family: 'Manrope', sans-serif;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer; background: var(--eld-surf2); color: var(--muted);
+    transition: all .15s;
   }
-  .eld-footer-btn:hover { background: var(--bg); color: var(--text); }
+  .eld-footer-btn:hover { background: var(--eld-surf3); color: var(--text); }
 
   /* TOAST */
   .eld-toast-container {
@@ -1224,52 +1294,49 @@
           <!-- DROPDOWN PANEL -->
           <div class="eld-panel" id="eld-panel">
             <div class="eld-panel-header">
-              <span style="font-size:16px">🛒</span>
-              <span class="eld-panel-title">Eldorado · Vendas</span>
-              <span class="eld-panel-badge" id="eld-panel-badge">0 novas</span>
+              <div class="eld-panel-title"><em>DEOXYS</em><span style="color:var(--accent)">.</span>ALTS</div>
+              <span class="eld-panel-badge" id="eld-panel-badge">0</span>
               <button class="eld-close-btn" onclick="toggleEldPanel()">✕</button>
             </div>
 
-            <!-- MINI STATS -->
+            <!-- STATUS BAR -->
+            <div class="eld-status-bar">
+              <div class="eld-pulse"></div>
+              <span class="eld-status-txt">Monitorando Eldorado · a cada 30s</span>
+            </div>
+
+            <!-- STATS -->
             <div class="eld-stats">
               <div class="eld-stat">
-                <div class="eld-stat-n green" id="eld-stat-revenue">R$0</div>
-                <div class="eld-stat-l">hoje</div>
+                <div class="eld-stat-n green" id="eld-stat-revenue">—</div>
+                <div class="eld-stat-l">Hoje ($)</div>
               </div>
               <div class="eld-stat">
-                <div class="eld-stat-n" id="eld-stat-total">0</div>
-                <div class="eld-stat-l">vendas</div>
+                <div class="eld-stat-n" id="eld-stat-total">—</div>
+                <div class="eld-stat-l">Vendas</div>
               </div>
               <div class="eld-stat">
-                <div class="eld-stat-n" id="eld-stat-pending">0</div>
-                <div class="eld-stat-l">pendentes</div>
+                <div class="eld-stat-n" id="eld-stat-pending">—</div>
+                <div class="eld-stat-l">Pendentes</div>
               </div>
             </div>
 
             <!-- TABS -->
-            <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);flex-shrink:0">
-              <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">🔔 Notifs</button>
-              <button class="eld-tab-btn" data-tab="pendentes" onclick="setEldTab('pendentes')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">⏳ Pendentes</button>
-              <button class="eld-tab-btn" data-tab="concluidas" onclick="setEldTab('concluidas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">✅ Concluídas</button>
-              <button class="eld-tab-btn" data-tab="canceladas" onclick="setEldTab('canceladas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">❌ Canceladas</button>
-              <button class="eld-tab-btn" data-tab="disputas" onclick="setEldTab('disputas')" style="flex:1;padding:9px 0;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s">⚠️ Disputas</button>
-            </div>
-            <style>
-              .eld-tab-btn.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
-            </style>
-
-            <!-- NOTIF LIST (aba notifs) -->
-            <div class="eld-notif-list" id="eld-notif-list" style="display:flex;flex-direction:column">
+            <div class="eld-tabs">
+              <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')">Notifs</button>
+              <button class="eld-tab-btn" data-tab="completed" onclick="setEldTab('completed')">Vendas ✅</button>
+              <button class="eld-tab-btn" data-tab="pending" onclick="setEldTab('pending')">Pendentes ⏳</button>
+              <button class="eld-tab-btn" data-tab="cancelled" onclick="setEldTab('cancelled')">Cancelados ❌</button>
             </div>
 
-            <!-- FILTERED LIST (abas pendentes / concluidas / canceladas) -->
-            <div class="eld-notif-list" id="eld-filtered-list" style="display:none;flex-direction:column">
-            </div>
+            <!-- NOTIF LIST -->
+            <div class="eld-notif-list" id="eld-notif-list" style="display:flex;flex-direction:column"></div>
 
-            <!-- FOOTER ACTIONS -->
+            <!-- FOOTER -->
             <div class="eld-panel-footer">
               <button class="eld-footer-btn" onclick="eldMarkAllRead()">Marcar lidas</button>
-              <button class="eld-footer-btn" onclick="openEldConfig()" title="Configurar cookie da Eldorado" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">⚙️</button>
+              <button class="eld-footer-btn" onclick="window.open('https://www.eldorado.gg/br/dashboard/orders','_blank')">Eldorado ↗</button>
+              <button class="eld-footer-btn" style="background:rgba(255,40,40,0.08);border-color:rgba(255,40,40,0.2);color:var(--accent)" onclick="clearEldCookie()">Limpar</button>
             </div>
           </div>
         </div>
@@ -4582,59 +4649,49 @@ function doImport() {
 
 
 <script>
-// ── ELDORADO NOTIFICATION SYSTEM (Worker-based) ─────────────────────────────
+// ── ELDORADO NOTIFICATION SYSTEM ─────────────────────────────────────────────
+// Recebe dados da extensão Chrome em tempo real via window.postMessage
+// Fallback: worker se extensão não estiver instalada
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 5000;
+const ELD_POLL_MS = 30000;
 
-let _eldNotifs    = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
-let _eldSeenIds   = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
-let _eldVendas    = JSON.parse(localStorage.getItem('eld_vendas') || '[]');
-let _eldPanelOpen = false;
-let _eldPollTimer = null;
-let _eldTab       = 'notifs';
-let _eldPendTotal = 0;
-let _eldPendItems = []; // lista real de pedidos pendentes vinda da API /pendentes
-
-// ── MIGRAÇÃO: limpa seen/dismissed para reprocessar notificações com lógica correta ──
-(function migrateEldStatus() {
-  // Versão da migração — se mudar, força reprocessamento
-  const MIGRATION_VER = '4';
-  if (localStorage.getItem('eld_migration') !== MIGRATION_VER) {
-    // Limpa IDs vistos para que o poll reprocesse todas as notificações da API
-    localStorage.removeItem('eld_seen');
-    localStorage.removeItem('eld_dismissed');
-    localStorage.removeItem('eld_notifs');
-    _eldNotifs  = [];
-    _eldSeenIds = [];
-    localStorage.setItem('eld_migration', MIGRATION_VER);
-    return;
-  }
-  // Corrige status incorretos em notifs já salvas
-  let changed = false;
-  _eldNotifs = _eldNotifs.map(n => {
-    if ((n.label === 'Novo pedido' || (n.evento && n.evento.includes('OrderCreated'))) && n.status === 'completed') {
-      changed = true;
-      return { ...n, status: 'pending', icon: '⚡' };
-    }
-    if ((n.evento && (n.evento.includes('Disputed') || n.evento.includes('Dispute'))) && n.status === 'cancelled') {
-      changed = true;
-      return { ...n, status: 'dispute', icon: '⚠️' };
-    }
-    if ((n.evento && (n.evento.includes('Cancelled') || n.evento.includes('Canceled'))) && n.status !== 'cancelled') {
-      changed = true;
-      return { ...n, status: 'cancelled', icon: '❌', label: 'Pedido cancelado' };
-    }
-    return n;
-  });
-  if (changed) localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
-})();
+let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
+let _eldSeenIds     = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
+let _eldPanelOpen   = false;
+let _eldPollTimer   = null;
+let _eldTab         = 'notifs';
+let _eldExtInstalled = false; // detecta se extensão está presente
 
 // ── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
 (function initEldorado() {
   renderEldPanel();
   updateEldBell();
-  startEldPolling();
+
+  // Escuta mensagens da extensão Chrome (via content.js)
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    if (!e.data) return;
+
+    if (e.data.type === 'ELDORADO_NEW_NOTIFS') {
+      _eldExtInstalled = true;
+      const incoming = e.data.payload || [];
+      if (incoming.length > 0) {
+        processExtensionNotifs(incoming);
+      }
+    }
+  });
+
+  // Fallback: polling via worker se extensão não estiver ativa após 5s
+  setTimeout(() => {
+    if (!_eldExtInstalled) {
+      console.log('[Eldorado] Extensão não detectada, usando worker como fallback.');
+      startEldPolling();
+    }
+  }, 5000);
+
+  // Sempre faz um poll inicial via worker para garantir dados
+  pollEldorado();
 
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('eld-bell-wrap');
@@ -4642,60 +4699,101 @@ let _eldPendItems = []; // lista real de pedidos pendentes vinda da API /pendent
   });
 })();
 
-// ── POLLING ───────────────────────────────────────────────────────────────────
+// ── PROCESSA NOTIFICAÇÕES DA EXTENSÃO ────────────────────────────────────────
+function processExtensionNotifs(notifs) {
+  const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  const newOnes = [];
+
+  for (const n of notifs) {
+    const id = String(n.id || Math.random());
+    if (_eldSeenIds.includes(id)) continue;
+    if (dismissed.includes(id)) continue;
+
+    // Mapeia formato da extensão para formato do site
+    const mapped = {
+      id,
+      icon:      n.icon  || getStatusIcon(n.status),
+      label:     n.label || getStatusLabel(n.status),
+      title:     n.title || 'Produto',
+      price:     n.price || '',
+      status:    normalizeEldStatus(n.status || ''),
+      comprador: n.buyer || '',
+      ts:        n.ts    || Date.now(),
+      read:      n.read  || false,
+    };
+
+    newOnes.push(mapped);
+    _eldSeenIds.push(id);
+  }
+
+  if (newOnes.length === 0) return;
+
+  _eldNotifs = [...newOnes, ..._eldNotifs].slice(0, 50);
+  _eldSeenIds = _eldSeenIds.slice(-500);
+  localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+  localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
+
+  // Toasts e som apenas para não lidas
+  newOnes.filter(n => !n.read).forEach(n => showEldToast(n));
+  if (newOnes.some(n => !n.read)) {
+    typeof playUiSound === 'function' && playUiSound();
+  }
+
+  renderEldPanel();
+  updateEldBell();
+
+  // Atualiza stats de pendentes
+  const pending = _eldNotifs.filter(n => normalizeEldStatus(n.status) === 'pending');
+  const penbadge = document.getElementById('eld-pending-badge');
+  const penbtn   = document.getElementById('eld-pending-btn');
+  const pEl      = document.getElementById('eld-stat-pending');
+  if (penbadge) { penbadge.textContent = pending.length > 9 ? '9+' : String(pending.length); penbadge.classList.toggle('visible', pending.length > 0); }
+  if (penbtn)   { penbtn.style.opacity = pending.length > 0 ? '1' : '0.5'; }
+  if (pEl)      { pEl.textContent = pending.length; }
+}
+
+// ── POLLING WORKER (fallback) ─────────────────────────────────────────────────
 function startEldPolling() {
   if (_eldPollTimer) clearInterval(_eldPollTimer);
-  pollEldorado();
   _eldPollTimer = setInterval(pollEldorado, ELD_POLL_MS);
 }
 
 async function pollEldorado() {
   try {
-    // Busca notificações e vendas em paralelo
-    const [rNotif, rVendas, rPend, rCancel] = await Promise.all([
+    const [rNotif, rPend] = await Promise.all([
       fetch(ELD_WORKER + '/notificacoes'),
-      fetch(ELD_WORKER + '/vendas'),
       fetch(ELD_WORKER + '/pendentes'),
-      fetch(ELD_WORKER + '/canceladas').catch(() => null)
     ]);
 
-    if (!rNotif.ok || !rVendas.ok) {
-      if (rNotif.status === 401 || rVendas.status === 401) {
-        showEldConfigError('Sessão expirada. Atualize o cookie via PowerShell.');
-      }
+    if (!rNotif.ok) {
+      if (rNotif.status === 401) showEldConfigError('Sessão expirada. Reabra a Eldorado no Chrome.');
       return;
     }
 
-    const dNotif  = await rNotif.json();
-    const dVendas = await rVendas.json();
-    const dPend   = rPend.ok ? await rPend.json() : { total: 0 };
-    const dCancel = (rCancel && rCancel.ok) ? await rCancel.json() : null;
+    const dNotif = await rNotif.json();
+    const dPend  = rPend.ok ? await rPend.json() : { total: 0, pendentes: [] };
 
-    // Atualizar badge de pendentes — usa valor REAL da API, não contagem local
-    // API retorna: { "pendentes": [...], "total": 4 }
-    _eldPendItems = dPend.pendentes || dPend.pedidos || dPend.orders || dPend.items || [];
-    if (Array.isArray(dPend)) { _eldPendItems = dPend; }
-    _eldPendTotal = dPend.total != null ? dPend.total : _eldPendItems.length;
+    // Pendentes
+    const pendTotal = dPend.total || (dPend.pendentes || []).length || 0;
     const penbadge = document.getElementById('eld-pending-badge');
     const penbtn   = document.getElementById('eld-pending-btn');
     const pEl      = document.getElementById('eld-stat-pending');
-    if (penbadge) { penbadge.textContent = _eldPendTotal > 9 ? '9+' : String(_eldPendTotal); penbadge.classList.toggle('visible', _eldPendTotal > 0); }
-    if (penbtn)   { penbtn.style.opacity = _eldPendTotal > 0 ? '1' : '0.5'; penbtn.title = `${_eldPendTotal} pedido${_eldPendTotal !== 1 ? 's' : ''} pendente${_eldPendTotal !== 1 ? 's' : ''} de entrega`; }
-    if (pEl)      { pEl.textContent = _eldPendTotal; }
+    if (penbadge) { penbadge.textContent = pendTotal > 9 ? '9+' : String(pendTotal); penbadge.classList.toggle('visible', pendTotal > 0); }
+    if (penbtn)   { penbtn.style.opacity = pendTotal > 0 ? '1' : '0.5'; penbtn.title = `${pendTotal} pendente(s)`; }
+    if (pEl)      { pEl.textContent = pendTotal; }
 
-    // ── Processar notificações ──
+    // Notificações
     const notifResults = dNotif.notificacoes || [];
-    const dismissedIds = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    const newNotifs = [];
-    let hasNew = false;
+    const dismissed    = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    const newNotifs    = [];
 
     for (const n of notifResults) {
       const id = String(n.id || Math.random());
+      if (_eldSeenIds.includes(id)) continue;
+      if (dismissed.includes(id)) continue;
+
       const ev = getEldEventInfo(n.evento);
-      // Cancelamentos e disputas nunca são ignorados pelo dismissed (são importantes)
-      const isCritical = ev.status === 'cancelled' || ev.status === 'dispute';
-      if (!isCritical && dismissedIds.includes(id)) continue;
-      const notif = {
+      newNotifs.push({
         id,
         icon:      ev.icon,
         label:     ev.label,
@@ -4705,115 +4803,52 @@ async function pollEldorado() {
         comprador: n.comprador || '',
         ts:        new Date(n.data || Date.now()).getTime(),
         read:      n.lida || false,
-        evento:    n.evento || ''
-      };
-
-      // Se já existe na lista, atualiza o status (ex: pending → cancelled)
-      const existingIdx = _eldNotifs.findIndex(x => x.id === id);
-      if (existingIdx >= 0) {
-        const old = _eldNotifs[existingIdx];
-        // Só atualiza se o status mudou
-        if (old.status !== notif.status) {
-          _eldNotifs[existingIdx] = { ...old, status: notif.status, label: notif.label, icon: notif.icon };
-          hasNew = true;
-        }
-      } else {
-        // Nova notificação
-        newNotifs.push(notif);
-        _eldSeenIds.push(id);
-        hasNew = true;
-      }
+      });
+      _eldSeenIds.push(id);
     }
 
-    if (hasNew) {
+    if (newNotifs.length > 0) {
       _eldNotifs = [...newNotifs, ..._eldNotifs].slice(0, 50);
       _eldSeenIds = _eldSeenIds.slice(-500);
       localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
       localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
       newNotifs.filter(n => !n.read).forEach(n => showEldToast(n));
-      if (newNotifs.length > 0) typeof playUiSound === 'function' && playUiSound();
-    }
-
-    // ── Processar vendas ──
-    const vendasResults = dVendas.vendas || [];
-    if (vendasResults.length > 0) {
-      _eldVendas = vendasResults;
-      localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
-    }
-
-    // ── Processar canceladas do endpoint /canceladas (se existir no Worker) ──
-    const canceladasEndpoint = dCancel
-      ? (dCancel.canceladas || dCancel.vendas || dCancel.orders || [])
-      : [];
-    // Combina com as canceladas vindas do /vendas
-    const todasCanceladas = [
-      ...canceladasEndpoint,
-      ...vendasResults.filter(v => (v.status || '').toLowerCase().includes('cancel'))
-    ];
-    let cancelChanged = false;
-    for (const v of todasCanceladas) {
-      const id = 'cancel-' + String(v.id || v._id || v.orderId || Math.random());
-      const already = _eldNotifs.find(n => n.id === id);
-      if (!already) {
-        const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : (v.price != null ? parseFloat(v.price) : parseFloat(v.valor) || 0);
-        _eldNotifs.push({
-          id,
-          icon:      '❌',
-          label:     'Pedido cancelado',
-          title:     v.produto || v.title || v.product || v.name || 'Produto',
-          price:     valor ? 'US$' + valor.toFixed(2) : '',
-          status:    'cancelled',
-          comprador: v.comprador || v.buyer || v.buyerName || '',
-          ts:        new Date(v.data || v.createdAt || v.cancelledAt || Date.now()).getTime(),
-          read:      true,
-          evento:    'Cancelled'
-        });
-        cancelChanged = true;
-      }
-    }
-    if (cancelChanged) {
-      localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+      if (newNotifs.some(n => !n.read)) typeof playUiSound === 'function' && playUiSound();
     }
 
     renderEldPanel();
     updateEldBell();
-
   } catch(e) {
     console.warn('[Eldorado] erro no poll:', e.message);
   }
 }
 
 function getEldEventInfo(evento) {
-  if (!evento) return { label: 'Novo pedido', icon: '⚡', status: 'pending' };
-  // Pedido criado/novo → fica em Notifs e Pendentes (aguardando entrega)
-  if (evento.includes('OrderCreated'))   return { label: 'Novo pedido',       icon: '⚡', status: 'pending' };
-  // Você confirmou a entrega → Concluídas
-  if (evento.includes('Success') || evento.includes('Received') || evento.includes('Delivered') || evento.includes('Completed'))
-                                         return { label: 'Venda concluída',   icon: '✅', status: 'completed' };
-  // Cancelados (por você ou pelo comprador)
-  if (evento.includes('Cancelled') || evento.includes('Canceled'))
-                                         return { label: 'Pedido cancelado',  icon: '❌', status: 'cancelled' };
-  // Em disputa → categoria própria
-  if (evento.includes('Disputed') || evento.includes('Dispute'))
-                                         return { label: 'Em disputa',        icon: '⚠️', status: 'dispute' };
-  // Mensagem / pré-venda → pendentes
-  if (evento.includes('TalkJs'))         return { label: 'Nova mensagem',     icon: '💬', status: 'pending' };
-  if (evento.includes('PreSell'))        return { label: 'Entrega pendente',  icon: '⏳', status: 'pending' };
-  return { label: 'Novo pedido', icon: '⚡', status: 'pending' };
+  if (!evento) return { label: 'Atualização', icon: '📦', status: 'other' };
+  if (evento.includes('OrderCreated'))  return { label: 'Novo pedido',      icon: '⏳', status: 'pending' };
+  if (evento.includes('Disputed'))      return { label: 'Em disputa',       icon: '⚠️', status: 'dispute' };
+  if (evento.includes('Cancelled'))     return { label: 'Pedido cancelado', icon: '❌', status: 'cancelled' };
+  if (evento.includes('Success') || evento.includes('Received')) return { label: 'Venda concluída', icon: '✅', status: 'completed' };
+  if (evento.includes('TalkJs'))        return { label: 'Nova mensagem',    icon: '💬', status: 'other' };
+  if (evento.includes('PreSell'))       return { label: 'Entrega pendente', icon: '⏳', status: 'pending' };
+  return { label: 'Atualização', icon: '📦', status: 'other' };
 }
 
 function normalizeEldStatus(raw) {
   const s = (raw || '').toLowerCase();
-  // Concluído = você confirmou a entrega
-  if (s.includes('conclu') || s.includes('complet') || s.includes('delivered') || s.includes('done') || s === 'completed') return 'completed';
-  // Cancelado por qualquer parte
-  if (s.includes('cancel')) return 'cancelled';
-  // Em disputa
-  if (s.includes('disput') || s.includes('dispute') || s.includes('review')) return 'dispute';
-  // Pendente = explicitamente pendente
-  if (s === 'pending' || s === 'pendente' || s.includes('aguard') || s.includes('process')) return 'pending';
-  // Desconhecido — NÃO joga como pending para não inflar a aba
+  if (s.match(/delivered|conclu|complet|done|finaliz/)) return 'completed';
+  if (s.match(/initialized|paid|received|pending|aguard|wait|process/)) return 'pending';
+  if (s.match(/cancel/)) return 'cancelled';
+  if (s.match(/disput|review|lost/)) return 'dispute';
+  if (['completed','pending','cancelled','dispute','other'].includes(s)) return s;
   return 'other';
+}
+
+function getStatusIcon(status) {
+  return { completed:'✅', pending:'⏳', cancelled:'❌', dispute:'⚠️', other:'📦' }[normalizeEldStatus(status)] || '📦';
+}
+function getStatusLabel(status) {
+  return { completed:'Venda concluída', pending:'Entrega pendente', cancelled:'Pedido cancelado', dispute:'Em disputa', other:'Atualização' }[normalizeEldStatus(status)] || 'Atualização';
 }
 
 // ── TOGGLE PAINEL ─────────────────────────────────────────────────────────────
@@ -4831,133 +4866,20 @@ function closeEldPanel() {
 function setEldTab(tab) {
   _eldTab = tab;
   document.querySelectorAll('.eld-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-
-  const notifList    = document.getElementById('eld-notif-list');
-  const filteredList = document.getElementById('eld-filtered-list');
-
-  if (tab === 'notifs') {
-    if (notifList)    notifList.style.display    = 'flex';
-    if (filteredList) filteredList.style.display = 'none';
-  } else {
-    if (notifList)    notifList.style.display    = 'none';
-    if (filteredList) { filteredList.style.display = 'flex'; renderEldFiltered(tab); }
-  }
-}
-
-function renderEldFiltered(tab) {
-  const list = document.getElementById('eld-filtered-list');
-  if (!list) return;
-
-  const statusMap = { pendentes: 'pending', concluidas: 'completed', canceladas: 'cancelled', disputas: 'dispute' };
-  const targetStatus = statusMap[tab];
-
-  let items = [];
-
-  if (tab === 'pendentes') {
-    // Sempre usa a lista REAL da API /pendentes
-    if (_eldPendItems.length > 0) {
-      items = _eldPendItems.map(v => ({
-        id:        String(v.id || v._id || Math.random()),
-        icon:      '⚡',
-        label:     'Pendente',
-        title:     v.produto || v.title || v.product || v.name || 'Produto',
-        price:     v.valor?.amount != null ? 'US$' + parseFloat(v.valor.amount).toFixed(2) : '',
-        status:    'pending',
-        comprador: v.comprador || v.buyer || '',
-        ts:        new Date(v.data || v.createdAt || Date.now()).getTime(),
-        read:      true
-      }));
-    } else {
-      // _eldPendItems ainda vazio — busca agora e re-renderiza
-      list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Carregando...</div>`;
-      fetch(ELD_WORKER + '/pendentes')
-        .then(r => r.json())
-        .then(d => {
-          _eldPendItems = d.pendentes || [];
-          _eldPendTotal = d.total ?? _eldPendItems.length;
-          const pEl = document.getElementById('eld-stat-pending');
-          if (pEl) pEl.textContent = _eldPendTotal;
-          renderEldFiltered('pendentes');
-        })
-        .catch(() => {
-          list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Erro ao carregar pendentes.</div>`;
-        });
-      return;
-    }
-  } else {
-    // Para as outras abas (ou se /pendentes não retornou lista), usa notificações locais
-    const fromNotifs = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
-
-    // Também busca em _eldVendas para canceladas/concluidas
-    const fromVendas = _eldVendas
-      .filter(v => normalizeEldStatus(v.status || '') === targetStatus)
-      .map(v => {
-        const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
-        const st = normalizeEldStatus(v.status || '');
-        const statusIcon = { completed:'✅', pending:'⚡', cancelled:'❌', dispute:'⚠️' }[st] || '📦';
-        const statusLabel = { completed:'Venda concluída', pending:'Novo pedido', cancelled:'Pedido cancelado', dispute:'Em disputa' }[st] || 'Venda';
-        return {
-          id:        String(v.id || Math.random()),
-          icon:      statusIcon,
-          label:     statusLabel,
-          title:     v.produto || 'Produto',
-          price:     valor ? 'US$' + valor.toFixed(2) : '',
-          status:    st,
-          comprador: v.comprador || '',
-          ts:        new Date(v.data || Date.now()).getTime(),
-          read:      true,
-          _fromVendas: true
-        };
-      });
-
-    const notifIds = new Set(fromNotifs.map(n => String(n.id)));
-    const extra = fromVendas.filter(v => !notifIds.has(v.id));
-    items = [...fromNotifs, ...extra].sort((a, b) => b.ts - a.ts);
-  }
-
-  const emptyLabel = { pendentes: 'pedidos pendentes de entrega', concluidas: 'pedidos concluídos', canceladas: 'pedidos cancelados', disputas: 'pedidos em disputa' };
-  const emptyIcon  = { pendentes: '⏳', concluidas: '✅', canceladas: '❌', disputas: '⚠️' };
-
-  if (items.length === 0) {
-    list.innerHTML = `
-      <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
-        <div style="font-size:28px">${emptyIcon[tab]}</div>
-        <div>Nenhum ${emptyLabel[tab]} ainda.</div>
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = items.map(n => {
-    const ago    = eldTimeAgo(n.ts);
-    const unread = !n.read ? 'unread' : '';
-    const st     = normalizeEldStatus(n.status || '');
-    return `
-      <div class="eld-notif ${unread} ${st}">
-        <div class="eld-notif-icon ${st}">${n.icon || '📦'}</div>
-        <div class="eld-notif-body">
-          <div class="eld-notif-label ${st}">${escHtml(n.label || 'Pedido')}</div>
-          <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
-          <div class="eld-notif-meta">${ago}${n.comprador ? ' · ' + escHtml(n.comprador) : ''}</div>
-        </div>
-        ${n.price ? `<div class="eld-notif-price ${st}">${escHtml(n.price)}</div>` : ''}
-        <div class="eld-unread-dot"></div>
-      </div>`;
-  }).join('');
+  renderEldList();
 }
 
 // ── RENDER PAINEL ─────────────────────────────────────────────────────────────
 function renderEldPanel() {
   renderEldStats();
   renderEldList();
-  // Se uma aba de filtro estiver ativa, re-renderiza
-  if (_eldTab && _eldTab !== 'notifs') {
-    renderEldFiltered(_eldTab);
-  }
+  renderEldVendas();
 }
 
 function renderEldStats() {
   const today = new Date(); today.setHours(0,0,0,0);
   const completedToday = _eldNotifs.filter(n => n.status === 'completed' && n.ts >= today.getTime());
+  const pending        = _eldNotifs.filter(n => n.status === 'pending' && !n.read);
   const total          = _eldNotifs.filter(n => n.status === 'completed');
 
   let revenue = 0;
@@ -4969,75 +4891,44 @@ function renderEldStats() {
 
   const rEl = document.getElementById('eld-stat-revenue');
   const tEl = document.getElementById('eld-stat-total');
+  const pEl = document.getElementById('eld-stat-pending');
   if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
   if (tEl) tEl.textContent = total.length;
-  // PENDENTES: NÃO sobrescrever aqui — o valor real vem da API /pendentes no pollEldorado
-  // e já é escrito diretamente no eld-stat-pending durante o poll.
+  if (pEl) pEl.textContent = pending.length;
 }
 
 function renderEldList() {
   const list = document.getElementById('eld-notif-list');
   if (!list) return;
 
-  // Notifs mostra apenas os não-lidos
-  const unreadNotifs = _eldNotifs.filter(n => !n.read);
+  const filtered = _eldTab === 'notifs'
+    ? _eldNotifs.filter(n => !n.read)
+    : _eldNotifs.filter(n => normalizeEldStatus(n.status) === _eldTab);
 
-  if (unreadNotifs.length === 0) {
+  if (filtered.length === 0) {
     list.innerHTML = `
-      <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
-        <div style="font-size:28px">🔔</div>
-        <div>Nenhuma notificação ainda.</div>
-        <div style="font-size:10px;opacity:.6">Aguardando novas vendas...</div>
+      <div style="text-align:center;padding:40px 16px;color:#4a4a55;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="font-size:28px;opacity:.5">🔔</div>
+        <div style="color:#6b6b78;font-weight:600">${_eldTab === 'notifs' ? 'Nenhuma notificação nova.' : 'Nenhuma nessa categoria.'}</div>
+        <div style="font-size:10px">Deixe o Chrome aberto — atualiza a cada 30s.</div>
       </div>`;
     return;
   }
 
-  list.innerHTML = unreadNotifs.map(n => {
-    const ago = eldTimeAgo(n.ts);
+  list.innerHTML = filtered.map(n => {
+    const ago    = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
+    const buyer  = n.comprador || n.buyer || '';
     return `
       <div class="eld-notif ${unread} ${n.status || 'other'}">
         <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '📦'}</div>
         <div class="eld-notif-body">
           <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || 'Atualização')}</div>
           <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
-          <div class="eld-notif-meta">${ago}${n.comprador ? ' · ' + escHtml(n.comprador) : ''}</div>
+          <div class="eld-notif-meta">${buyer ? escHtml(buyer) + ' · ' : ''}${ago}</div>
         </div>
         ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
         <div class="eld-unread-dot"></div>
-      </div>`;
-  }).join('');
-}
-
-function renderEldVendas() {
-  const list = document.getElementById('eld-vendas-list');
-  if (!list) return;
-
-  if (_eldVendas.length === 0) {
-    list.innerHTML = `
-      <div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
-        <div style="font-size:28px">📦</div>
-        <div>Nenhuma venda ainda.</div>
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = _eldVendas.map(v => {
-    const valor = v.valor?.amount != null ? parseFloat(v.valor.amount) : parseFloat(v.valor) || 0;
-    const comprador = v.comprador || 'Comprador';
-    const produto = v.produto || 'Produto';
-    const ago = eldTimeAgo(new Date(v.data || Date.now()).getTime());
-    const status = normalizeEldStatus(v.status || '');
-    const statusIcon = { completed:'✅', pending:'⏳', cancelled:'❌', dispute:'⚠️', other:'📦' }[status] || '📦';
-    return `
-      <div class="eld-notif ${status}" style="cursor:default">
-        <div class="eld-notif-icon ${status}">${statusIcon}</div>
-        <div class="eld-notif-body">
-          <div class="eld-notif-label ${status}">${{ completed:'Concluída', pending:'Pendente', cancelled:'Cancelada', dispute:'Disputa', other:'Venda' }[status] || 'Venda'}</div>
-          <div class="eld-notif-title">${escHtml(produto)}</div>
-          <div class="eld-notif-meta">${ago} · ${escHtml(comprador)}</div>
-        </div>
-        ${valor ? `<div class="eld-notif-price completed">US$${valor.toFixed(2)}</div>` : ''}
       </div>`;
   }).join('');
 }
@@ -5056,35 +4947,24 @@ function showEldConfigError(msg) {
 // ── BELL BADGE ────────────────────────────────────────────────────────────────
 function updateEldBell() {
   const unread  = _eldNotifs.filter(n => !n.read).length;
-  // _eldPendTotal = valor real da API /pendentes; não usar contagem local que pode estar errada
-  const badge    = document.getElementById('eld-bell-badge');
-  const pbadge   = document.getElementById('eld-panel-badge');
+  const pending = _eldNotifs.filter(n => n.status === 'pending' && !n.read).length;
+  const badge   = document.getElementById('eld-bell-badge');
+  const pbadge  = document.getElementById('eld-panel-badge');
   const penbadge = document.getElementById('eld-pending-badge');
   const penbtn   = document.getElementById('eld-pending-btn');
-  const pEl      = document.getElementById('eld-stat-pending');
-  if (badge)    { badge.textContent = unread > 9 ? '9+' : String(unread); badge.classList.toggle('visible', unread > 0); }
-  if (pbadge)   { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
-  if (penbadge) { penbadge.textContent = _eldPendTotal > 9 ? '9+' : String(_eldPendTotal); penbadge.classList.toggle('visible', _eldPendTotal > 0); }
-  if (penbtn)   { penbtn.style.opacity = _eldPendTotal > 0 ? '1' : '0.5'; }
-  if (pEl)      { pEl.textContent = _eldPendTotal; }
+  if (badge) { badge.textContent = unread > 9 ? '9+' : String(unread); badge.classList.toggle('visible', unread > 0); }
+  if (pbadge) { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
+  if (penbadge) { penbadge.textContent = pending > 9 ? '9+' : String(pending); penbadge.classList.toggle('visible', pending > 0); }
+  if (penbtn) { penbtn.style.opacity = pending > 0 ? '1' : '0.5'; }
 }
 
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
 function eldMarkAllRead() {
-  // Notifs mostra TODOS os itens de _eldNotifs sem filtro de status.
-  // As outras abas filtram por status (pending/completed/cancelled/dispute).
-  // Então: remover da lista apenas os itens que NÃO têm status definido ou são "all",
-  // preservando os que têm status específico (pending, completed, cancelled, dispute).
-  // Na prática: a aba Notifs é um inbox geral — limpar = mover para "lido" sem aparecer mais no notifs.
-  // Solução: marcar todos como read=true; a aba Notifs só mostra não-lidos, as outras ignoram o read.
-  // Mas o pedido do usuário é: limpar o notifs. Então filtramos _eldNotifs mantendo apenas
-  // os que têm status específico (ficam nas abas deles), e removemos os sem status / "outros".
-  
-  // Preserva itens com status concreto (aparecem nas abas de filtro)
-  const keepStatuses = ['pending', 'completed', 'cancelled', 'dispute'];
-  _eldNotifs = _eldNotifs.filter(n => keepStatuses.includes(normalizeEldStatus(n.status || '')));
-  // Marca todos como lidos (remove badges)
-  _eldNotifs = _eldNotifs.map(n => ({ ...n, read: true }));
+  // Salva os IDs atuais como descartados permanentemente
+  const dismissedIds = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  _eldNotifs.forEach(n => { if (n.id && !dismissedIds.includes(n.id)) dismissedIds.push(n.id); });
+  localStorage.setItem('eld_dismissed', JSON.stringify(dismissedIds.slice(-500)));
+  _eldNotifs = [];
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   renderEldPanel();
   updateEldBell();
