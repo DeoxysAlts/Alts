@@ -4672,11 +4672,10 @@ async function pollEldorado() {
     const dCancel = (rCancel && rCancel.ok) ? await rCancel.json() : null;
 
     // Atualizar badge de pendentes — usa valor REAL da API, não contagem local
-    _eldPendTotal = dPend.total != null ? dPend.total : (dPend.pendentes != null ? dPend.pendentes : 0);
-    // Salva a lista real de pedidos pendentes (pode vir como .pedidos, .orders, .items, etc.)
-    _eldPendItems = dPend.pedidos || dPend.orders || dPend.items || dPend.pendentes_list || [];
-    // Se /pendentes retornou array direto
-    if (Array.isArray(dPend)) { _eldPendItems = dPend; _eldPendTotal = dPend.length; }
+    // API retorna: { "pendentes": [...], "total": 4 }
+    _eldPendItems = dPend.pendentes || dPend.pedidos || dPend.orders || dPend.items || [];
+    if (Array.isArray(dPend)) { _eldPendItems = dPend; }
+    _eldPendTotal = dPend.total != null ? dPend.total : _eldPendItems.length;
     const penbadge = document.getElementById('eld-pending-badge');
     const penbtn   = document.getElementById('eld-pending-btn');
     const pEl      = document.getElementById('eld-stat-pending');
@@ -4855,23 +4854,18 @@ function renderEldFiltered(tab) {
   let items = [];
 
   if (tab === 'pendentes' && _eldPendItems.length > 0) {
-    // Usa a lista REAL da API /pendentes — fonte da verdade
-    items = _eldPendItems.map(v => {
-      const valor = v.valor?.amount != null ? parseFloat(v.valor.amount)
-                  : v.price != null ? parseFloat(v.price)
-                  : parseFloat(v.valor) || 0;
-      return {
-        id:        String(v.id || v._id || v.orderId || Math.random()),
-        icon:      '⚡',
-        label:     'Pendente',
-        title:     v.produto || v.title || v.product || v.name || 'Produto',
-        price:     valor ? 'US$' + valor.toFixed(2) : '',
-        status:    'pending',
-        comprador: v.comprador || v.buyer || v.buyerName || '',
-        ts:        new Date(v.data || v.createdAt || Date.now()).getTime(),
-        read:      true
-      };
-    });
+    // Usa a lista REAL da API /pendentes — estrutura: { id, produto, valor: { amount, currency }, comprador }
+    items = _eldPendItems.map(v => ({
+      id:        String(v.id || v._id || Math.random()),
+      icon:      '⚡',
+      label:     'Pendente',
+      title:     v.produto || v.title || v.product || v.name || 'Produto',
+      price:     v.valor?.amount != null ? 'US$' + parseFloat(v.valor.amount).toFixed(2) : '',
+      status:    'pending',
+      comprador: v.comprador || v.buyer || '',
+      ts:        new Date(v.data || v.createdAt || Date.now()).getTime(),
+      read:      true
+    }));
   } else {
     // Para as outras abas (ou se /pendentes não retornou lista), usa notificações locais
     const fromNotifs = _eldNotifs.filter(n => normalizeEldStatus(n.status || '') === targetStatus);
