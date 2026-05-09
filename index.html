@@ -4818,17 +4818,20 @@ async function pollEldorado() {
     // ── Cancelados + Disputas direto da API ─────────────────────────
     const canceladasApi = dCancel.canceladas || [];
     if (canceladasApi.length > 0) {
-      _eldCancelled = canceladasApi.map(c => ({
-        id:        String(c.id),
-        icon:      c.status === 'dispute' ? '⚠️' : '❌',
-        label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
-        title:     c.produto || 'Produto',
-        price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
-        status:    c.status || 'cancelled',
-        comprador: c.comprador || '',
-        ts:        new Date(c.data || Date.now()).getTime(),
-        read:      true,
-      }));
+      const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+      _eldCancelled = canceladasApi
+        .filter(c => !dismissed.includes(String(c.id)))
+        .map(c => ({
+          id:        String(c.id),
+          icon:      c.status === 'dispute' ? '⚠️' : '❌',
+          label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+          title:     c.produto || 'Produto',
+          price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+          status:    c.status || 'cancelled',
+          comprador: c.comprador || '',
+          ts:        new Date(c.data || Date.now()).getTime(),
+          read:      true,
+        }));
       localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
     }
 
@@ -4885,7 +4888,22 @@ async function pollEldorado() {
     }
 
     // Pendentes
-    const pendTotal = dPend.total || (dPend.pendentes || []).length || 0;
+    const pendentesApi = dPend.pendentes || [];
+    if (pendentesApi.length > 0) {
+      _eldPending = pendentesApi.map(p => ({
+        id:        String(p.id),
+        icon:      '⏳',
+        label:     'Entrega pendente',
+        title:     p.produto || 'Produto',
+        price:     p.valor ? 'US$' + parseFloat(p.valor).toFixed(2) : '',
+        status:    'pending',
+        comprador: p.comprador || '',
+        ts:        new Date(p.data || Date.now()).getTime(),
+        read:      true,
+      }));
+      localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    }
+    const pendTotal = dPend.total || pendentesApi.length || 0;
     const penbadge = document.getElementById('eld-pending-badge');
     const penbtn   = document.getElementById('eld-pending-btn');
     const pEl      = document.getElementById('eld-stat-pending');
@@ -5084,8 +5102,10 @@ function updateEldBell() {
 
 // ── DISPENSAR NOTIFICAÇÃO INDIVIDUAL ─────────────────────────────────────────
 function dismissEldNotif(id) {
-  _eldNotifs = _eldNotifs.filter(n => String(n.id) !== String(id));
-  localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+  _eldNotifs    = _eldNotifs.filter(n => String(n.id) !== String(id));
+  _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
+  localStorage.setItem('eld_notifs',    JSON.stringify(_eldNotifs));
+  localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
   // Salva também como dismissed para não voltar no próximo poll
   const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
   if (!dismissed.includes(String(id))) dismissed.push(String(id));
