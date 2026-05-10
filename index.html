@@ -5228,8 +5228,7 @@ async function saveEldConfig() {
   }
 }
 function clearEldCookie() {
-  const tabNames = { notifs: 'notificações', completed: 'concluídos', pending: 'pendentes', cancelled: 'cancelados' };
-  if (!confirm(`Limpar aba "${tabNames[_eldTab] || _eldTab}"?`)) return;
+
 
   if (_eldTab === 'notifs') {
     // Salva IDs como dismissed para não voltarem
