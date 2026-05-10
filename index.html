@@ -1519,6 +1519,8 @@
       <!-- filtro de período -->
       <div style="display:flex;gap:3px;background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.07);border-radius:10px;padding:3px;flex-shrink:0">
         <button id="vd-tab-hoje" onclick="setVdPeriodo('hoje')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:#1fd679;color:#000;transition:all .2s;white-space:nowrap">Hoje</button>
+        <button id="vd-tab-ontem" onclick="setVdPeriodo('ontem')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">Ontem</button>
+        <button id="vd-tab-3dias" onclick="setVdPeriodo('3dias')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">3 dias</button>
         <button id="vd-tab-semana" onclick="setVdPeriodo('semana')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">7 dias</button>
         <button id="vd-tab-tudo" onclick="setVdPeriodo('tudo')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">Tudo</button>
       </div>
@@ -1540,7 +1542,7 @@
         <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rad);padding:16px">
           <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px">
             <svg width="14" height="14" fill="none" stroke="#1fd679" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Receita por hora
+            <span id="vd-chart-title">Receita por hora</span>
           </div>
           <div id="vd-chart" style="height:160px;display:flex;align-items:flex-end;gap:3px;padding-bottom:4px;position:relative"></div>
           <div id="vd-chart-labels" style="display:flex;gap:3px;margin-top:4px;overflow:hidden"></div>
@@ -3257,7 +3259,7 @@ function closeVendasDia() {
 
 function setVdPeriodo(p) {
   _vdPeriodo = p;
-  ['hoje','semana','tudo'].forEach(t => {
+  ['hoje','ontem','3dias','semana','tudo'].forEach(t => {
     const btn = document.getElementById('vd-tab-' + t);
     if (!btn) return;
     if (t === p) { btn.style.background = '#1fd679'; btn.style.color = '#000'; btn.style.fontWeight = '600'; }
@@ -3267,16 +3269,43 @@ function setVdPeriodo(p) {
 }
 
 function _vdGetVendas() {
-  const all = JSON.parse(localStorage.getItem('eld_vendas') || '[]');
+  // Lê do histórico acumulado (eld_historico) — nunca perde dados de dias anteriores
+  const all = JSON.parse(localStorage.getItem('eld_historico') || '[]');
   const now = Date.now();
   if (_vdPeriodo === 'hoje') {
     const start = new Date(); start.setHours(0,0,0,0);
-    return all.filter(v => (v.ts || 0) >= start.getTime());
+    return all.filter(v => (v.ts || 0) >= start.getTime() && v._tipo !== 'cancelado');
+  }
+  if (_vdPeriodo === 'ontem') {
+    const startOntem = new Date(); startOntem.setDate(startOntem.getDate()-1); startOntem.setHours(0,0,0,0);
+    const endOntem   = new Date(); endOntem.setHours(0,0,0,0);
+    return all.filter(v => (v.ts||0) >= startOntem.getTime() && (v.ts||0) < endOntem.getTime() && v._tipo !== 'cancelado');
+  }
+  if (_vdPeriodo === '3dias') {
+    return all.filter(v => (v.ts||0) >= now - 3*86400000 && v._tipo !== 'cancelado');
   }
   if (_vdPeriodo === 'semana') {
-    return all.filter(v => (v.ts || 0) >= now - 7 * 86400000);
+    return all.filter(v => (v.ts||0) >= now - 7*86400000 && v._tipo !== 'cancelado');
   }
-  return all;
+  return all.filter(v => v._tipo !== 'cancelado');
+}
+
+function _vdGetCancelados() {
+  const all = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+  const now = Date.now();
+  const cancelled = all.filter(v => v._tipo === 'cancelado');
+  if (_vdPeriodo === 'hoje') {
+    const start = new Date(); start.setHours(0,0,0,0);
+    return cancelled.filter(v => (v.ts||0) >= start.getTime());
+  }
+  if (_vdPeriodo === 'ontem') {
+    const startOntem = new Date(); startOntem.setDate(startOntem.getDate()-1); startOntem.setHours(0,0,0,0);
+    const endOntem   = new Date(); endOntem.setHours(0,0,0,0);
+    return cancelled.filter(v => (v.ts||0) >= startOntem.getTime() && (v.ts||0) < endOntem.getTime());
+  }
+  if (_vdPeriodo === '3dias') return cancelled.filter(v => (v.ts||0) >= now - 3*86400000);
+  if (_vdPeriodo === 'semana') return cancelled.filter(v => (v.ts||0) >= now - 7*86400000);
+  return cancelled;
 }
 
 function _vdParsePrice(priceStr) {
@@ -3289,9 +3318,9 @@ function renderVendasDia() {
   const q = (document.getElementById('vd-search') || {}).value || '';
   const qn = q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
-  const vendas = _vdGetVendas();
-  const pendentes  = JSON.parse(localStorage.getItem('eld_pending')   || '[]');
-  const cancelados = JSON.parse(localStorage.getItem('eld_cancelled') || '[]');
+  const vendas    = _vdGetVendas();
+  const cancelados = _vdGetCancelados();
+  const pendentes  = JSON.parse(localStorage.getItem('eld_pending') || '[]');
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const totalRec   = vendas.reduce((s,v) => s + _vdParsePrice(v.price), 0);
@@ -3299,7 +3328,7 @@ function renderVendasDia() {
   const pendRec    = pendentes.reduce((s,v) => s + _vdParsePrice(v.price), 0);
   const cancelRec  = cancelados.reduce((s,v) => s + _vdParsePrice(v.price), 0);
 
-  const label = _vdPeriodo === 'hoje' ? 'hoje' : _vdPeriodo === 'semana' ? '7 dias' : 'total';
+  const label = _vdPeriodo === 'hoje' ? 'hoje' : _vdPeriodo === 'ontem' ? 'ontem' : _vdPeriodo === '3dias' ? 'últimos 3 dias' : _vdPeriodo === 'semana' ? '7 dias' : 'total';
   const subtitle = document.getElementById('vd-subtitle');
   if (subtitle) subtitle.textContent = `${vendas.length} venda${vendas.length !== 1 ? 's' : ''} ${label} · US$${totalRec.toFixed(2)} recebidos`;
 
@@ -3312,7 +3341,7 @@ function renderVendasDia() {
     { label:'Vendas concluídas',   val:vendas.length,                color:'#7dd3fc', icon:'✅' },
     { label:'Ticket médio',        val: vendas.length ? 'US$'+ticketMed.toFixed(2) : '—', color:'#f5c400', icon:'📊' },
     { label:'Pendentes (receita)', val: pendentes.length ? 'US$'+pendRec.toFixed(2) : '—', color:'#fdba74', icon:'⏳' },
-    { label:'Cancelados',          val: cancelados.length + (cancelRec > 0 ? ' · US$'+cancelRec.toFixed(2) : ''), color:'#f87171', icon:'❌' },
+    { label:'Cancelados ' + label, val: cancelados.length + (cancelRec > 0 ? ' · US$'+cancelRec.toFixed(2) : ''), color:'#f87171', icon:'❌' },
   ].map(k => `
     <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rad);padding:14px 18px;position:relative;overflow:hidden">
       <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${k.color};border-radius:3px 0 0 3px"></div>
@@ -3325,6 +3354,10 @@ function renderVendasDia() {
   // ── GRÁFICO POR HORA ──────────────────────────────────────────────────────
   const chartEl  = document.getElementById('vd-chart');
   const labelEl  = document.getElementById('vd-chart-labels');
+  const chartTitle = document.getElementById('vd-chart-title');
+  if (chartTitle) {
+    chartTitle.textContent = (_vdPeriodo === 'hoje' || _vdPeriodo === 'ontem') ? 'Receita por hora' : 'Receita por dia';
+  }
   if (chartEl) {
     const buckets = {};
     const now2 = new Date();
@@ -3333,6 +3366,25 @@ function renderVendasDia() {
       vendas.forEach(v => {
         const h = new Date(v.ts).getHours();
         buckets[h] = (buckets[h] || 0) + _vdParsePrice(v.price);
+      });
+    } else if (_vdPeriodo === 'ontem') {
+      for (let h = 0; h < 24; h++) buckets[h] = 0;
+      vendas.forEach(v => {
+        const h = new Date(v.ts).getHours();
+        buckets[h] = (buckets[h] || 0) + _vdParsePrice(v.price);
+      });
+    } else if (_vdPeriodo === '3dias') {
+      for (let d = 2; d >= 0; d--) {
+        const day = new Date(); day.setDate(day.getDate() - d); day.setHours(0,0,0,0);
+        const key = d === 0 ? 'Hoje' : d === 1 ? 'Ontem' : day.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+        buckets[key] = 0;
+      }
+      vendas.forEach(v => {
+        const vDate = new Date(v.ts); vDate.setHours(0,0,0,0);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const diff = Math.round((today - vDate) / 86400000);
+        const key = diff === 0 ? 'Hoje' : diff === 1 ? 'Ontem' : vDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+        if (key in buckets) buckets[key] = (buckets[key] || 0) + _vdParsePrice(v.price);
       });
     } else if (_vdPeriodo === 'semana') {
       for (let d = 6; d >= 0; d--) {
@@ -3399,28 +3451,24 @@ function renderVendasDia() {
       }).join('');
   }
 
-  // ── LISTA DE VENDAS ────────────────────────────────────────────────────────
-  const allToShow = JSON.parse(localStorage.getItem('eld_vendas') || '[]')
-    .concat(
-      _vdPeriodo === 'hoje' ? [] : [],
-    );
-
-  // Filtra por período + busca
-  let listaVendas = _vdGetVendas();
+  // ── LISTA DE VENDAS + CANCELADOS ─────────────────────────────────────────────
+  let listaVendas = _vdGetVendas().map(v => ({...v, _listaTipo: 'venda'}));
+  const listaCancelados = _vdGetCancelados().map(v => ({...v, _listaTipo: 'cancelado'}));
+  let listaAll = [...listaVendas, ...listaCancelados];
   if (qn) {
-    listaVendas = listaVendas.filter(v => {
+    listaAll = listaAll.filter(v => {
       const t = (v.title || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       const c = (v.comprador || '').toLowerCase();
       return t.includes(qn) || c.includes(qn);
     });
   }
-  listaVendas = [...listaVendas].sort((a,b) => (b.ts||0) - (a.ts||0));
+  listaAll = [...listaAll].sort((a,b) => (b.ts||0) - (a.ts||0));
 
   const listaEl = document.getElementById('vd-lista');
   const emptyEl = document.getElementById('vd-empty');
   if (!listaEl) return;
 
-  if (listaVendas.length === 0) {
+  if (listaAll.length === 0) {
     listaEl.innerHTML = '';
     if (emptyEl) { emptyEl.style.display = 'flex'; }
     return;
@@ -3436,21 +3484,27 @@ function renderVendasDia() {
     return new Date(ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
   }
 
-  listaEl.innerHTML = listaVendas.map((v, i) => {
+  listaEl.innerHTML = listaAll.map((v, i) => {
     const price = _vdParsePrice(v.price);
     const ago   = _vdAgo(v.ts || Date.now());
+    const isCancelled = v._listaTipo === 'cancelado';
     const row   = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
     const timeStr = v.ts ? new Date(v.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div style="display:grid;grid-template-columns:32px 1fr auto auto;align-items:center;gap:12px;padding:10px 18px;background:${row};border-bottom:0.5px solid var(--border);transition:background .12s"
-      onmouseover="this.style.background='rgba(31,214,121,.04)'" onmouseout="this.style.background='${row}'">
-      <div style="font-size:18px;text-align:center">${v.icon || '✅'}</div>
+    const dateStr = v.ts ? new Date(v.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+    const priceColor = isCancelled ? '#f87171' : '#1fd679';
+    const pricePrefix = isCancelled ? '-' : '';
+    const hoverBg = isCancelled ? 'rgba(248,113,113,.04)' : 'rgba(31,214,121,.04)';
+    return `<div style="display:grid;grid-template-columns:32px 1fr auto auto;align-items:center;gap:12px;padding:10px 18px;background:${row};border-bottom:0.5px solid var(--border);transition:background .12s;${isCancelled ? 'opacity:.75' : ''}"
+      onmouseover="this.style.background='${hoverBg}'" onmouseout="this.style.background='${row}'">
+      <div style="font-size:18px;text-align:center">${v.icon || (isCancelled ? '❌' : '✅')}</div>
       <div style="min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(v.title || 'Produto')}</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis${isCancelled ? ';text-decoration:line-through;opacity:.7' : ''}">${escHtml(v.title || 'Produto')}</div>
         ${v.comprador ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">👤 ${escHtml(v.comprador)}</div>` : ''}
+        ${isCancelled ? `<div style="font-size:10px;color:#f87171;margin-top:1px">${v.label || 'Cancelado'}</div>` : ''}
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:14px;font-weight:700;color:#1fd679">${price > 0 ? 'US$'+price.toFixed(2) : v.price || '—'}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:1px">${timeStr}</div>
+        <div style="font-size:14px;font-weight:700;color:${priceColor}">${price > 0 ? pricePrefix+'US$'+price.toFixed(2) : v.price || '—'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px">${timeStr} ${_vdPeriodo !== 'hoje' && _vdPeriodo !== 'ontem' ? dateStr : ''}</div>
       </div>
       <div style="font-size:10px;color:var(--muted);text-align:right;white-space:nowrap;min-width:50px">${ago}</div>
     </div>`;
@@ -5112,6 +5166,14 @@ function processExtensionNotifs(notifs) {
     if (reallyNew.length > 0) {
       _eldVendas = [...reallyNew, ..._eldVendas].slice(0, 100);
       localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+      // Acumula no histórico persistente
+      let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+      const hIds = new Set(historico.map(h => String(h.id)));
+      const paraHistorico = reallyNew.filter(v => !hIds.has(String(v.id))).map(v => ({...v, _tipo:'venda'}));
+      if (paraHistorico.length > 0) {
+        historico = [...paraHistorico, ...historico].slice(0, 2000);
+        localStorage.setItem('eld_historico', JSON.stringify(historico));
+      }
     }
   }
 
@@ -5175,20 +5237,24 @@ async function pollEldorado() {
     const dCancel = rCancel.ok ? await rCancel.json() : { total: 0, canceladas: [] };
     const dVendas = rVendas.ok ? await rVendas.json() : { total: 0, vendas: [] };
 
-    // ── Cancelados + Disputas direto da API ─────────────────────────
+    // ── Cancelados — acumula no histórico persistente ───────────────
     const canceladasApi = dCancel.canceladas || [];
     if (canceladasApi.length > 0) {
       const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
       
-      // Detecta cancelamentos NOVOS (não existiam antes)
+      // Carrega histórico acumulado
+      let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+      const historicoIds = new Set(historico.map(h => String(h.id)));
+
+      // Detecta cancelamentos NOVOS
       const novosCancelamentos = canceladasApi.filter(c => 
-        !_eldCancelled.find(x => x.id === String(c.id))
+        !historicoIds.has('c-' + String(c.id)) && !_eldCancelled.find(x => x.id === String(c.id))
       );
       
-      _eldCancelled = canceladasApi
-        .filter(c => !dismissed.includes(String(c.id)))
-        .map(c => ({
-          id:        String(c.id),
+      // Adiciona ao histórico com _tipo = 'cancelado'
+      if (novosCancelamentos.length > 0) {
+        const novosMapeados = novosCancelamentos.map(c => ({
+          id:        'c-' + String(c.id),
           icon:      c.status === 'dispute' ? '⚠️' : '❌',
           label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
           title:     c.produto || 'Produto',
@@ -5197,10 +5263,13 @@ async function pollEldorado() {
           comprador: c.comprador || '',
           ts:        new Date(c.data || Date.now()).getTime(),
           read:      true,
+          _tipo:     'cancelado',
         }));
-      localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
-      
-      // NOTIFICA CANCELAMENTOS NOVOS COM TOAST + SOM!
+        historico = [...novosMapeados, ...historico].slice(0, 2000);
+        localStorage.setItem('eld_historico', JSON.stringify(historico));
+      }
+
+      // Notifica cancelamentos novos com toast + som
       novosCancelamentos.forEach(c => {
         const notif = {
           id:        String(c.id),
@@ -5216,15 +5285,54 @@ async function pollEldorado() {
         showEldToast(notif);
         typeof playUiSound === 'function' && playUiSound();
       });
+
+      // Mantém _eldCancelled sincronizado com a API (para painel de notificações)
+      _eldCancelled = canceladasApi
+        .filter(c => !dismissed.includes(String(c.id)))
+        .map(c => ({
+          id:        String(c.id),
+          icon:      c.status === 'dispute' ? '⚠️' : '❌',
+          label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+          title:     c.produto || 'Produto',
+          price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+          status:    c.status || 'cancelled',
+          comprador: c.comprador || '',
+          ts:        new Date(c.data || Date.now()).getTime(),
+          read:      true,
+        }));
+      localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
     }
 
-    // ── Vendas sincronizadas da API ────────────────────────────────
+    // ── Vendas — acumula no histórico persistente ────────────────
     const vendasApi = dVendas.vendas || [];
     const dismissedVendas = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
     
-    // Sempre mapeia as vendas (mesmo que vazio) para manter sincronizado
-    const novasVendas = vendasApi.filter(v => !_eldSeenIds.includes('venda-' + String(v.id)));
+    // Carrega histórico acumulado (nunca perde dados antigos)
+    let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+    const historicoIds = new Set(historico.map(h => String(h.id)));
     
+    // Detecta NOVAS vendas (que não estão no histórico)
+    const novasVendas = vendasApi.filter(v => !historicoIds.has(String(v.id)) && !_eldSeenIds.includes('venda-' + String(v.id)));
+    
+    // Adiciona novas vendas ao histórico com _tipo = 'venda'
+    if (novasVendas.length > 0) {
+      const novasMapeadas = novasVendas.map(v => ({
+        id:        String(v.id),
+        icon:      '✅',
+        label:     'Venda concluída',
+        title:     (v.produto || 'Produto').split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || v.produto || 'Produto',
+        price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
+        status:    'completed',
+        comprador: v.comprador || '',
+        ts:        new Date(v.data || Date.now()).getTime(),
+        read:      true,
+        _tipo:     'venda',
+      }));
+      historico = [...novasMapeadas, ...historico].slice(0, 2000);
+      localStorage.setItem('eld_historico', JSON.stringify(historico));
+    }
+
+    // Mantém eld_vendas sincronizado com a API (para o painel de notificações)
     _eldVendas = vendasApi
       .filter(v => !dismissedVendas.includes(String(v.id)))
       .map(v => ({
@@ -5255,7 +5363,6 @@ async function pollEldorado() {
           read:      false,
         };
         showEldToast(notif);
-        _eldSeenIds.push('venda-' + String(v.id));
         _eldSeenIds.push('venda-' + String(v.id));
       });
       typeof playUiSound === 'function' && playUiSound();
