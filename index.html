@@ -5440,10 +5440,13 @@ let _eldExtInstalled = false; // detecta se extensão está presente
 // ── DEDUPLICAÇÃO GLOBAL DE NOTIFS ────────────────────────────────────────────
 // Chave única por conteúdo — evita duplicatas entre extensão e worker
 function eldNotifDupKey(n) {
-  const title  = (n.title  || '').trim().toLowerCase();
+  const title     = (n.title     || '').trim().toLowerCase();
+  const comprador = (n.comprador || '').trim().toLowerCase();
+  const price     = (n.price     || '').replace(/[^0-9.]/g, '');
+  // pending e novo pedido são o mesmo evento — agrupa os dois como pending
   const status = normalizeEldStatus(n.status || '');
-  const price  = (n.price  || '').replace(/[^0-9.]/g, '');
-  return title + '|' + status + '|' + price;
+  const statusGroup = (status === 'pending') ? 'pending' : status;
+  return title + '|' + comprador + '|' + price + '|' + statusGroup;
 }
 function eldNotifExists(n) {
   const key = eldNotifDupKey(n);
@@ -5962,8 +5965,10 @@ async function pollEldorado() {
       });
 
       // Todas as notifs entram em Notifs (incluindo concluídas — ficam lá até confirmar)
-      if (filtered.length > 0) {
-        _eldNotifs = [...filtered, ..._eldNotifs].slice(0, 50);
+      // Remove duplicatas de pending (Novo pedido vs Entrega pendente = mesmo evento)
+      const filteredFinal = filtered.filter(n => !eldNotifExists(n));
+      if (filteredFinal.length > 0) {
+        _eldNotifs = [...filteredFinal, ..._eldNotifs].slice(0, 50);
         localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
       }
 
