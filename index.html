@@ -5568,15 +5568,16 @@ async function pollEldorado() {
 
     // ── Cancelados — acumula no histórico persistente ───────────────
     const canceladasApi = dCancel.canceladas || [];
-    if (canceladasApi.length > 0) {
+    {
       const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
       
       // Carrega histórico acumulado
       let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
       const historicoIds = new Set(historico.map(h => String(h.id)));
 
-      // Detecta cancelamentos NOVOS
-      const novosCancelamentos = canceladasApi.filter(c => 
+      // Detecta cancelamentos NOVOS (só os que não são disputa)
+      const novosCancelamentos = canceladasApi.filter(c =>
+        normalizeEldStatus(c.status) !== 'dispute' &&
         !historicoIds.has('c-' + String(c.id)) && !_eldCancelled.find(x => x.id === String(c.id))
       );
       
@@ -5584,8 +5585,8 @@ async function pollEldorado() {
       if (novosCancelamentos.length > 0) {
         const novosMapeados = novosCancelamentos.map(c => ({
           id:        'c-' + String(c.id),
-          icon:      c.status === 'dispute' ? '⚠️' : '❌',
-          label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+          icon:      normalizeEldStatus(c.status) === 'dispute' ? '⚠️' : '❌',
+          label:     normalizeEldStatus(c.status) === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
           title:     c.produto || 'Produto',
           price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
           status:    c.status || 'cancelled',
@@ -5602,8 +5603,8 @@ async function pollEldorado() {
       novosCancelamentos.forEach(c => {
         const notif = {
           id:        String(c.id),
-          icon:      c.status === 'dispute' ? '⚠️' : '❌',
-          label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+          icon:      normalizeEldStatus(c.status) === 'dispute' ? '⚠️' : '❌',
+          label:     normalizeEldStatus(c.status) === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
           title:     c.produto || 'Produto',
           price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
           status:    c.status || 'cancelled',
@@ -5675,6 +5676,12 @@ async function pollEldorado() {
               ts:        new Date(c.data || Date.now()).getTime(),
               read:      _eldDisputes.find(d => String(d.id) === String(c.id))?.read ?? true,
             }));
+          localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
+        }
+      } else {
+        // API não retornou nenhuma disputa — zera o painel para ficar em sincronia
+        if (_eldDisputes.length > 0) {
+          _eldDisputes = [];
           localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
         }
       }
