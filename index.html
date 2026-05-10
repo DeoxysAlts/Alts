@@ -5945,17 +5945,22 @@ async function pollEldorado() {
     localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
 
     // Novos pendentes também aparecem nas Notifs (não lidos)
+    // IDs dos pendentes ATIVOS nunca ficam no seen_pend — seen_pend só guarda IDs que já saíram da fila
     const existingNotifIds = new Set(_eldNotifs.map(n => String(n.id)));
-    const existingPendIds  = new Set((JSON.parse(localStorage.getItem('eld_seen_pend') || '[]')));
-    const novosNasNotifs   = novosItemsPend.filter(p => !existingNotifIds.has(p.id) && !existingPendIds.has(p.id));
+    const seenPendRaw      = JSON.parse(localStorage.getItem('eld_seen_pend') || '[]');
+    // Remove do seen_pend qualquer ID que ainda está ativo (pode ter voltado como novo pedido)
+    const ativosIds        = new Set(novosItemsPend.map(p => String(p.id)));
+    const seenPendSet      = new Set(seenPendRaw.filter(id => !ativosIds.has(id)));
+    // Considera novo: não está nas Notifs E não foi notificado antes
+    const novosNasNotifs   = novosItemsPend.filter(p => !existingNotifIds.has(String(p.id)) && !seenPendSet.has(String(p.id)));
     if (novosNasNotifs.length > 0) {
-      const comUnread = novosNasNotifs.map(p => ({...p, read: false}));
+      const comUnread = novosNasNotifs.map(p => ({...p, read: false, status: 'pending', icon: '⏳', label: 'Entrega pendente'}));
       _eldNotifs = [...comUnread, ..._eldNotifs].slice(0, 50);
       localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
-      // Salva IDs vistos para não duplicar
-      const seenPend = [...existingPendIds, ...novosNasNotifs.map(p => p.id)].slice(-200);
-      localStorage.setItem('eld_seen_pend', JSON.stringify(seenPend));
-      novosNasNotifs.forEach(p => showEldToast({...p, read: false}));
+      // Marca como vistos para não duplicar
+      const newSeenPend = [...seenPendSet, ...novosNasNotifs.map(p => String(p.id))].slice(-200);
+      localStorage.setItem('eld_seen_pend', JSON.stringify(newSeenPend));
+      novosNasNotifs.forEach(p => showEldToast({...p, read: false, icon: '⏳', label: 'Entrega pendente'}));
       typeof playUiSound === 'function' && playUiSound();
     }
     const pendTotal = dPend.total || pendentesApi.length || 0;
