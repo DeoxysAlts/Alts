@@ -898,7 +898,7 @@
 
   /* NOTIF LIST */
   .eld-notif-list {
-    max-height: 420px; overflow-y: auto;
+    max-height: 480px; overflow-y: auto;
     padding: 6px;
     display: flex; flex-direction: column; gap: 4px;
     scrollbar-width: thin;
@@ -5894,17 +5894,16 @@ function renderEldList() {
 
     if (isPending) {
       return `
-        <div class="eld-notif ${unread} pending" style="flex-direction:column;gap:6px;padding:10px 12px 10px 14px">
+        <div class="eld-notif ${unread} pending" style="flex-direction:column;gap:5px;padding:8px 12px 8px 14px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
             <div style="flex:1;min-width:0">
-              <div class="eld-notif-label pending" style="margin-bottom:3px">Entrega pendente</div>
-              <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.45;word-break:break-word;white-space:normal;padding-right:4px">${escHtml(n.title)}</div>
+              <div class="eld-notif-label pending" style="margin-bottom:2px">Entrega pendente</div>
+              <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.4;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
             </div>
-            <div style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--eld-yellow);flex-shrink:0;margin-top:14px">${escHtml(n.price || '')}</div>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--eld-yellow);flex-shrink:0;margin-top:13px">${escHtml(n.price || '')}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:10px;color:#6b6b78;font-weight:500">
-            ${buyer ? `<span>👤 ${escHtml(buyer)}</span>` : ''}
-            <span>🕐 ${ago}</span>
+          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:#6b6b78;font-weight:500">
+            ${buyer ? `<span>👤 ${escHtml(buyer)}</span>` : ''}<span>🕐 ${ago}</span>
           </div>
           <button class="eld-confirm-delivery-btn" data-confirm="${escHtml(String(n.id))}">✓ CONFIRMAR ENTREGA</button>
           <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
