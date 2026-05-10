@@ -1330,6 +1330,10 @@
                 <div class="eld-stat-n" id="eld-stat-pending">—</div>
                 <div class="eld-stat-l">Pendentes</div>
               </div>
+              <div class="eld-stat">
+                <div class="eld-stat-n" id="eld-stat-cancelled" style="color:#f87171">—</div>
+                <div class="eld-stat-l">Cancelados</div>
+              </div>
             </div>
 
             <!-- TABS -->
@@ -5438,55 +5442,89 @@ function renderEldPanel() {
 
 function renderEldStats() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const completedToday = _eldNotifs.filter(n => n.status === 'completed' && n.ts >= today.getTime());
-  const total          = _eldNotifs.filter(n => n.status === 'completed');
+  
+  // Concluídos: vendas da API + notificações com status completed
+  const completedFromVendas = _eldVendas.filter(v => v.ts >= today.getTime());
+  const completedFromNotifs = _eldNotifs.filter(n => n.status === 'completed' && n.ts >= today.getTime());
+  const vendedIds = new Set(completedFromVendas.map(v => v.id));
+  const allCompleted = [
+    ...completedFromVendas,
+    ...completedFromNotifs.filter(n => !vendedIds.has(n.id))
+  ];
 
   let revenue = 0;
-  completedToday.forEach(n => {
+  allCompleted.forEach(n => {
     const m = (n.price || '').replace(/[^0-9,.]/g,'').replace(',','.');
     const v = parseFloat(m);
     if (!isNaN(v)) revenue += v;
   });
 
+  const cancelledToday = _eldCancelled.filter(c => c.ts >= today.getTime()).length;
+
   const rEl = document.getElementById('eld-stat-revenue');
   const tEl = document.getElementById('eld-stat-total');
   const pEl = document.getElementById('eld-stat-pending');
+  const cEl = document.getElementById('eld-stat-cancelled');
+  
   if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
-  if (tEl) tEl.textContent = total.length;
+  if (tEl) tEl.textContent = allCompleted.length;
   if (pEl) pEl.textContent = _eldPending.length;
+  if (cEl) cEl.textContent = cancelledToday;
 }
 
 function renderEldList() {
   const list = document.getElementById('eld-notif-list');
   if (!list) return;
 
-  const filtered = _eldTab === 'notifs'
-    ? _eldNotifs.filter(n => {
-        if (!n.read) {
-          // Remove 'other' sem título real e sem preço
-          if (normalizeEldStatus(n.status) === 'other') {
-            const hasTitle = n.title && n.title !== 'Produto' && n.title.trim().length > 3;
-            const hasPrice = n.price && parseFloat((n.price||'').replace(/[^0-9.]/g,'')) > 0;
-            return hasTitle || hasPrice;
-          }
-          return true;
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  let filtered = [];
+  
+  if (_eldTab === 'notifs') {
+    // Notificações não lidas
+    filtered = _eldNotifs.filter(n => {
+      if (!n.read) {
+        if (normalizeEldStatus(n.status) === 'other') {
+          const hasTitle = n.title && n.title !== 'Produto' && n.title.trim().length > 3;
+          const hasPrice = n.price && parseFloat((n.price||'').replace(/[^0-9.]/g,'')) > 0;
+          return hasTitle || hasPrice;
         }
-        return false;
-      })
-    : _eldTab === 'completed'
-    ? _eldVendas
-    : _eldTab === 'pending'
-    ? _eldPending
-    : _eldTab === 'cancelled'
-    ? _eldCancelled
-    : _eldNotifs.filter(n => normalizeEldStatus(n.status) === _eldTab);
+        return true;
+      }
+      return false;
+    });
+  } else if (_eldTab === 'completed') {
+    // Todos os pedidos concluídos de hoje (vendas + notificações)
+    const vendedHoje = _eldVendas.filter(v => v.ts >= today.getTime());
+    const notifHoje = _eldNotifs.filter(n => n.status === 'completed' && n.ts >= today.getTime());
+    
+    // Combina e remove duplicatas
+    const vendaIds = new Set(vendedHoje.map(v => v.id));
+    filtered = [
+      ...vendedHoje,
+      ...notifHoje.filter(n => !vendaIds.has(n.id))
+    ].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  } else if (_eldTab === 'pending') {
+    filtered = _eldPending;
+  } else if (_eldTab === 'cancelled') {
+    // Todos os cancelados de hoje
+    filtered = _eldCancelled.filter(c => c.ts >= today.getTime());
+  } else {
+    filtered = _eldNotifs.filter(n => normalizeEldStatus(n.status) === _eldTab);
+  }
 
   if (filtered.length === 0) {
+    const msgVazio = {
+      'notifs': 'Nenhuma notificação nova',
+      'completed': 'Nenhuma venda ainda hoje',
+      'cancelled': 'Sem cancelamentos hoje',
+      'pending': 'Nenhum pendente'
+    };
     list.innerHTML = `
       <div style="text-align:center;padding:40px 16px;color:#4a4a55;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
         <div style="font-size:28px;opacity:.5">🔔</div>
-        <div style="color:#6b6b78;font-weight:600">${_eldTab === 'notifs' ? 'Nenhuma notificação nova.' : 'Nenhuma nessa categoria.'}</div>
-        <div style="font-size:10px">Deixe o Chrome aberto — atualiza a cada 10s.</div>
+        <div style="color:#6b6b78;font-weight:600">${msgVazio[_eldTab] || 'Nenhum item nessa categoria.'}</div>
+        <div style="font-size:10px;color:#555">Atualizando a cada 5 segundos...</div>
       </div>`;
     return;
   }
@@ -5498,6 +5536,17 @@ function renderEldList() {
     return `
       <div class="eld-notif ${unread} ${n.status || 'other'}">
         <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '📦'}</div>
+        <div class="eld-notif-body">
+          <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || 'Atualização')}</div>
+          <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
+          <div class="eld-notif-meta">${buyer ? escHtml(buyer) + ' · ' : ''}${ago}</div>
+        </div>
+        ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
+        <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
+        <div class="eld-unread-dot"></div>
+      </div>`;
+  }).join('');
+}
         <div class="eld-notif-body">
           <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || 'Atualização')}</div>
           <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
