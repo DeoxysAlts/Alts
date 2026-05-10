@@ -5048,14 +5048,53 @@ let _eldExtInstalled = false; // detecta se extensão está presente
     if (_eldPanelOpen && wrap && !wrap.contains(e.target)) closeEldPanel();
   });
 
-  // Event delegation para botão ✕
-  document.getElementById('eld-notif-list').addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-dismiss]');
-    if (btn) {
-      e.stopPropagation();
-      dismissEldNotif(btn.dataset.dismiss);
+  // Event delegation para botão ✕ - com delay para garantir que o elemento existe
+  setTimeout(() => {
+    const notifList = document.getElementById('eld-notif-list');
+    if (notifList) {
+      notifList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-dismiss]');
+        if (btn) {
+          e.stopPropagation();
+          dismissEldNotif(btn.dataset.dismiss);
+        }
+      });
     }
-  });
+  }, 100);
+
+// ── EXPOR FUNÇÕES GLOBALMENTE ─────────────────────────────────────────────────────────────
+window.toggleEldPanel = function() { _eldPanelOpen ? closeEldPanel() : openEldPanel(); };
+window.openEldPanel = function() {
+  _eldPanelOpen = true;
+  document.getElementById('eld-panel').classList.add('open');
+};
+window.closeEldPanel = function() {
+  _eldPanelOpen = false;
+  document.getElementById('eld-panel').classList.remove('open');
+};
+
+window.setEldTab = function(tab) {
+  _eldTab = tab;
+  document.querySelectorAll('.eld-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  renderEldList();
+};
+
+window.dismissEldNotif = function(id) {
+  _eldNotifs    = _eldNotifs.filter(n => String(n.id) !== String(id));
+  _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
+  _eldVendas    = _eldVendas.filter(n => String(n.id) !== String(id));
+  _eldPending   = _eldPending.filter(n => String(n.id) !== String(id));
+  localStorage.setItem('eld_notifs',    JSON.stringify(_eldNotifs));
+  localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+  localStorage.setItem('eld_vendas',    JSON.stringify(_eldVendas));
+  localStorage.setItem('eld_pending',   JSON.stringify(_eldPending));
+  const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  if (!dismissed.includes(String(id))) dismissed.push(String(id));
+  localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+  renderEldPanel();
+  updateEldBell();
+};
+
 })();
 
 // ── PROCESSA NOTIFICAÇÕES DA EXTENSÃO ────────────────────────────────────────
@@ -5416,24 +5455,6 @@ function getStatusLabel(status) {
   return { completed:'Venda concluída', pending:'Entrega pendente', cancelled:'Pedido cancelado', dispute:'Em disputa', other:'Atualização' }[normalizeEldStatus(status)] || 'Atualização';
 }
 
-// ── TOGGLE PAINEL ─────────────────────────────────────────────────────────────
-function toggleEldPanel() { _eldPanelOpen ? closeEldPanel() : openEldPanel(); }
-function openEldPanel() {
-  _eldPanelOpen = true;
-  document.getElementById('eld-panel').classList.add('open');
-}
-function closeEldPanel() {
-  _eldPanelOpen = false;
-  document.getElementById('eld-panel').classList.remove('open');
-}
-
-// ── TABS ──────────────────────────────────────────────────────────────────────
-function setEldTab(tab) {
-  _eldTab = tab;
-  document.querySelectorAll('.eld-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  renderEldList();
-}
-
 // ── RENDER PAINEL ─────────────────────────────────────────────────────────────
 function renderEldPanel() {
   renderEldStats();
@@ -5594,23 +5615,6 @@ function updateEldBell() {
 }
 
 // ── DISPENSAR NOTIFICAÇÃO INDIVIDUAL ─────────────────────────────────────────
-function dismissEldNotif(id) {
-  _eldNotifs    = _eldNotifs.filter(n => String(n.id) !== String(id));
-  _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
-  _eldVendas    = _eldVendas.filter(n => String(n.id) !== String(id));
-  _eldPending   = _eldPending.filter(n => String(n.id) !== String(id));
-  localStorage.setItem('eld_notifs',    JSON.stringify(_eldNotifs));
-  localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
-  localStorage.setItem('eld_vendas',    JSON.stringify(_eldVendas));
-  localStorage.setItem('eld_pending',   JSON.stringify(_eldPending));
-  // Salva também como dismissed para não voltar no próximo poll
-  const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-  if (!dismissed.includes(String(id))) dismissed.push(String(id));
-  localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
-  renderEldPanel();
-  updateEldBell();
-}
-
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
 function eldMarkAllRead() {
   // Salva os IDs atuais como descartados permanentemente
