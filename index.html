@@ -5384,7 +5384,20 @@ let _eldExtInstalled = false; // detecta se extensão está presente
     if (e.data.type === 'ELDORADO_PENDING') {
       _eldExtInstalled = true;
       const incoming = e.data.payload || [];
-      _eldPending = incoming;
+      const dismissedPendExt = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+
+      // Nunca sobrescreve com lista vazia — só adiciona novos itens
+      if (incoming.length > 0) {
+        const existingIds = new Set(_eldPending.map(p => String(p.id)));
+        const novosExt = incoming
+          .filter(p => !dismissedPendExt.includes(String(p.id)) && !existingIds.has(String(p.id)));
+        if (novosExt.length > 0) {
+          _eldPending = [..._eldPending, ...novosExt].slice(0, 100);
+          localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+        }
+      }
+      // Filtra dismissed do array atual
+      _eldPending = _eldPending.filter(p => !dismissedPendExt.includes(String(p.id)));
       localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
 
       // Novos pendentes também aparecem nas Notifs
