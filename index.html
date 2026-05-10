@@ -1335,7 +1335,7 @@
             <!-- TABS -->
             <div class="eld-tabs">
               <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')">Notifs</button>
-              <button class="eld-tab-btn" data-tab="completed" onclick="setEldTab('completed')">Vendas ✅</button>
+              <button class="eld-tab-btn" data-tab="completed" onclick="setEldTab('completed')">Concluídos ✅</button>
               <button class="eld-tab-btn" data-tab="pending" onclick="setEldTab('pending')">Pendentes ⏳</button>
               <button class="eld-tab-btn" data-tab="cancelled" onclick="setEldTab('cancelled')">Cancelados ❌</button>
             </div>
@@ -4967,12 +4967,30 @@ async function pollEldorado() {
     }
 
     if (newNotifs.length > 0) {
-      _eldNotifs = [...newNotifs, ..._eldNotifs].slice(0, 50);
+      // Concluídos vão só pra aba Concluídos, não aparecem nas Notifs
+      const newCompleted = newNotifs.filter(n => normalizeEldStatus(n.status) === 'completed');
+      const newOthers    = newNotifs.filter(n => normalizeEldStatus(n.status) !== 'completed');
+
+      if (newCompleted.length > 0) {
+        const existingIds = new Set(_eldVendas.map(v => String(v.id)));
+        const reallyNew   = newCompleted.filter(v => !existingIds.has(String(v.id)));
+        if (reallyNew.length > 0) {
+          _eldVendas = [...reallyNew, ..._eldVendas].slice(0, 100);
+          localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+        }
+      }
+
+      // Só não-concluídos entram nas Notifs
+      if (newOthers.length > 0) {
+        _eldNotifs = [...newOthers, ..._eldNotifs].slice(0, 50);
+        localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+      }
+
       _eldSeenIds = _eldSeenIds.slice(-500);
-      localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
-      localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
-      // Novos cancelados via notificação → adiciona ao topo do array
-      const newCancelled = newNotifs.filter(n => normalizeEldStatus(n.status) === 'cancelled');
+      localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
+
+      // Cancelados em array separado
+      const newCancelled = newOthers.filter(n => normalizeEldStatus(n.status) === 'cancelled');
       if (newCancelled.length > 0) {
         const existingCancelIds = new Set(_eldCancelled.map(c => String(c.id)));
         const reallyNew = newCancelled.filter(c => !existingCancelIds.has(String(c.id)));
@@ -4981,6 +4999,8 @@ async function pollEldorado() {
           localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
         }
       }
+
+      // Toast e som para todos (incluindo concluídos)
       newNotifs.filter(n => !n.read).forEach(n => showEldToast(n));
       if (newNotifs.some(n => !n.read)) typeof playUiSound === 'function' && playUiSound();
     }
