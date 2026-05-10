@@ -5220,11 +5220,12 @@ async function pollEldorado() {
     const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
     if (!uid) return; // não logado, não faz nada
     const eldHeaders = { 'x-user-id': uid };
-    const [rNotif, rPend, rCancel, rVendas] = await Promise.all([
+    const [rNotif, rPend, rCancel, rVendas, rHistorico] = await Promise.all([
       fetch(ELD_WORKER + '/notificacoes', { headers: eldHeaders }),
       fetch(ELD_WORKER + '/pendentes',    { headers: eldHeaders }),
       fetch(ELD_WORKER + '/canceladas',   { headers: eldHeaders }),
       fetch(ELD_WORKER + '/vendas',       { headers: eldHeaders }),
+      fetch(ELD_WORKER + '/historico',    { headers: eldHeaders }),
     ]);
 
     if (!rNotif.ok) {
@@ -5236,6 +5237,31 @@ async function pollEldorado() {
     const dPend   = rPend.ok   ? await rPend.json()   : { total: 0, pendentes: [] };
     const dCancel = rCancel.ok ? await rCancel.json() : { total: 0, canceladas: [] };
     const dVendas = rVendas.ok ? await rVendas.json() : { total: 0, vendas: [] };
+    const dHistorico = rHistorico.ok ? await rHistorico.json() : { historico: [] };
+
+    // ── Processa histórico completo do worker ─────────────────────
+    // Isso popula o eld_historico com vendas + cancelamentos do passado
+    if (dHistorico.historico && dHistorico.historico.length > 0) {
+      let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+      const hIds = new Set(historico.map(h => String(h.id)));
+      const novosDoHistorico = dHistorico.historico.filter(v => !hIds.has(String(v.id)));
+      if (novosDoHistorico.length > 0) {
+        const mapeados = novosDoHistorico.map(v => ({
+          id:        String(v.id),
+          icon:      v._tipo === 'cancelado' ? '❌' : '✅',
+          label:     v._tipo === 'cancelado' ? 'Pedido cancelado' : 'Venda concluída',
+          title:     (v.produto || 'Produto').split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || v.produto || 'Produto',
+          price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
+          status:    v.status || (v._tipo === 'cancelado' ? 'cancelled' : 'completed'),
+          comprador: v.comprador || '',
+          ts:        new Date(v.data || Date.now()).getTime(),
+          read:      true,
+          _tipo:     v._tipo || 'venda',
+        }));
+        historico = [...mapeados, ...historico].slice(0, 2000);
+        localStorage.setItem('eld_historico', JSON.stringify(historico));
+      }
+    }
 
     // ── Cancelados — acumula no histórico persistente ───────────────
     const canceladasApi = dCancel.canceladas || [];
