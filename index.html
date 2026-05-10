@@ -5344,7 +5344,8 @@ function doImport() {
 // Fallback: worker se extensão não estiver instalada
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 5000;  // Reduzido de 10000 para atualizar 2x mais rápido
+const ELD_POLL_MS = 30000; // 30s — evita rate limit 429 do Cloudflare
+let _eldRateLimitBackoff = false;
 
 let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds     = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
@@ -5548,6 +5549,8 @@ function startEldPolling() {
 }
 
 async function pollEldorado() {
+  // Se estiver em backoff por rate limit, aguarda
+  if (_eldRateLimitBackoff) return;
   try {
     const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
     if (!uid) return; // não logado, não faz nada
@@ -5562,6 +5565,17 @@ async function pollEldorado() {
 
     if (!rNotif.ok) {
       if (rNotif.status === 401) showEldConfigError('Sessão expirada. Reabra a Eldorado no Chrome.');
+      // Rate limit — para o polling por 3 minutos para não piorar
+      if (rNotif.status === 429) {
+        console.warn('[Eldorado] Rate limit (429). Pausando polling por 3 minutos.');
+        _eldRateLimitBackoff = true;
+        clearInterval(_eldPollTimer);
+        setTimeout(() => {
+          _eldRateLimitBackoff = false;
+          startEldPolling();
+          pollEldorado();
+        }, 3 * 60 * 1000);
+      }
       return;
     }
 
@@ -6359,11 +6373,12 @@ async function cancelEldOrder(id) {
   }
 
   // Remove dos pendentes localmente
+  const cancelledItem = _eldPending.find(p => String(p.id) === String(id));
   _eldPending = _eldPending.filter(p => String(p.id) !== String(id));
   localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
 
   // Adiciona nos cancelados
-  const item = _eldPending.find(p => String(p.id) === String(id)) || { id, title: '', status: 'cancelled' };
+  const item = cancelledItem || { id, title: '', status: 'cancelled' };
   _eldCancelled = [{ ...item, status: 'cancelled', icon: '❌', label: 'Pedido cancelado', read: false }, ..._eldCancelled].slice(0, 100);
   localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
 
