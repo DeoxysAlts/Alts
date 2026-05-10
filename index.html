@@ -5437,6 +5437,19 @@ let _eldExtInstalled = false; // detecta se extensão está presente
   });
 })();
 
+// ── DEDUPLICAÇÃO GLOBAL DE NOTIFS ────────────────────────────────────────────
+// Chave única por conteúdo — evita duplicatas entre extensão e worker
+function eldNotifDupKey(n) {
+  const title  = (n.title  || '').trim().toLowerCase();
+  const status = normalizeEldStatus(n.status || '');
+  const price  = (n.price  || '').replace(/[^0-9.]/g, '');
+  return title + '|' + status + '|' + price;
+}
+function eldNotifExists(n) {
+  const key = eldNotifDupKey(n);
+  return _eldNotifs.some(x => eldNotifDupKey(x) === key);
+}
+
 // ── PROCESSA NOTIFICAÇÕES DA EXTENSÃO ────────────────────────────────────────
 function processExtensionNotifs(notifs) {
   const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
@@ -5470,6 +5483,8 @@ function processExtensionNotifs(notifs) {
       read:      n.read  || false,
     };
 
+    // Deduplicação por conteúdo (título+status+preço) — evita duplicata com worker
+    if (eldNotifExists(mapped)) { _eldSeenIds.push(id); continue; }
     newOnes.push(mapped);
     _eldSeenIds.push(id);
   }
@@ -5919,7 +5934,7 @@ async function pollEldorado() {
       if (dismissed.includes(id)) continue;
 
       const ev = getEldEventInfo(n.evento);
-      newNotifs.push({
+      const mapped = {
         id,
         icon:      ev.icon,
         label:     ev.label,
@@ -5929,7 +5944,9 @@ async function pollEldorado() {
         comprador: n.comprador || '',
         ts:        new Date(n.data || Date.now()).getTime(),
         read:      n.lida || false,
-      });
+      };
+      if (eldNotifExists(mapped)) { _eldSeenIds.push(id); continue; }
+      newNotifs.push(mapped);
       _eldSeenIds.push(id);
     }
 
