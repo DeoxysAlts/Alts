@@ -923,12 +923,29 @@
   .eld-notif.unread.cancelled::after  { background: var(--eld-red); }
   .eld-notif.unread.dispute::after    { background: var(--eld-purple); }
   .eld-notif.unread.other::after      { background: var(--eld-blue); }
-  .eld-unread-dot {
+ {
     position: absolute; top: 8px; right: 8px;
     width: 5px; height: 5px; border-radius: 50%;
     background: var(--accent); display: none;
   }
   .eld-notif.unread .eld-unread-dot { display: block; }
+  .eld-confirm-delivery-btn {
+    margin-top: 6px;
+    background: rgba(31,214,121,0.15);
+    border: 0.5px solid rgba(31,214,121,0.4);
+    color: #1fd679;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .eld-confirm-delivery-btn:hover { background: rgba(31,214,121,0.28); }
   .eld-notif-icon {
     width: 34px; height: 34px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -1522,6 +1539,7 @@
         <button id="vd-tab-ontem" onclick="setVdPeriodo('ontem')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">Ontem</button>
         <button id="vd-tab-3dias" onclick="setVdPeriodo('3dias')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">3 dias</button>
         <button id="vd-tab-semana" onclick="setVdPeriodo('semana')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">7 dias</button>
+        <button id="vd-tab-mes" onclick="setVdPeriodo('mes')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">Mês</button>
         <button id="vd-tab-tudo" onclick="setVdPeriodo('tudo')" style="padding:6px 14px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;white-space:nowrap">Tudo</button>
       </div>
       <button onclick="window.open('https://www.eldorado.gg/br/dashboard/orders','_blank')" style="background:rgba(31,214,121,.1);border:0.5px solid rgba(31,214,121,.3);color:#1fd679;height:36px;padding:0 14px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;white-space:nowrap;transition:background .15s"
@@ -3283,7 +3301,7 @@ function closeVendasDia() {
 
 function setVdPeriodo(p) {
   _vdPeriodo = p;
-  ['hoje','ontem','3dias','semana','tudo'].forEach(t => {
+  ['hoje','ontem','3dias','semana','mes','tudo'].forEach(t => {
     const btn = document.getElementById('vd-tab-' + t);
     if (!btn) return;
     if (t === p) { btn.style.background = '#1fd679'; btn.style.color = '#000'; btn.style.fontWeight = '600'; }
@@ -3311,6 +3329,10 @@ function _vdGetVendas() {
   if (_vdPeriodo === 'semana') {
     return all.filter(v => (v.ts||0) >= now - 7*86400000 && v._tipo !== 'cancelado');
   }
+  if (_vdPeriodo === 'mes') {
+    const startMes = new Date(); startMes.setDate(1); startMes.setHours(0,0,0,0);
+    return all.filter(v => (v.ts||0) >= startMes.getTime() && v._tipo !== 'cancelado');
+  }
   return all.filter(v => v._tipo !== 'cancelado');
 }
 
@@ -3329,6 +3351,7 @@ function _vdGetCancelados() {
   }
   if (_vdPeriodo === '3dias') return cancelled.filter(v => (v.ts||0) >= now - 3*86400000);
   if (_vdPeriodo === 'semana') return cancelled.filter(v => (v.ts||0) >= now - 7*86400000);
+  if (_vdPeriodo === 'mes') { const sm=new Date(); sm.setDate(1); sm.setHours(0,0,0,0); return cancelled.filter(v=>(v.ts||0)>=sm.getTime()); }
   return cancelled;
 }
 
@@ -3352,7 +3375,7 @@ function renderVendasDia() {
   const pendRec    = pendentes.reduce((s,v) => s + _vdParsePrice(v.price), 0);
   const cancelRec  = cancelados.reduce((s,v) => s + _vdParsePrice(v.price), 0);
 
-  const label = _vdPeriodo === 'hoje' ? 'hoje' : _vdPeriodo === 'ontem' ? 'ontem' : _vdPeriodo === '3dias' ? 'últimos 3 dias' : _vdPeriodo === 'semana' ? '7 dias' : 'total';
+  const label = _vdPeriodo === 'hoje' ? 'hoje' : _vdPeriodo === 'ontem' ? 'ontem' : _vdPeriodo === '3dias' ? 'últimos 3 dias' : _vdPeriodo === 'semana' ? '7 dias' : _vdPeriodo === 'mes' ? 'este mês' : 'total';
   const subtitle = document.getElementById('vd-subtitle');
   if (subtitle) subtitle.textContent = `${vendas.length} venda${vendas.length !== 1 ? 's' : ''} ${label} · US$${totalRec.toFixed(2)} recebidos`;
 
@@ -3397,6 +3420,14 @@ function renderVendasDia() {
         const h = new Date(v.ts).getHours();
         buckets[h] = (buckets[h] || 0) + _vdParsePrice(v.price);
       });
+    } else if (_vdPeriodo === 'mes') {
+      // dia 1 até hoje
+      const today = now2.getDate();
+      for (let d = 1; d <= today; d++) buckets[d] = 0;
+      vendas.forEach(v => {
+        const d = new Date(v.ts).getDate();
+        if (d in buckets) buckets[d] = (buckets[d] || 0) + _vdParsePrice(v.price);
+      });
     } else if (_vdPeriodo === '3dias') {
       for (let d = 2; d >= 0; d--) {
         const day = new Date(); day.setDate(day.getDate() - d); day.setHours(0,0,0,0);
@@ -3437,6 +3468,8 @@ function renderVendasDia() {
     Object.keys(buckets).forEach(k => countBuckets[k] = 0);
     if (_vdPeriodo === 'hoje' || _vdPeriodo === 'ontem') {
       vendas.forEach(v => { const h = new Date(v.ts).getHours(); if (h in countBuckets) countBuckets[h] = (countBuckets[h]||0)+1; });
+    } else if (_vdPeriodo === 'mes') {
+      vendas.forEach(v => { const d = new Date(v.ts).getDate(); if (d in countBuckets) countBuckets[d]=(countBuckets[d]||0)+1; });
     } else if (_vdPeriodo === '3dias') {
       vendas.forEach(v => {
         const vDate = new Date(v.ts); vDate.setHours(0,0,0,0);
@@ -3456,101 +3489,96 @@ function renderVendasDia() {
     const vals = keys.map(k => usePedidos ? (countBuckets[k]||0) : buckets[k]);
     const maxVal = Math.max(...vals, 0.01);
 
-    // ── SVG LINE CHART ────────────────────────────────────────────────────────
+    // ── BAR CHART (ordenado maior → menor) ───────────────────────────────────
+    // Monta pares [label, valor] e ordena do maior para o menor
+    const pairs = keys.map((k, i) => ({
+      label: (_vdPeriodo === 'hoje' || _vdPeriodo === 'ontem') ? (typeof k === 'number' ? k + 'h' : String(k)) : String(k),
+      val: vals[i]
+    })).sort((a, b) => b.val - a.val);
+
+    // Remove entradas com zero se houver entradas com valor (para não poluir)
+    const hasAnyVal = pairs.some(p => p.val > 0);
+    const sorted = hasAnyVal ? pairs.filter(p => p.val > 0) : pairs;
+
     chartEl.style.cssText = 'width:100%;position:relative;overflow:visible';
-    chartEl.innerHTML = '';
 
-    const W = 560, H = 170, padL = 48, padR = 12, padT = 18, padB = 28;
-    const plotW = W - padL - padR;
-    const plotH = H - padT - padB;
-    const n = keys.length;
+    if (sorted.length === 0) {
+      chartEl.innerHTML = `<div style="height:180px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.2);font-size:12px;font-family:'DM Sans',sans-serif">Nenhuma venda nesse período</div>`;
+    } else {
+      const W = 560, H = 190, padL = 52, padR = 12, padT = 24, padB = 32;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+      const n = sorted.length;
+      const barGap = Math.max(2, Math.floor(plotW / n * 0.18));
+      const barW = Math.max(4, Math.floor((plotW - barGap * (n - 1)) / n));
 
-    // Y-axis: 4 grid lines
-    const nYTicks = 4;
-    let gridLines = '', yLabels = '';
-    for (let i = 0; i <= nYTicks; i++) {
-      const yVal = (maxVal / nYTicks) * i;
-      const yPx  = padT + plotH - (yVal / maxVal) * plotH;
-      gridLines += `<line x1="${padL}" y1="${yPx.toFixed(1)}" x2="${W - padR}" y2="${yPx.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
-      const labelTxt = yVal >= 1000 ? `$${(yVal/1000).toFixed(1)}k` : `$${yVal.toFixed(yVal < 10 ? 2 : 0)}`;
-      yLabels += `<text x="${padL - 6}" y="${(yPx + 4).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${labelTxt}</text>`;
-    }
-
-    // Points
-    const pts = keys.map((k, i) => {
-      const x = n === 1 ? padL + plotW / 2 : padL + (i / (n - 1)) * plotW;
-      const y = padT + plotH - (vals[i] / maxVal) * plotH;
-      return { x, y, v: vals[i], label: typeof k === 'number' ? k + 'h' : k };
-    });
-
-    // Smooth bezier line
-    function bezierPath(points) {
-      if (points.length < 2) return points.length === 1 ? `M${points[0].x},${points[0].y}` : '';
-      let d = `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
-      for (let i = 1; i < points.length; i++) {
-        const prev = points[i - 1], curr = points[i];
-        const cpx = (prev.x + curr.x) / 2;
-        d += ` C${cpx.toFixed(2)},${prev.y.toFixed(2)} ${cpx.toFixed(2)},${curr.y.toFixed(2)} ${curr.x.toFixed(2)},${curr.y.toFixed(2)}`;
+      // Y grid lines
+      const nYTicks = 4;
+      let gridLines = '', yLabels = '';
+      for (let i = 0; i <= nYTicks; i++) {
+        const yVal = (maxVal / nYTicks) * i;
+        const yPx  = padT + plotH - (yVal / maxVal) * plotH;
+        gridLines += `<line x1="${padL}" y1="${yPx.toFixed(1)}" x2="${W - padR}" y2="${yPx.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+        const fmt = usePedidos ? String(Math.round(yVal)) : (yVal >= 1000 ? `$${(yVal/1000).toFixed(1)}k` : `$${yVal.toFixed(yVal < 10 && yVal > 0 ? 2 : 0)}`);
+        yLabels += `<text x="${padL - 6}" y="${(yPx + 4).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.28)" font-family="DM Sans,sans-serif">${escHtml(fmt)}</text>`;
       }
-      return d;
+
+      // Barras + labels
+      let bars = '', xLabels = '', valLabels = '', tooltips = '';
+      sorted.forEach((p, i) => {
+        const bh = Math.max(4, (p.val / maxVal) * plotH);
+        const bx = padL + i * (barW + barGap);
+        const by = padT + plotH - bh;
+        const cx = bx + barW / 2;
+        const tipId = 'vd-bartip-' + i;
+        const tipTxt = usePedidos ? `${p.val} pedido${p.val!==1?'s':''}` : `US$${p.val.toFixed(2)}`;
+        const tipW = Math.max(52, tipTxt.length * 6.5);
+        const tipX = Math.min(Math.max(cx, tipW/2 + padL), W - tipW/2 - padR);
+        const tipY = Math.max(by - 14, padT);
+
+        // Gradiente único por barra (mais brilhante no topo)
+        const gradId = 'bg' + i + '_' + Date.now();
+
+        bars += `
+          <rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW}" height="${bh.toFixed(1)}"
+            rx="3" ry="3" fill="#1fd679" opacity="0.9"
+            onmouseover="document.getElementById('${tipId}').style.display='block';this.setAttribute('opacity','1')"
+            onmouseout="document.getElementById('${tipId}').style.display='none';this.setAttribute('opacity','0.9')"
+            style="cursor:default;transition:opacity .15s"/>
+        `;
+
+        // Valor em cima da barra (só se barra larga o suficiente)
+        if (barW >= 18) {
+          const vFmt = usePedidos ? String(p.val) : (p.val >= 100 ? `$${p.val.toFixed(0)}` : `$${p.val.toFixed(2)}`);
+          valLabels += `<text x="${cx.toFixed(1)}" y="${(by - 4).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#1fd679" font-family="DM Sans,sans-serif" pointer-events="none">${escHtml(vFmt)}</text>`;
+        }
+
+        // Label eixo X (dia/hora) — mostra todos se couber, senão a cada N
+        const showLabel = n <= 20 || i % Math.ceil(n / 20) === 0;
+        if (showLabel) {
+          xLabels += `<text x="${cx.toFixed(1)}" y="${(padT + plotH + 14).toFixed(1)}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${escHtml(p.label)}</text>`;
+        }
+
+        // Tooltip
+        tooltips += `
+          <g id="${tipId}" style="display:none;pointer-events:none">
+            <rect x="${(tipX - tipW/2).toFixed(1)}" y="${(tipY - 12).toFixed(1)}" width="${tipW.toFixed(1)}" height="18" rx="4" fill="#1fd679"/>
+            <text x="${tipX.toFixed(1)}" y="${(tipY + 1).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#000" font-family="DM Sans,sans-serif">${escHtml(tipTxt)}</text>
+          </g>
+        `;
+      });
+
+      chartEl.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px;display:block;overflow:visible">
+          ${gridLines}
+          ${yLabels}
+          ${bars}
+          ${valLabels}
+          ${xLabels}
+          ${tooltips}
+        </svg>
+      `;
     }
-
-    const linePath = bezierPath(pts);
-    // Area = line path + close to bottom
-    const areaPath = pts.length
-      ? linePath + ` L${pts[pts.length-1].x.toFixed(2)},${(padT + plotH).toFixed(2)} L${pts[0].x.toFixed(2)},${(padT + plotH).toFixed(2)} Z`
-      : '';
-
-    // X labels (show a subset to avoid crowding)
-    let xLabels = '';
-    const maxXLabels = Math.min(n, 8);
-    const xStep = Math.max(1, Math.floor(n / maxXLabels));
-    pts.forEach((p, i) => {
-      if (i % xStep === 0 || i === n - 1) {
-        xLabels += `<text x="${p.x.toFixed(1)}" y="${(padT + plotH + 18).toFixed(1)}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${escHtml(String(p.label))}</text>`;
-      }
-    });
-
-    // Tooltip dots (invisible hit area + visible dot)
-    let dots = '', tooltips = '';
-    pts.forEach((p, i) => {
-      const hasVal = p.v > 0;
-      const tipId = 'vd-svgtip-' + i;
-      const tipTxt = usePedidos ? `${p.v} pedido${p.v!==1?'s':''}` : `US$${p.v.toFixed(2)}`;
-      const tipX = Math.min(Math.max(p.x, 30), W - 30);
-      const tipY = Math.max(p.y - 14, padT + 4);
-      dots += `
-        <circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="10" fill="transparent" stroke="none"
-          onmouseover="document.getElementById('${tipId}').style.display='block'"
-          onmouseout="document.getElementById('${tipId}').style.display='none'"/>
-        <circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${hasVal ? 3.5 : 2}" fill="${hasVal ? '#1fd679' : 'rgba(31,214,121,0.3)'}" stroke="${hasVal ? '#0e0e10' : 'none'}" stroke-width="2" pointer-events="none"/>
-      `;
-      tooltips += `
-        <g id="${tipId}" style="display:none;pointer-events:none">
-          <rect x="${(tipX - 28).toFixed(1)}" y="${(tipY - 11).toFixed(1)}" width="56" height="18" rx="4" fill="#1fd679"/>
-          <text x="${tipX.toFixed(1)}" y="${(tipY + 2).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#000" font-family="DM Sans,sans-serif">${escHtml(tipTxt)}</text>
-        </g>
-      `;
-    });
-
-    const uniqueId = 'vdgrad' + Date.now();
-    chartEl.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px;display:block;overflow:visible">
-        <defs>
-          <linearGradient id="${uniqueId}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#1fd679" stop-opacity="0.28"/>
-            <stop offset="100%" stop-color="#1fd679" stop-opacity="0.02"/>
-          </linearGradient>
-        </defs>
-        ${gridLines}
-        ${yLabels}
-        ${xLabels}
-        ${areaPath ? `<path d="${areaPath}" fill="url(#${uniqueId})" stroke="none"/>` : ''}
-        ${linePath ? `<path d="${linePath}" fill="none" stroke="#1fd679" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
-        ${dots}
-        ${tooltips}
-      </svg>
-    `;
 
     if (labelEl) labelEl.innerHTML = '';
   }
@@ -5237,6 +5265,11 @@ let _eldExtInstalled = false; // detecta se extensão está presente
       e.stopPropagation();
       dismissEldNotif(btn.dataset.dismiss);
     }
+    const confirmBtn = e.target.closest('[data-confirm]');
+    if (confirmBtn) {
+      e.stopPropagation();
+      confirmEldDelivery(confirmBtn.dataset.confirm);
+    }
   });
 })();
 
@@ -5727,8 +5760,10 @@ function renderEldList() {
 
   const filtered = _eldTab === 'notifs'
     ? _eldNotifs.filter(n => {
-        // Vendas concluídas NÃO aparecem nas notifs — ficam só em Concluídos
-        if (normalizeEldStatus(n.status) === 'completed') return false;
+        // Vendas com status 'completed' aparecem nas notifs SE ainda não foram confirmadas pelo usuário
+        if (normalizeEldStatus(n.status) === 'completed') {
+          return !n.delivered; // só aparece se não foi marcada como entregue
+        }
         if (!n.read) {
           // Remove 'other' sem título real e sem preço
           if (normalizeEldStatus(n.status) === 'other') {
@@ -5741,7 +5776,7 @@ function renderEldList() {
         return false;
       })
     : _eldTab === 'completed'
-    ? _eldVendas
+    ? _eldVendas.filter(v => v.delivered)
     : _eldTab === 'pending'
     ? _eldPending
     : _eldTab === 'cancelled'
@@ -5770,6 +5805,7 @@ function renderEldList() {
     const ago    = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
     const buyer  = n.comprador || n.buyer || '';
+    const isCompletedPending = normalizeEldStatus(n.status) === 'completed' && _eldTab === 'notifs';
     return `
       <div class="eld-notif ${unread} ${n.status || 'other'}">
         <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '📦'}</div>
@@ -5777,6 +5813,7 @@ function renderEldList() {
           <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || 'Atualização')}</div>
           <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
           <div class="eld-notif-meta">${buyer ? escHtml(buyer) + ' · ' : ''}${ago}</div>
+          ${isCompletedPending ? `<button class="eld-confirm-delivery-btn" data-confirm="${escHtml(String(n.id))}" title="Marcar como entregue">✓ Confirmar entrega</button>` : ''}
         </div>
         ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
         <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
@@ -5817,6 +5854,29 @@ function updateEldBell() {
     vdBadge.textContent = cnt;
     vdBadge.style.display = cnt > 0 ? 'inline-block' : 'none';
   }
+}
+
+// ── CONFIRMAR ENTREGA ─────────────────────────────────────────────────────────
+function confirmEldDelivery(id) {
+  // Marca a notif como entregue (sai das Notifs)
+  _eldNotifs = _eldNotifs.map(n => String(n.id) === String(id) ? {...n, delivered: true, read: true} : n);
+  localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+
+  // Garante que está em _eldVendas como entregue
+  const existing = _eldVendas.find(v => String(v.id) === String(id));
+  if (existing) {
+    _eldVendas = _eldVendas.map(v => String(v.id) === String(id) ? {...v, delivered: true} : v);
+  } else {
+    // Pega da notif e adiciona em vendas
+    const notif = _eldNotifs.find(n => String(n.id) === String(id));
+    if (notif) {
+      _eldVendas = [{...notif, delivered: true}, ..._eldVendas].slice(0, 100);
+    }
+  }
+  localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+
+  renderEldPanel();
+  updateEldBell();
 }
 
 // ── DISPENSAR NOTIFICAÇÃO INDIVIDUAL ─────────────────────────────────────────
