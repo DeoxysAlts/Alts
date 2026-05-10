@@ -5881,10 +5881,8 @@ function renderEldList() {
 
   const filtered = _eldTab === 'notifs'
     ? _eldNotifs.filter(n => {
-        // Vendas com status 'completed' aparecem nas notifs SE ainda não foram confirmadas pelo usuário
-        if (normalizeEldStatus(n.status) === 'completed') {
-          return !n.delivered; // só aparece se não foi marcada como entregue
-        }
+        // Vendas concluídas NUNCA aparecem em Notifs — ficam só em Concluídos
+        if (normalizeEldStatus(n.status) === 'completed') return false;
         if (!n.read) {
           // Remove 'other' sem título real e sem preço
           if (normalizeEldStatus(n.status) === 'other') {
@@ -5897,7 +5895,7 @@ function renderEldList() {
         return false;
       })
     : _eldTab === 'completed'
-    ? _eldVendas.filter(v => v.delivered)
+    ? _eldVendas
     : _eldTab === 'pending'
     ? _eldPending
     : _eldTab === 'cancelled'
@@ -5926,8 +5924,7 @@ function renderEldList() {
     const ago    = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
     const buyer  = n.comprador || n.buyer || '';
-    const showConfirm = (normalizeEldStatus(n.status) === 'completed' && _eldTab === 'notifs')
-                     || _eldTab === 'pending';
+    const showConfirm = _eldTab === 'pending';
     return `
       <div class="eld-notif ${unread} ${n.status || 'other'}">
         <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '📦'}</div>
