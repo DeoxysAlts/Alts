@@ -5397,6 +5397,11 @@ let _eldExtInstalled = false; // detecta se extensão está presente
       e.stopPropagation();
       confirmEldDelivery(confirmBtn.dataset.confirm);
     }
+    const cancelBtn = e.target.closest('[data-cancel]');
+    if (cancelBtn) {
+      e.stopPropagation();
+      cancelEldOrder(cancelBtn.dataset.cancel);
+    }
   });
 })();
 
@@ -5894,18 +5899,30 @@ function renderEldList() {
 
     if (isPending) {
       return `
-        <div class="eld-notif ${unread} pending" style="flex-direction:column;gap:5px;padding:8px 12px 8px 14px">
+        <div class="eld-notif ${unread} pending" style="flex-direction:column;gap:6px;padding:10px 12px 10px 14px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
             <div style="flex:1;min-width:0">
-              <div class="eld-notif-label pending" style="margin-bottom:2px">Entrega pendente</div>
-              <div style="font-size:11px;font-weight:700;color:var(--text);line-height:1.4;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
+              <div class="eld-notif-label pending" style="margin-bottom:3px;display:flex;align-items:center;gap:4px">⏳ Entrega pendente</div>
+              <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.45;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
             </div>
-            <div style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--eld-yellow);flex-shrink:0;margin-top:13px">${escHtml(n.price || '')}</div>
+            <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:var(--eld-yellow);flex-shrink:0;margin-top:14px;letter-spacing:-0.5px">${escHtml(n.price || '')}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:#6b6b78;font-weight:500">
-            ${buyer ? `<span>👤 ${escHtml(buyer)}</span>` : ''}<span>🕐 ${ago}</span>
+          <div style="display:flex;align-items:center;gap:10px;font-size:10px;color:#5a5a6a;font-weight:500">
+            ${buyer ? `<span style="display:flex;align-items:center;gap:3px;color:#7878a0">👤 ${escHtml(buyer)}</span>` : ''}
+            <span class="eld-ts" data-ts="${n.ts}" style="display:flex;align-items:center;gap:3px">🕐 ${ago}</span>
           </div>
-          <button class="eld-confirm-delivery-btn" data-confirm="${escHtml(String(n.id))}">✓ CONFIRMAR ENTREGA</button>
+          <div style="display:flex;gap:6px;margin-top:1px">
+            <button class="eld-confirm-delivery-btn" data-confirm="${escHtml(String(n.id))}"
+              style="flex:2;padding:8px 10px;font-size:11px;border-radius:8px;font-weight:700;letter-spacing:0.1px;text-transform:none">
+              ✓ Confirmar entrega
+            </button>
+            <button data-cancel="${escHtml(String(n.id))}"
+              style="flex:1;padding:8px 10px;background:rgba(255,85,85,0.07);border:1px solid rgba(255,85,85,0.18);color:#cc4444;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:4px"
+              onmouseover="this.style.background='rgba(255,85,85,0.15)';this.style.borderColor='rgba(255,85,85,0.35)';this.style.color='#ff5555'"
+              onmouseout="this.style.background='rgba(255,85,85,0.07)';this.style.borderColor='rgba(255,85,85,0.18)';this.style.color='#cc4444'">
+              ✕ Cancelar
+            </button>
+          </div>
           <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
         </div>`;
     }
@@ -6037,7 +6054,44 @@ async function confirmEldDelivery(id) {
   setTimeout(() => { renderEldPanel(); updateEldBell(); }, eldOk ? 800 : 0);
 }
 
-// ── DISPENSAR NOTIFICAÇÃO INDIVIDUAL ─────────────────────────────────────────
+// ── CANCELAR PEDIDO ───────────────────────────────────────────────────────────
+async function cancelEldOrder(id) {
+  if (!confirm('Tem certeza que deseja cancelar este pedido na Eldorado?')) return;
+
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  const btn = document.querySelector(`[data-cancel="${id}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Cancelando...'; }
+
+  let ok = false;
+  if (uid) {
+    try {
+      const resp = await fetch(ELD_WORKER + '/cancelar-pedido', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
+        body:    JSON.stringify({ orderId: id }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.ok) ok = true;
+    } catch(e) {}
+  }
+
+  if (!ok) {
+    if (btn) { btn.disabled = false; btn.textContent = '✕ CANCELAR'; }
+    if (!confirm('Não foi possível cancelar na Eldorado.\nDeseja remover apenas do painel?')) return;
+  }
+
+  // Remove dos pendentes localmente
+  _eldPending = _eldPending.filter(p => String(p.id) !== String(id));
+  localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+
+  // Adiciona nos cancelados
+  const item = _eldPending.find(p => String(p.id) === String(id)) || { id, title: '', status: 'cancelled' };
+  _eldCancelled = [{ ...item, status: 'cancelled', icon: '❌', label: 'Pedido cancelado', read: false }, ..._eldCancelled].slice(0, 100);
+  localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+
+  renderEldPanel();
+  updateEldBell();
+}
 function dismissEldNotif(id) {
   _eldNotifs    = _eldNotifs.filter(n => String(n.id) !== String(id));
   _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
@@ -6182,6 +6236,14 @@ function eldTimeAgo(ts) {
   if (s < 86400) return `há ${Math.floor(s/3600)}h`;
   return `há ${Math.floor(s/86400)} dia${Math.floor(s/86400) > 1 ? 's' : ''}`;
 }
+
+// Atualiza horários em tempo real a cada 30s
+setInterval(() => {
+  document.querySelectorAll('.eld-ts[data-ts]').forEach(el => {
+    const ts = parseInt(el.dataset.ts);
+    if (!isNaN(ts)) el.textContent = '🕐 ' + eldTimeAgo(ts);
+  });
+}, 30000);
 </script>
 
 
