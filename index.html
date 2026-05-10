@@ -1544,8 +1544,8 @@
             <svg width="14" height="14" fill="none" stroke="#1fd679" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <span id="vd-chart-title">Receita por hora</span>
           </div>
-          <div id="vd-chart" style="height:160px;display:flex;align-items:flex-end;gap:3px;padding-bottom:4px;position:relative"></div>
-          <div id="vd-chart-labels" style="display:flex;gap:3px;margin-top:4px;overflow:hidden"></div>
+          <div id="vd-chart" style="height:180px;display:flex;align-items:flex-end;gap:2px;padding-bottom:0;position:relative"></div>
+          <div id="vd-chart-labels" style="display:none"></div>
         </div>
 
         <!-- Produtos mais vendidos -->
@@ -3412,15 +3412,24 @@ function renderVendasDia() {
     const vals = keys.map(k => buckets[k]);
     const maxVal = Math.max(...vals, 0.01);
 
+    // Gráfico redesenhado: valor em cima, barra, hora embaixo
+    chartEl.style.cssText = 'height:180px;display:flex;align-items:flex-end;gap:2px;padding:20px 0 0 0;position:relative;overflow:visible';
     chartEl.innerHTML = keys.map((k, i) => {
-      const h = Math.max(4, (vals[i] / maxVal) * 148);
+      const h = Math.max(6, (vals[i] / maxVal) * 130);
       const isActive = vals[i] > 0;
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;cursor:default" title="${k}: US$${vals[i].toFixed(2)}">
-        <div style="width:100%;background:${isActive ? '#1fd679' : 'rgba(31,214,121,.15)'};border-radius:3px 3px 0 0;height:${h}px;transition:height .3s;min-width:4px;max-width:28px"></div>
+      const label = typeof k === 'number' ? k + 'h' : k;
+      const valLabel = isActive ? (vals[i] < 10 ? '$' + vals[i].toFixed(2) : '$' + vals[i].toFixed(1)) : '';
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;position:relative;min-width:0"
+        onmouseover="this.querySelector('.vd-tip').style.opacity='1';this.querySelector('.vd-bar').style.filter='brightness(1.3)'"
+        onmouseout="this.querySelector('.vd-tip').style.opacity='0';this.querySelector('.vd-bar').style.filter='none'">
+        <div class="vd-tip" style="position:absolute;bottom:calc(${h}px + 26px);background:#1fd679;color:#000;font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:10">US$${vals[i].toFixed(2)}</div>
+        ${isActive ? `<div style="font-size:8px;color:#1fd679;font-weight:700;margin-bottom:2px;white-space:nowrap">${valLabel}</div>` : '<div style="height:14px"></div>'}
+        <div class="vd-bar" style="width:100%;max-width:24px;background:${isActive ? '#1fd679' : 'rgba(31,214,121,.1)'};border-radius:3px 3px 0 0;height:${h}px;transition:height .3s,filter .15s"></div>
+        <div style="font-size:9px;color:${isActive ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)'};margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center">${label}</div>
       </div>`;
     }).join('');
 
-    if (labelEl) labelEl.innerHTML = keys.map(k => `<div style="flex:1;font-size:9px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:28px">${k}</div>`).join('');
+    if (labelEl) labelEl.innerHTML = ''; // labels agora estão dentro das barras
   }
 
   // ── TOP PRODUTOS ──────────────────────────────────────────────────────────
