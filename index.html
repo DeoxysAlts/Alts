@@ -5342,6 +5342,11 @@ let _eldExtInstalled = false; // detecta se extensão está presente
 
 // ── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
 (function initEldorado() {
+  // Limpa _eldVendas antigos que vieram da API (títulos em branco)
+  // Mantém apenas os que foram confirmados pelo usuário (têm delivered:true)
+  _eldVendas = _eldVendas.filter(v => v.delivered === true);
+  localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+
   renderEldPanel();
   updateEldBell();
 
@@ -5443,28 +5448,10 @@ function processExtensionNotifs(notifs) {
 
   if (filtered.length === 0) return;
 
-  // Vendas concluídas vão para aba Vendas ✅ E também aparecem nas Notifs
-  const newCompleted = filtered.filter(n => normalizeEldStatus(n.status) === 'completed');
-  const newOthers    = filtered.filter(n => normalizeEldStatus(n.status) !== 'completed');
+  // Vendas concluídas ficam APENAS nas Notifs até você confirmar entrega
+  // NÃO vão para _eldVendas automaticamente
 
-  if (newCompleted.length > 0) {
-    const existingIds = new Set(_eldVendas.map(v => String(v.id)));
-    const reallyNew   = newCompleted.filter(v => !existingIds.has(String(v.id)));
-    if (reallyNew.length > 0) {
-      _eldVendas = [...reallyNew, ..._eldVendas].slice(0, 100);
-      localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
-      // Acumula no histórico persistente
-      let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-      const hIds = new Set(historico.map(h => String(h.id)));
-      const paraHistorico = reallyNew.filter(v => !hIds.has(String(v.id))).map(v => ({...v, _tipo:'venda'}));
-      if (paraHistorico.length > 0) {
-        historico = [...paraHistorico, ...historico].slice(0, 2000);
-        localStorage.setItem('eld_historico', JSON.stringify(historico));
-      }
-    }
-  }
-
-  // Todas (concluídas + outras) aparecem nas Notifs
+  // Todas as notifs (concluídas + outras) aparecem nas Notifs
   _eldNotifs  = [...filtered, ..._eldNotifs].slice(0, 50);
   _eldSeenIds = _eldSeenIds.slice(-500);
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
@@ -5645,42 +5632,33 @@ async function pollEldorado() {
       localStorage.setItem('eld_historico', JSON.stringify(historico));
     }
 
-    // Mantém eld_vendas sincronizado com a API (para o painel de notificações)
-    _eldVendas = vendasApi
-      .filter(v => !dismissedVendas.includes(String(v.id)))
-      .map(v => ({
-        id:        String(v.id),
-        icon:      '✅',
-        label:     'Venda concluída',
-        title:     (v.produto || 'Produto') || v.produto || 'Produto',
-        price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
-        status:    'completed',
-        comprador: v.comprador || '',
-        ts:        new Date(v.data || Date.now()).getTime(),
-        read:      true,
-      }));
-    localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
-
-    // Notifica novas vendas com toast + som
+    // Novas vendas vão para Notifs (não para _eldVendas diretamente)
+    // _eldVendas só recebe itens confirmados pelo usuário via botão
     if (novasVendas.length > 0) {
-      novasVendas.forEach(v => {
-        const notif = {
+      const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+      const novasNotifs = novasVendas
+        .filter(v => !dismissed.includes(String(v.id)))
+        .map(v => ({
           id:        String(v.id),
           icon:      '✅',
           label:     'Venda concluída',
-          title:     (v.produto || 'Produto') || v.produto || 'Produto',
+          title:     v.produto || 'Produto',
           price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
           status:    'completed',
           comprador: v.comprador || '',
           ts:        new Date(v.data || Date.now()).getTime(),
           read:      false,
-        };
-        showEldToast(notif);
-        _eldSeenIds.push('venda-' + String(v.id));
-      });
-      typeof playUiSound === 'function' && playUiSound();
-      _eldSeenIds = _eldSeenIds.slice(-500);
-      localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
+        }));
+      if (novasNotifs.length > 0) {
+        const existingNotifIds = new Set(_eldNotifs.map(n => String(n.id)));
+        const reallyNewNotifs = novasNotifs.filter(n => !existingNotifIds.has(String(n.id)));
+        if (reallyNewNotifs.length > 0) {
+          _eldNotifs = [...reallyNewNotifs, ..._eldNotifs].slice(0, 50);
+          localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+          reallyNewNotifs.forEach(n => { showEldToast(n); _eldSeenIds.push('venda-' + String(n.id)); });
+          typeof playUiSound === 'function' && playUiSound();
+        }
+      }
     }
 
     // Atualiza stat de vendas do dia
@@ -5748,7 +5726,7 @@ async function pollEldorado() {
     }
 
     if (newNotifs.length > 0) {
-      // Filtra notificações inúteis: status 'other' sem título real e sem preço
+      // Filtra notificações inúteis
       const filtered = newNotifs.filter(n => {
         if (normalizeEldStatus(n.status) === 'other') {
           const hasTitle = n.title && n.title !== 'Produto' && n.title.trim().length > 3;
@@ -5758,20 +5736,7 @@ async function pollEldorado() {
         return true;
       });
 
-      // Concluídos vão para aba Concluídos E também aparecem nas Notifs
-      const newCompleted = filtered.filter(n => normalizeEldStatus(n.status) === 'completed');
-      const newOthers    = filtered.filter(n => normalizeEldStatus(n.status) !== 'completed');
-
-      if (newCompleted.length > 0) {
-        const existingIds = new Set(_eldVendas.map(v => String(v.id)));
-        const reallyNew   = newCompleted.filter(v => !existingIds.has(String(v.id)));
-        if (reallyNew.length > 0) {
-          _eldVendas = [...reallyNew, ..._eldVendas].slice(0, 100);
-          localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
-        }
-      }
-
-      // Todas (concluídas + outras) entram nas Notifs
+      // Todas as notifs entram em Notifs (incluindo concluídas — ficam lá até confirmar)
       if (filtered.length > 0) {
         _eldNotifs = [...filtered, ..._eldNotifs].slice(0, 50);
         localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
@@ -5781,7 +5746,7 @@ async function pollEldorado() {
       localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
 
       // Cancelados em array separado
-      const newCancelled = newOthers.filter(n => normalizeEldStatus(n.status) === 'cancelled');
+      const newCancelled = filtered.filter(n => normalizeEldStatus(n.status) === 'cancelled');
       if (newCancelled.length > 0) {
         const existingCancelIds = new Set(_eldCancelled.map(c => String(c.id)));
         const reallyNew = newCancelled.filter(c => !existingCancelIds.has(String(c.id)));
@@ -5791,7 +5756,7 @@ async function pollEldorado() {
         }
       }
 
-      // Toast e som para todos (incluindo concluídos)
+      // Toast e som
       newNotifs.filter(n => !n.read).forEach(n => showEldToast(n));
       if (newNotifs.some(n => !n.read)) typeof playUiSound === 'function' && playUiSound();
     }
