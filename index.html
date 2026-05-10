@@ -898,15 +898,15 @@
 
   /* NOTIF LIST */
   .eld-notif-list {
-    max-height: 340px; overflow-y: auto;
-    padding: 8px;
-    display: flex; flex-direction: column; gap: 5px;
+    max-height: 420px; overflow-y: auto;
+    padding: 6px;
+    display: flex; flex-direction: column; gap: 4px;
     scrollbar-width: thin;
     scrollbar-color: var(--eld-surf3) transparent;
   }
   .eld-notif {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: 10px 12px 10px 14px;
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 10px 8px 12px;
     background: var(--eld-surf);
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 10px;
@@ -989,7 +989,7 @@
   .eld-notif-label.other     { color: var(--eld-blue); }
   .eld-notif-title {
     font-size: 12px; font-weight: 600; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35;
+    white-space: normal; word-break: break-word; line-height: 1.4;
     flex: 1; min-width: 0;
   }
   .eld-notif-meta { font-size: 10px; color: #555560; margin-top: 2px; font-weight: 500; display: block; }
@@ -5409,9 +5409,9 @@ function processExtensionNotifs(notifs) {
     if (_eldSeenIds.includes(dupKey)) continue;
     _eldSeenIds.push(dupKey);
 
-    // Mapeia formato da extensão — limpa título (só nome do produto)
+    // Mapeia formato da extensão — mantém título completo
     const rawTitle   = n.title || 'Produto';
-    const cleanTitle = rawTitle.split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || rawTitle;
+    const cleanTitle = rawTitle.trim() || rawTitle;
 
     const mapped = {
       id,
@@ -5537,7 +5537,7 @@ async function pollEldorado() {
           id:        String(v.id),
           icon:      v._tipo === 'cancelado' ? '❌' : '✅',
           label:     v._tipo === 'cancelado' ? 'Pedido cancelado' : 'Venda concluída',
-          title:     (v.produto || 'Produto').split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || v.produto || 'Produto',
+          title:     (v.produto || 'Produto') || v.produto || 'Produto',
           price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
           status:    v.status || (v._tipo === 'cancelado' ? 'cancelled' : 'completed'),
           comprador: v.comprador || '',
@@ -5633,7 +5633,7 @@ async function pollEldorado() {
         id:        String(v.id),
         icon:      '✅',
         label:     'Venda concluída',
-        title:     (v.produto || 'Produto').split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || v.produto || 'Produto',
+        title:     (v.produto || 'Produto') || v.produto || 'Produto',
         price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
         status:    'completed',
         comprador: v.comprador || '',
@@ -5652,7 +5652,7 @@ async function pollEldorado() {
         id:        String(v.id),
         icon:      '✅',
         label:     'Venda concluída',
-        title:     (v.produto || 'Produto').split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || v.produto || 'Produto',
+        title:     (v.produto || 'Produto') || v.produto || 'Produto',
         price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
         status:    'completed',
         comprador: v.comprador || '',
@@ -5668,7 +5668,7 @@ async function pollEldorado() {
           id:        String(v.id),
           icon:      '✅',
           label:     'Venda concluída',
-          title:     (v.produto || 'Produto').split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || v.produto || 'Produto',
+          title:     (v.produto || 'Produto') || v.produto || 'Produto',
           price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
           status:    'completed',
           comprador: v.comprador || '',
@@ -5706,7 +5706,7 @@ async function pollEldorado() {
         id:        String(p.id),
         icon:      '⏳',
         label:     'Entrega pendente',
-        title:     (p.produto || 'Produto').split(/\s+[\[\(【]|\s+[-\u2013\u2014]\s+/)[0].trim() || p.produto || 'Produto',
+        title:     (p.produto || 'Produto') || p.produto || 'Produto',
         price:     p.valor ? 'US$' + parseFloat(p.valor).toFixed(2) : '',
         status:    'pending',
         comprador: p.comprador || '',
@@ -5930,12 +5930,12 @@ function renderEldList() {
       <div class="eld-notif ${unread} ${n.status || 'other'}">
         <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '📦'}</div>
         <div class="eld-notif-body">
-          <div class="eld-notif-label ${n.status || 'other'}">${escHtml(n.label || 'Atualização')}</div>
-          <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
-          <div class="eld-notif-meta">
-            ${buyer ? escHtml(buyer) + ' · ' : ''}${ago}
-            ${n.price ? `<span class="eld-notif-price ${n.status || ''}" style="margin-left:6px">${escHtml(n.price)}</span>` : ''}
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:1px">
+            <div class="eld-notif-label ${n.status || 'other'}" style="margin-bottom:0">${escHtml(n.label || 'Atualização')}</div>
+            ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
           </div>
+          <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
+          <div class="eld-notif-meta">${buyer ? escHtml(buyer) + ' · ' : ''}${ago}</div>
           ${showConfirm ? `<button class="eld-confirm-delivery-btn" data-confirm="${escHtml(String(n.id))}" title="Confirmar entrega na Eldorado">✓ Confirmar entrega</button>` : ''}
         </div>
         <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
