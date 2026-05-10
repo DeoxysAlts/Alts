@@ -936,7 +936,7 @@
   .eld-notif.unread.cancelled::after  { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
   .eld-notif.unread.dispute::after    { background: var(--eld-purple); }
   .eld-notif.unread.other::after      { background: var(--eld-blue); }
- {
+  .eld-unread-dot {
     position: absolute; top: 8px; right: 8px;
     width: 5px; height: 5px; border-radius: 50%;
     background: var(--accent); display: none;
@@ -989,7 +989,7 @@
   .eld-notif-title {
     font-size: 12px; font-weight: 600; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.35;
-    max-width: 175px;
+    flex: 1; min-width: 0;
   }
   .eld-notif-meta { font-size: 10px; color: #555560; margin-top: 2px; font-weight: 500; display: block; }
   .eld-notif-price {
