@@ -5365,8 +5365,24 @@ let _eldExtInstalled = false; // detecta se extensão está presente
 
     if (e.data.type === 'ELDORADO_PENDING') {
       _eldExtInstalled = true;
-      _eldPending = e.data.payload || [];
+      const incoming = e.data.payload || [];
+      _eldPending = incoming;
       localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+
+      // Novos pendentes também aparecem nas Notifs
+      const existingNotifIds = new Set(_eldNotifs.map(n => String(n.id)));
+      const seenPend = new Set(JSON.parse(localStorage.getItem('eld_seen_pend') || '[]'));
+      const novos = incoming.filter(p => !existingNotifIds.has(String(p.id)) && !seenPend.has(String(p.id)));
+      if (novos.length > 0) {
+        const comUnread = novos.map(p => ({...p, read: false, status: 'pending', icon: '⏳', label: 'Entrega pendente'}));
+        _eldNotifs = [...comUnread, ..._eldNotifs].slice(0, 50);
+        localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+        const newSeen = [...seenPend, ...novos.map(p => String(p.id))].slice(-200);
+        localStorage.setItem('eld_seen_pend', JSON.stringify(newSeen));
+        novos.forEach(p => showEldToast({...p, read: false, icon: '⏳', label: 'Entrega pendente'}));
+        typeof playUiSound === 'function' && playUiSound();
+      }
+
       renderEldPanel();
       updateEldBell();
     }
@@ -5683,20 +5699,36 @@ async function pollEldorado() {
     // Pendentes — respeita dismissed e atualiza em tempo real
     const pendentesApi = dPend.pendentes || [];
     const dismissedPend = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    _eldPending = pendentesApi
+    const novosItemsPend = pendentesApi
       .filter(p => !dismissedPend.includes(String(p.id)))
       .map(p => ({
         id:        String(p.id),
         icon:      '⏳',
         label:     'Entrega pendente',
-        title:     (p.produto || 'Produto') || p.produto || 'Produto',
+        title:     p.produto || 'Produto',
         price:     p.valor ? 'US$' + parseFloat(p.valor).toFixed(2) : '',
         status:    'pending',
         comprador: p.comprador || '',
         ts:        new Date(p.data || Date.now()).getTime(),
         read:      true,
       }));
+    _eldPending = novosItemsPend;
     localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+
+    // Novos pendentes também aparecem nas Notifs (não lidos)
+    const existingNotifIds = new Set(_eldNotifs.map(n => String(n.id)));
+    const existingPendIds  = new Set((JSON.parse(localStorage.getItem('eld_seen_pend') || '[]')));
+    const novosNasNotifs   = novosItemsPend.filter(p => !existingNotifIds.has(p.id) && !existingPendIds.has(p.id));
+    if (novosNasNotifs.length > 0) {
+      const comUnread = novosNasNotifs.map(p => ({...p, read: false}));
+      _eldNotifs = [...comUnread, ..._eldNotifs].slice(0, 50);
+      localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+      // Salva IDs vistos para não duplicar
+      const seenPend = [...existingPendIds, ...novosNasNotifs.map(p => p.id)].slice(-200);
+      localStorage.setItem('eld_seen_pend', JSON.stringify(seenPend));
+      novosNasNotifs.forEach(p => showEldToast({...p, read: false}));
+      typeof playUiSound === 'function' && playUiSound();
+    }
     const pendTotal = dPend.total || pendentesApi.length || 0;
     const penbadge = document.getElementById('eld-pending-badge');
     const penbtn   = document.getElementById('eld-pending-btn');
