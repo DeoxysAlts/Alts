@@ -5415,6 +5415,8 @@ let _eldExtInstalled = false; // detecta se extensão está presente
 
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('eld-bell-wrap');
+    // Não fecha se clicou em botão de confirmar ou cancelar
+    if (e.target.closest('[data-confirm]') || e.target.closest('[data-cancel]')) return;
     if (_eldPanelOpen && wrap && !wrap.contains(e.target)) closeEldPanel();
   });
 
@@ -6273,6 +6275,7 @@ function updateEldBell() {
 
 // ── CONFIRMAR ENTREGA ─────────────────────────────────────────────────────────
 async function confirmEldDelivery(id) {
+  openEldPanel(); // garante que o painel permanece aberto
   const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
 
   const btn = document.querySelector(`[data-confirm="${id}"]`);
@@ -6348,6 +6351,7 @@ async function confirmEldDelivery(id) {
 
 // ── CANCELAR PEDIDO ───────────────────────────────────────────────────────────
 async function cancelEldOrder(id) {
+  openEldPanel(); // garante que o painel permanece aberto
   if (!confirm('Tem certeza que deseja cancelar este pedido na Eldorado?')) return;
 
   const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
