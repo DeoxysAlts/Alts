@@ -6125,18 +6125,29 @@ async function cancelEldOrder(id) {
   updateEldBell();
 }
 function dismissEldNotif(id) {
-  _eldNotifs    = _eldNotifs.filter(n => String(n.id) !== String(id));
-  _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
-  _eldVendas    = _eldVendas.filter(n => String(n.id) !== String(id));
-  _eldPending   = _eldPending.filter(n => String(n.id) !== String(id));
-  localStorage.setItem('eld_notifs',    JSON.stringify(_eldNotifs));
-  localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
-  localStorage.setItem('eld_vendas',    JSON.stringify(_eldVendas));
-  localStorage.setItem('eld_pending',   JSON.stringify(_eldPending));
-  // Salva também como dismissed para não voltar no próximo poll
-  const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-  if (!dismissed.includes(String(id))) dismissed.push(String(id));
-  localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+  if (_eldTab === 'notifs') {
+    // Só remove das notifs — NÃO remove de pendentes, concluídos ou cancelados
+    _eldNotifs = _eldNotifs.filter(n => String(n.id) !== String(id));
+    localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+  } else if (_eldTab === 'completed') {
+    _eldVendas = _eldVendas.filter(n => String(n.id) !== String(id));
+    localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+  } else if (_eldTab === 'cancelled') {
+    _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
+    localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    if (!dismissed.includes(String(id))) dismissed.push(String(id));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+  } else if (_eldTab === 'pending') {
+    // Na aba pendentes o X cancela o item — remove de pendentes e notifs
+    _eldPending = _eldPending.filter(n => String(n.id) !== String(id));
+    _eldNotifs  = _eldNotifs.filter(n => String(n.id) !== String(id));
+    localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    localStorage.setItem('eld_notifs',  JSON.stringify(_eldNotifs));
+    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    if (!dismissed.includes(String(id))) dismissed.push(String(id));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+  }
   renderEldPanel();
   updateEldBell();
 }
