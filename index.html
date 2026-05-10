@@ -5401,12 +5401,11 @@ let _eldExtInstalled = false; // detecta se extensão está presente
     }
   });
 
-  // Se não tem extensão, inicia polling via Worker (requer cookie configurado no perfil)
+  // Sempre inicia polling via Worker (disputas vencidas, sincronização)
+  // A extensão continua funcionando em paralelo para notifs em tempo real
   setTimeout(() => {
-    if (!_eldExtInstalled) {
-      startEldPolling();
-      pollEldorado();
-    }
+    startEldPolling();
+    pollEldorado();
   }, 3000);
 
   document.addEventListener('click', (e) => {
