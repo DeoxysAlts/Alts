@@ -5228,19 +5228,39 @@ async function saveEldConfig() {
   }
 }
 function clearEldCookie() {
-  if (!confirm('Limpar notificações salvas?')) return;
-  localStorage.removeItem('eld_notifs');
-  localStorage.removeItem('eld_seen');
-  localStorage.removeItem('eld_vendas');
-  localStorage.removeItem('eld_cancelled');
-  _eldNotifs = [];
-  _eldSeenIds = [];
-  _eldVendas = [];
-  _eldCancelled = [];
-  if (_eldPollTimer) clearInterval(_eldPollTimer);
+  const tabNames = { notifs: 'notificações', completed: 'concluídos', pending: 'pendentes', cancelled: 'cancelados' };
+  if (!confirm(`Limpar aba "${tabNames[_eldTab] || _eldTab}"?`)) return;
+
+  if (_eldTab === 'notifs') {
+    // Salva IDs como dismissed para não voltarem
+    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    _eldNotifs.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    _eldNotifs = [];
+    localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+  } else if (_eldTab === 'completed') {
+    // Salva IDs como dismissed para não voltarem
+    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    _eldVendas.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    _eldVendas = [];
+    localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+  } else if (_eldTab === 'pending') {
+    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    _eldPending.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    _eldPending = [];
+    localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+  } else if (_eldTab === 'cancelled') {
+    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    _eldCancelled.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    _eldCancelled = [];
+    localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+  }
+
   renderEldPanel();
   updateEldBell();
-  closeEldConfig();
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
