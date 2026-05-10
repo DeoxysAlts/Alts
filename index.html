@@ -4992,7 +4992,7 @@ function doImport() {
 // Fallback: worker se extensão não estiver instalada
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 10000;
+const ELD_POLL_MS = 5000;  // Reduzido de 10s para 5s - atualiza mais rápido!
 
 let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds     = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
@@ -5179,6 +5179,12 @@ async function pollEldorado() {
     const canceladasApi = dCancel.canceladas || [];
     if (canceladasApi.length > 0) {
       const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+      
+      // Detecta cancelamentos NOVOS (não existiam antes)
+      const novosCancelamentos = canceladasApi.filter(c => 
+        !_eldCancelled.find(x => x.id === String(c.id))
+      );
+      
       _eldCancelled = canceladasApi
         .filter(c => !dismissed.includes(String(c.id)))
         .map(c => ({
@@ -5193,6 +5199,24 @@ async function pollEldorado() {
           read:      true,
         }));
       localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+      
+      // NOTIFICA CANCELAMENTOS NOVOS COM TOAST + SOM!
+      novosCancelamentos.forEach(c => {
+        const notif = {
+          id:        String(c.id),
+          icon:      c.status === 'dispute' ? '⚠️' : '❌',
+          label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+          title:     c.produto || 'Produto',
+          price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+          status:    c.status || 'cancelled',
+          comprador: c.comprador || '',
+          ts:        new Date(c.data || Date.now()).getTime(),
+          read:      false,
+        };
+        showEldToast(notif);
+        console.log('❌ Novo cancelamento detectado:', c.id, c.produto);
+        typeof playUiSound === 'function' && playUiSound();
+      });
     }
 
     // ── Vendas sincronizadas da API ────────────────────────────────
