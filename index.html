@@ -5890,7 +5890,32 @@ function renderEldList() {
     const ago    = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
     const buyer  = n.comprador || n.buyer || '';
-    const showConfirm = _eldTab === 'pending';
+    const isPending = _eldTab === 'pending';
+
+    if (isPending) {
+      // Layout especial para pendentes
+      return `
+        <div class="eld-notif ${unread} pending" style="flex-direction:column;gap:0;padding:10px 12px 10px 14px">
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <div class="eld-notif-icon pending" style="flex-shrink:0">⏳</div>
+            <div style="flex:1;min-width:0">
+              <div class="eld-notif-label pending">Entrega pendente</div>
+              <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.4;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
+            </div>
+            <div style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--eld-yellow);flex-shrink:0;margin-left:4px">${escHtml(n.price || '')}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;padding-left:40px;font-size:10px;color:#6b6b78;font-weight:500">
+            ${buyer ? `<span>👤 ${escHtml(buyer)}</span>` : ''}
+            <span>🕐 ${ago}</span>
+          </div>
+          <div style="padding-left:40px;margin-top:8px">
+            <button class="eld-confirm-delivery-btn" data-confirm="${escHtml(String(n.id))}" title="Confirmar entrega na Eldorado">✓ Confirmar entrega</button>
+          </div>
+          <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
+        </div>`;
+    }
+
+    // Layout padrão para notifs/concluídos/cancelados
     return `
       <div class="eld-notif ${unread} ${n.status || 'other'}">
         <div class="eld-notif-icon ${n.status || 'other'}">${n.icon || '📦'}</div>
@@ -5899,9 +5924,8 @@ function renderEldList() {
             <div class="eld-notif-label ${n.status || 'other'}" style="margin-bottom:0">${escHtml(n.label || 'Atualização')}</div>
             ${n.price ? `<div class="eld-notif-price ${n.status || ''}">${escHtml(n.price)}</div>` : ''}
           </div>
-          <div class="eld-notif-title" title="${escHtml(n.title)}">${escHtml(n.title)}</div>
+          <div class="eld-notif-title">${escHtml(n.title)}</div>
           <div class="eld-notif-meta">${buyer ? escHtml(buyer) + ' · ' : ''}${ago}</div>
-          ${showConfirm ? `<button class="eld-confirm-delivery-btn" data-confirm="${escHtml(String(n.id))}" title="Confirmar entrega na Eldorado">✓ Confirmar entrega</button>` : ''}
         </div>
         <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
         <div class="eld-unread-dot"></div>
@@ -5946,12 +5970,12 @@ function updateEldBell() {
 // ── CONFIRMAR ENTREGA ─────────────────────────────────────────────────────────
 async function confirmEldDelivery(id) {
   const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-  console.log('[ConfirmDelivery] id:', id, '| uid:', uid);
 
   const btn = document.querySelector(`[data-confirm="${id}"]`);
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span style="display:inline-block;animation:spin .7s linear infinite">⟳</span> Confirmando...';
+    btn.innerHTML = '⟳ Confirmando na Eldorado...';
+    btn.style.opacity = '0.7';
   }
 
   let eldOk = false;
@@ -5959,41 +5983,44 @@ async function confirmEldDelivery(id) {
 
   if (uid) {
     try {
-      console.log('[ConfirmDelivery] → PUT /confirmar-entrega orderId:', id);
       const resp = await fetch(ELD_WORKER + '/confirmar-entrega', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
         body:    JSON.stringify({ orderId: id }),
       });
       const data = await resp.json();
-      console.log('[ConfirmDelivery] ← status:', resp.status, '| data:', JSON.stringify(data));
+      console.log('[ConfirmDelivery]', resp.status, data);
       if (resp.ok && data.ok) {
         eldOk = true;
       } else if (resp.status === 401) {
-        eldMsg = 'Sessão expirada — atualize o cookie da Eldorado.';
+        eldMsg = 'Sessão expirada — atualize o cookie.';
       } else {
-        eldMsg = data.error || 'Falha desconhecida no Worker.';
+        eldMsg = data.error || 'Falha no Worker.';
       }
     } catch(e) {
-      console.error('[ConfirmDelivery] erro:', e);
-      eldMsg = 'Erro de conexão: ' + e.message;
+      eldMsg = 'Erro de conexão.';
     }
   } else {
     eldMsg = 'Usuário não autenticado.';
   }
 
-  // Se deu erro na Eldorado, pergunta se quer confirmar só localmente
   if (!eldOk) {
-    if (btn) { btn.disabled = false; btn.innerHTML = '✓ Confirmar entrega'; }
-
-    const msg = eldMsg
-      ? `⚠️ ${eldMsg}\n\nDeseja marcar como entregue apenas no painel (sem confirmar na Eldorado)?`
-      : '⚠️ Cookie não configurado.\n\nDeseja marcar como entregue apenas no painel?';
-
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '✓ Confirmar entrega';
+      btn.style.opacity = '1';
+    }
+    const msg = `⚠️ Não foi possível confirmar na Eldorado.\n${eldMsg}\n\nDeseja marcar como entregue apenas no painel?`;
     if (!confirm(msg)) return;
+  } else {
+    if (btn) {
+      btn.innerHTML = '✅ Confirmado!';
+      btn.style.background = 'rgba(31,214,121,0.25)';
+      btn.style.borderColor = 'rgba(31,214,121,0.6)';
+    }
   }
 
-  // Marca localmente como entregue
+  // Move da notif para concluídos
   _eldNotifs = _eldNotifs.map(n => String(n.id) === String(id) ? {...n, delivered: true, read: true} : n);
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
 
@@ -6003,24 +6030,16 @@ async function confirmEldDelivery(id) {
   localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
 
   // Adiciona em concluídos
+  const source = pendingItem || _eldNotifs.find(n => String(n.id) === String(id));
   const existing = _eldVendas.find(v => String(v.id) === String(id));
   if (existing) {
     _eldVendas = _eldVendas.map(v => String(v.id) === String(id) ? {...v, delivered: true} : v);
-  } else {
-    const source = pendingItem || _eldNotifs.find(n => String(n.id) === String(id));
-    if (source) _eldVendas = [{...source, delivered: true, status: 'completed', icon: '✅', label: 'Venda concluída'}, ..._eldVendas].slice(0, 100);
+  } else if (source) {
+    _eldVendas = [{...source, delivered: true, status: 'completed', icon: '✅', label: 'Venda concluída'}, ..._eldVendas].slice(0, 100);
   }
   localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
 
-  renderEldPanel();
-  updateEldBell();
-
-  // Toast de feedback
-  if (eldOk) {
-    showEldToast({ icon: '✅', label: 'Entrega confirmada', title: 'Pedido confirmado na Eldorado!', status: 'completed' });
-  } else {
-    showEldToast({ icon: '✅', label: 'Marcado localmente', title: 'Marcado como entregue no painel.', status: 'completed' });
-  }
+  setTimeout(() => { renderEldPanel(); updateEldBell(); }, eldOk ? 800 : 0);
 }
 
 // ── DISPENSAR NOTIFICAÇÃO INDIVIDUAL ─────────────────────────────────────────
