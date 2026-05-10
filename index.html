@@ -938,7 +938,8 @@
   .eld-notif.unread.pending::after    { background: var(--eld-yellow); box-shadow: 0 0 6px var(--eld-yellow); }
   .eld-notif.unread.cancelled::after  { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
   .eld-notif.unread.dispute::after     { background: var(--eld-purple); }
-  .eld-notif.unread.dispute_won::after { background: var(--eld-green); box-shadow: 0 0 6px var(--eld-green); }
+  .eld-notif.unread.dispute_won::after  { background: var(--eld-green); box-shadow: 0 0 6px var(--eld-green); }
+  .eld-notif.unread.dispute_lost::after { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
   .eld-notif.unread.other::after       { background: var(--eld-blue); }
   .eld-unread-dot {
     position: absolute; top: 8px; right: 8px;
@@ -976,7 +977,8 @@
   .eld-notif-icon.pending   { background: rgba(245,166,35,0.12); }
   .eld-notif-icon.cancelled { background: rgba(255,85,85,0.12); }
   .eld-notif-icon.dispute      { background: rgba(157,125,255,0.12); }
-  .eld-notif-icon.dispute_won  { background: rgba(31,214,121,0.12); }
+  .eld-notif-icon.dispute_won   { background: rgba(31,214,121,0.12); }
+  .eld-notif-icon.dispute_lost  { background: rgba(255,85,85,0.12); }
   .eld-notif-icon.other        { background: rgba(74,158,255,0.12); }
   .eld-notif-body { flex: 1; min-width: 0; }
   .eld-notif-top-row {
@@ -991,7 +993,8 @@
   .eld-notif-label.pending   { color: var(--eld-yellow); }
   .eld-notif-label.cancelled { color: var(--eld-red); }
   .eld-notif-label.dispute      { color: var(--eld-purple); }
-  .eld-notif-label.dispute_won  { color: var(--eld-green); }
+  .eld-notif-label.dispute_won   { color: var(--eld-green); }
+  .eld-notif-label.dispute_lost  { color: var(--eld-red); }
   .eld-notif-label.other        { color: var(--eld-blue); }
   .eld-notif-title {
     font-size: 12px; font-weight: 600; color: var(--text);
@@ -1009,7 +1012,8 @@
   .eld-notif-price.pending   { color: var(--eld-yellow); }
   .eld-notif-price.cancelled { color: var(--eld-red); opacity:.7; }
   .eld-notif-price.dispute      { color: var(--eld-purple); }
-  .eld-notif-price.dispute_won  { color: var(--eld-green); }
+  .eld-notif-price.dispute_won   { color: var(--eld-green); }
+  .eld-notif-price.dispute_lost  { color: var(--eld-red); opacity:.7; }
   .eld-notif-price.other        { color: var(--eld-blue); }
 
   .eld-notif-dismiss {
@@ -5438,10 +5442,13 @@ function processExtensionNotifs(notifs) {
   const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
   const newOnes = [];
 
+  const ONE_HOUR = 60 * 60 * 1000;
   for (const n of notifs) {
     const id = String(n.id || Math.random());
     if (_eldSeenIds.includes(id)) continue;
     if (dismissed.includes(id)) continue;
+    // Ignora notifs com mais de 1 hora (extensão reinjetando histórico antigo)
+    if (n.ts && (Date.now() - n.ts) > ONE_HOUR) continue;
     // Evita duplicatas por título+status (extensão pode mandar mesmo evento sem ID fixo)
     const dupKey = (n.title || '') + '|' + (n.status || '') + '|' + (n.ts || '');
     if (_eldSeenIds.includes(dupKey)) continue;
@@ -5635,6 +5642,40 @@ async function pollEldorado() {
           read:      true,
         }));
       localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+
+      // ── Disputas perdidas vindas do worker ────────────────────────
+      const disputasPerdidasApi = canceladasApi.filter(c => c.status === 'dispute_lost');
+      if (disputasPerdidasApi.length > 0) {
+        const seenLost = new Set(JSON.parse(localStorage.getItem('eld_lost_seen') || '[]'));
+        disputasPerdidasApi.forEach(c => {
+          const lid = 'lost-' + String(c.id);
+          if (seenLost.has(String(c.id))) return;
+          const lostNotif = {
+            id:        lid,
+            icon:      '💸',
+            label:     'Disputa perdida',
+            title:     c.produto || 'Produto',
+            price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+            status:    'dispute_lost',
+            comprador: c.comprador || '',
+            ts:        Date.now(),
+            read:      false,
+          };
+          const existingIds = new Set(_eldNotifs.map(n => String(n.id)));
+          if (!existingIds.has(lid)) {
+            _eldNotifs = [lostNotif, ..._eldNotifs].slice(0, 50);
+            showEldToast(lostNotif);
+            typeof playUiSound === 'function' && playUiSound();
+          }
+          seenLost.add(String(c.id));
+        });
+        localStorage.setItem('eld_lost_seen', JSON.stringify([...seenLost].slice(-200)));
+        localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+        // Remove disputas perdidas do painel de disputas
+        const lostIdsSet = new Set(disputasPerdidasApi.map(c => String(c.id)));
+        _eldDisputes = _eldDisputes.filter(d => !lostIdsSet.has(String(d.id)));
+        localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
+      }
 
       // ── Disputas vencidas vindas do worker (KV tracking) ──────────
       const disputasVencidasApi = canceladasApi.filter(c => c.status === 'dispute_won');
@@ -5963,16 +6004,18 @@ function normalizeEldStatus(raw) {
   if (s.match(/initialized|paid|received|pending|aguard|wait|process/)) return 'pending';
   if (s.match(/cancel/)) return 'cancelled';
   if (s === 'dispute_won') return 'dispute_won';
-  if (s.match(/disput|review|lost/)) return 'dispute';
-  if (['completed','pending','cancelled','dispute','dispute_won','other'].includes(s)) return s;
+  if (s === 'dispute_lost') return 'dispute_lost';
+  if (s.match(/lost|refund|chargeback/)) return 'dispute_lost';
+  if (s.match(/disput|review/)) return 'dispute';
+  if (['completed','pending','cancelled','dispute','dispute_won','dispute_lost','other'].includes(s)) return s;
   return 'other';
 }
 
 function getStatusIcon(status) {
-  return { completed:'✅', pending:'⏳', cancelled:'❌', dispute:'⚠️', dispute_won:'🏆', other:'📦' }[normalizeEldStatus(status)] || '📦';
+  return { completed:'✅', pending:'⏳', cancelled:'❌', dispute:'⚠️', dispute_won:'🏆', dispute_lost:'💸', other:'📦' }[normalizeEldStatus(status)] || '📦';
 }
 function getStatusLabel(status) {
-  return { completed:'Venda concluída', pending:'Entrega pendente', cancelled:'Pedido cancelado', dispute:'Em disputa', dispute_won:'Disputa vencida', other:'Atualização' }[normalizeEldStatus(status)] || 'Atualização';
+  return { completed:'Venda concluída', pending:'Entrega pendente', cancelled:'Pedido cancelado', dispute:'Em disputa', dispute_won:'Disputa vencida', dispute_lost:'Disputa perdida', other:'Atualização' }[normalizeEldStatus(status)] || 'Atualização';
 }
 
 // ── TOGGLE PAINEL ─────────────────────────────────────────────────────────────
