@@ -4704,16 +4704,7 @@ let _eldExtInstalled = false; // detecta se extensão está presente
     }
   });
 
-  // Fallback: polling via worker se extensão não estiver ativa após 5s
-  setTimeout(() => {
-    if (!_eldExtInstalled) {
-      console.log('[Eldorado] Extensão não detectada, usando worker como fallback.');
-      startEldPolling();
-    }
-  }, 5000);
-
-  // Sempre faz um poll inicial via worker para garantir dados
-  pollEldorado();
+  // Notificações apenas via extensão Chrome (extensão necessária)
 
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('eld-bell-wrap');
