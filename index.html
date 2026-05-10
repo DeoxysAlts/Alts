@@ -5344,7 +5344,7 @@ function doImport() {
 // Fallback: worker se extensão não estiver instalada
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 30000; // 30s — evita rate limit 429 do Cloudflare
+const ELD_POLL_MS = 5000; // 5s — polling rápido para notificações em tempo real
 let _eldRateLimitBackoff = false;
 
 let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
@@ -5408,10 +5408,8 @@ let _eldExtInstalled = false; // detecta se extensão está presente
 
   // Sempre inicia polling via Worker (disputas vencidas, sincronização)
   // A extensão continua funcionando em paralelo para notifs em tempo real
-  setTimeout(() => {
-    startEldPolling();
-    pollEldorado();
-  }, 3000);
+  startEldPolling();
+  pollEldorado();
 
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('eld-bell-wrap');
@@ -5509,25 +5507,50 @@ function processExtensionNotifs(notifs) {
 
   if (filtered.length === 0) return;
 
+  // Disputas abertas ("Em disputa") NÃO vão para Notifs — só para aba Disputas
+  // Somente o resultado final (dispute_won / dispute_lost) vai para Notifs
+  const forNotifs = filtered.filter(n => normalizeEldStatus(n.status) !== 'dispute');
+  const newDisputas = filtered.filter(n => normalizeEldStatus(n.status) === 'dispute');
+
+  // Adiciona disputas novas da extensão ao _eldDisputes
+  if (newDisputas.length > 0) {
+    const existingDisputeIds = new Set(_eldDisputes.map(d => String(d.id)));
+    const reallyNewDisputas = newDisputas.filter(d => !existingDisputeIds.has(String(d.id)));
+    if (reallyNewDisputas.length > 0) {
+      _eldDisputes = [...reallyNewDisputas, ..._eldDisputes].slice(0, 100);
+      localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
+    }
+  }
+
+  if (forNotifs.length === 0) {
+    // Só toasts para disputas, sem adicionar nas Notifs
+    newDisputas.filter(n => !n.read).forEach(n => showEldToast(n));
+    if (newDisputas.some(n => !n.read)) typeof playUiSound === 'function' && playUiSound();
+    renderEldPanel();
+    updateEldBell();
+    return;
+  }
+
   // Vendas concluídas ficam APENAS nas Notifs até você confirmar entrega
   // NÃO vão para _eldVendas automaticamente
 
-  // Todas as notifs (concluídas + outras) aparecem nas Notifs
-  _eldNotifs  = [...filtered, ..._eldNotifs].slice(0, 50);
+  // Notifs recebem tudo EXCETO disputas abertas
+  _eldNotifs  = [...forNotifs, ..._eldNotifs].slice(0, 50);
   _eldSeenIds = _eldSeenIds.slice(-500);
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
 
   // Salva cancelados em array separado para não sumirem ao marcar lidas
-  const newCancelled = filtered.filter(n => normalizeEldStatus(n.status) === 'cancelled');
+  const newCancelled = forNotifs.filter(n => normalizeEldStatus(n.status) === 'cancelled');
   if (newCancelled.length > 0) {
     _eldCancelled = [...newCancelled, ..._eldCancelled].slice(0, 100);
     localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
   }
 
-  // Toasts e som para todas as novas (incluindo vendas concluídas)
-  newOnes.filter(n => !n.read).forEach(n => showEldToast(n));
-  if (newOnes.some(n => !n.read)) {
+  // Toasts e som para todas as novas (incluindo vendas concluídas e disputas)
+  const allNewForToast = [...forNotifs, ...newDisputas];
+  allNewForToast.filter(n => !n.read).forEach(n => showEldToast(n));
+  if (allNewForToast.some(n => !n.read)) {
     typeof playUiSound === 'function' && playUiSound();
   }
 
@@ -5623,6 +5646,8 @@ async function pollEldorado() {
       // Detecta cancelamentos NOVOS (só os que não são disputa)
       const novosCancelamentos = canceladasApi.filter(c =>
         normalizeEldStatus(c.status) !== 'dispute' &&
+        c.status !== 'dispute_won' &&
+        c.status !== 'dispute_lost' &&
         !historicoIds.has('c-' + String(c.id)) && !_eldCancelled.find(x => x.id === String(c.id))
       );
       
@@ -5771,15 +5796,9 @@ async function pollEldorado() {
           }));
           _eldDisputes = [...mapped, ..._eldDisputes].slice(0, 100);
           localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
-          // Toast + notif para disputas novas
-          mapped.forEach(d => {
-            showEldToast(d);
-            const existingNotifIds2 = new Set(_eldNotifs.map(n => String(n.id)));
-            if (!existingNotifIds2.has(String(d.id))) {
-              _eldNotifs = [d, ..._eldNotifs].slice(0, 50);
-            }
-          });
-          localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+          // Toast para disputas novas — mas NÃO adiciona nas Notifs
+          // (só o resultado final — vencida ou perdida — vai para Notifs)
+          mapped.forEach(d => showEldToast(d));
           typeof playUiSound === 'function' && playUiSound();
         } else {
           // Sincroniza disputas existentes
