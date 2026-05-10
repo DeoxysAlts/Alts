@@ -895,6 +895,8 @@
   }
   .eld-tab-btn.active { background: var(--eld-surf3); border-color: rgba(255,255,255,0.11); color: var(--text); }
   .eld-tab-btn:hover:not(.active) { color: var(--text); }
+  .eld-tab-btn[data-tab="disputes"].has-items { color: #f5a623; }
+  .eld-tab-btn[data-tab="disputes"].has-items.active { background: rgba(245,166,35,0.15); border-color: rgba(245,166,35,0.3); color: #f5a623; }
 
   /* NOTIF LIST */
   .eld-notif-list {
@@ -934,52 +936,8 @@
   .eld-notif.unread.completed::after  { background: var(--eld-green); box-shadow: 0 0 6px var(--eld-green); }
   .eld-notif.unread.pending::after    { background: var(--eld-yellow); box-shadow: 0 0 6px var(--eld-yellow); }
   .eld-notif.unread.cancelled::after  { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
-  .eld-notif.unread.dispute::after    { background: var(--eld-purple); box-shadow: 0 0 6px var(--eld-purple); }
+  .eld-notif.unread.dispute::after    { background: var(--eld-purple); }
   .eld-notif.unread.other::after      { background: var(--eld-blue); }
-
-  /* Dispute tab badge */
-  #eld-tab-disputed { position: relative; }
-  #eld-tab-disputed.has-disputes { color: #c084fc !important; border-color: rgba(157,125,255,0.35) !important; }
-  #eld-tab-disputed.has-disputes.active { background: rgba(157,125,255,0.12) !important; }
-
-  /* Dispute card styles */
-  .eld-dispute-reason {
-    background: rgba(157,125,255,0.07);
-    border-left: 2px solid rgba(157,125,255,0.45);
-    border-radius: 0 6px 6px 0;
-    padding: 6px 10px;
-    margin: 4px 0;
-    font-size: 11px;
-    color: #b8b8d0;
-    line-height: 1.45;
-  }
-  .eld-dispute-timer {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 10px; color: #c084fc; font-weight: 600;
-    margin-top: 2px;
-  }
-  .eld-dispute-actions { display: flex; gap: 6px; margin-top: 6px; }
-  .eld-btn-review {
-    flex: 2; padding: 7px 10px;
-    background: rgba(157,125,255,0.10);
-    border: 1px solid rgba(157,125,255,0.28);
-    color: #c084fc; font-size: 11px; font-weight: 700;
-    border-radius: 8px; cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: background .15s, border-color .15s;
-  }
-  .eld-btn-review:hover { background: rgba(157,125,255,0.22); border-color: rgba(157,125,255,0.5); }
-  .eld-btn-refund {
-    flex: 1; padding: 7px 10px;
-    background: rgba(74,158,255,0.08);
-    border: 1px solid rgba(74,158,255,0.22);
-    color: #4a9eff; font-size: 11px; font-weight: 700;
-    border-radius: 8px; cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: background .15s, border-color .15s;
-    white-space: nowrap;
-  }
-  .eld-btn-refund:hover { background: rgba(74,158,255,0.18); border-color: rgba(74,158,255,0.4); }
   .eld-unread-dot {
     position: absolute; top: 8px; right: 8px;
     width: 5px; height: 5px; border-radius: 50%;
@@ -1415,6 +1373,10 @@
                 <div class="eld-stat-n" id="eld-stat-pending">—</div>
                 <div class="eld-stat-l">Pendentes</div>
               </div>
+              <div class="eld-stat" id="eld-stat-disputes-wrap" style="display:none">
+                <div class="eld-stat-n" id="eld-stat-disputes" style="color:#f5a623">—</div>
+                <div class="eld-stat-l" style="color:#f5a623">Disputas</div>
+              </div>
             </div>
 
             <!-- TABS -->
@@ -1422,7 +1384,7 @@
               <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')">Notifs</button>
               <button class="eld-tab-btn" data-tab="completed" onclick="setEldTab('completed')">Concluídos ✅</button>
               <button class="eld-tab-btn" data-tab="pending" onclick="setEldTab('pending')">Pendentes ⏳</button>
-              <button class="eld-tab-btn" data-tab="disputed" onclick="setEldTab('disputed')" id="eld-tab-disputed">Disputas ⚠️</button>
+              <button class="eld-tab-btn" data-tab="disputes" onclick="setEldTab('disputes')">Disputas ⚠️</button>
               <button class="eld-tab-btn" data-tab="cancelled" onclick="setEldTab('cancelled')">Cancelados ❌</button>
             </div>
 
@@ -5379,8 +5341,8 @@ let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds     = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
 let _eldPending     = JSON.parse(localStorage.getItem('eld_pending') || '[]');
 let _eldCancelled   = JSON.parse(localStorage.getItem('eld_cancelled') || '[]');
+let _eldDisputes    = JSON.parse(localStorage.getItem('eld_disputes') || '[]');
 let _eldVendas      = JSON.parse(localStorage.getItem('eld_vendas') || '[]');
-let _eldDisputed    = JSON.parse(localStorage.getItem('eld_disputed') || '[]');
 let _eldPanelOpen   = false;
 let _eldPollTimer   = null;
 let _eldTab         = 'notifs';
@@ -5392,17 +5354,6 @@ let _eldExtInstalled = false; // detecta se extensão está presente
   // Mantém apenas os que foram confirmados pelo usuário (têm delivered:true)
   _eldVendas = _eldVendas.filter(v => v.delivered === true);
   localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
-
-  // Restaura badge de disputas ao carregar
-  if (_eldDisputed.length > 0) {
-    setTimeout(() => {
-      const disputeTab = document.getElementById('eld-tab-disputed');
-      if (disputeTab) {
-        disputeTab.classList.add('has-disputes');
-        disputeTab.textContent = `Disputas ⚠️ (${_eldDisputed.length})`;
-      }
-    }, 300);
-  }
 
   renderEldPanel();
   updateEldBell();
@@ -5542,22 +5493,6 @@ function processExtensionNotifs(notifs) {
     localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
   }
 
-  // Salva disputados em array separado
-  const newDisputed = filtered.filter(n => normalizeEldStatus(n.status) === 'dispute');
-  if (newDisputed.length > 0) {
-    const existingDisputeIds = new Set(_eldDisputed.map(d => String(d.id)));
-    const reallyNewDisputes = newDisputed.filter(d => !existingDisputeIds.has(String(d.id)));
-    if (reallyNewDisputes.length > 0) {
-      _eldDisputed = [...reallyNewDisputes, ..._eldDisputed].slice(0, 100);
-      localStorage.setItem('eld_disputed', JSON.stringify(_eldDisputed));
-    }
-    const disputeTab = document.getElementById('eld-tab-disputed');
-    if (disputeTab) {
-      disputeTab.classList.toggle('has-disputes', _eldDisputed.length > 0);
-      disputeTab.textContent = _eldDisputed.length > 0 ? `Disputas ⚠️ (${_eldDisputed.length})` : 'Disputas ⚠️';
-    }
-  }
-
   // Toasts e som para todas as novas (incluindo vendas concluídas)
   newOnes.filter(n => !n.read).forEach(n => showEldToast(n));
   if (newOnes.some(n => !n.read)) {
@@ -5588,13 +5523,12 @@ async function pollEldorado() {
     const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
     if (!uid) return; // não logado, não faz nada
     const eldHeaders = { 'x-user-id': uid };
-    const [rNotif, rPend, rCancel, rVendas, rHistorico, rDisputas] = await Promise.all([
+    const [rNotif, rPend, rCancel, rVendas, rHistorico] = await Promise.all([
       fetch(ELD_WORKER + '/notificacoes', { headers: eldHeaders }),
       fetch(ELD_WORKER + '/pendentes',    { headers: eldHeaders }),
       fetch(ELD_WORKER + '/canceladas',   { headers: eldHeaders }),
       fetch(ELD_WORKER + '/vendas',       { headers: eldHeaders }),
       fetch(ELD_WORKER + '/historico',    { headers: eldHeaders }),
-      fetch(ELD_WORKER + '/disputas',     { headers: eldHeaders }),
     ]);
 
     if (!rNotif.ok) {
@@ -5607,7 +5541,6 @@ async function pollEldorado() {
     const dCancel = rCancel.ok ? await rCancel.json() : { total: 0, canceladas: [] };
     const dVendas = rVendas.ok ? await rVendas.json() : { total: 0, vendas: [] };
     const dHistorico = rHistorico.ok ? await rHistorico.json() : { historico: [] };
-    const dDisputas  = rDisputas && rDisputas.ok ? await rDisputas.json() : { disputas: [] };
 
     // ── Processa histórico completo do worker ─────────────────────
     // Isso popula o eld_historico com vendas + cancelamentos do passado
@@ -5684,11 +5617,11 @@ async function pollEldorado() {
 
       // Mantém _eldCancelled sincronizado com a API (para painel de notificações)
       _eldCancelled = canceladasApi
-        .filter(c => !dismissed.includes(String(c.id)))
+        .filter(c => !dismissed.includes(String(c.id)) && c.status !== 'dispute' && normalizeEldStatus(c.status) !== 'dispute')
         .map(c => ({
           id:        String(c.id),
-          icon:      c.status === 'dispute' ? '⚠️' : '❌',
-          label:     c.status === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+          icon:      '❌',
+          label:     'Pedido cancelado',
           title:     c.produto || 'Produto',
           price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
           status:    c.status || 'cancelled',
@@ -5697,6 +5630,54 @@ async function pollEldorado() {
           read:      true,
         }));
       localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+
+      // ── Disputas — array separado ──────────────────────────────────
+      const disputasApi = canceladasApi.filter(c => normalizeEldStatus(c.status) === 'dispute');
+      if (disputasApi.length > 0) {
+        const existingDisputeIds = new Set(_eldDisputes.map(d => String(d.id)));
+        const novasDisputas = disputasApi.filter(c => !existingDisputeIds.has(String(c.id)) && !dismissed.includes(String(c.id)));
+        if (novasDisputas.length > 0) {
+          const mapped = novasDisputas.map(c => ({
+            id:        String(c.id),
+            icon:      '⚠️',
+            label:     'Em disputa',
+            title:     c.produto || 'Produto',
+            price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+            status:    'dispute',
+            comprador: c.comprador || '',
+            ts:        new Date(c.data || Date.now()).getTime(),
+            read:      false,
+          }));
+          _eldDisputes = [...mapped, ..._eldDisputes].slice(0, 100);
+          localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
+          // Toast + notif para disputas novas
+          mapped.forEach(d => {
+            showEldToast(d);
+            const existingNotifIds2 = new Set(_eldNotifs.map(n => String(n.id)));
+            if (!existingNotifIds2.has(String(d.id))) {
+              _eldNotifs = [d, ..._eldNotifs].slice(0, 50);
+            }
+          });
+          localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+          typeof playUiSound === 'function' && playUiSound();
+        } else {
+          // Sincroniza disputas existentes
+          _eldDisputes = disputasApi
+            .filter(c => !dismissed.includes(String(c.id)))
+            .map(c => ({
+              id:        String(c.id),
+              icon:      '⚠️',
+              label:     'Em disputa',
+              title:     c.produto || 'Produto',
+              price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+              status:    'dispute',
+              comprador: c.comprador || '',
+              ts:        new Date(c.data || Date.now()).getTime(),
+              read:      _eldDisputes.find(d => String(d.id) === String(c.id))?.read ?? true,
+            }));
+          localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
+        }
+      }
     }
 
     // ── Vendas — acumula no histórico persistente ────────────────
@@ -5868,96 +5849,20 @@ async function pollEldorado() {
         }
       }
 
-      // Disputas em array separado (também captura disputas vindas das notificações)
-      const newDisputedFromNotif = filtered.filter(n => normalizeEldStatus(n.status) === 'dispute');
-      if (newDisputedFromNotif.length > 0) {
-        const existingDisputeIds = new Set(_eldDisputed.map(d => String(d.id)));
-        const reallyNewDisputes = newDisputedFromNotif.filter(d => !existingDisputeIds.has(String(d.id)));
-        if (reallyNewDisputes.length > 0) {
-          _eldDisputed = [...reallyNewDisputes, ..._eldDisputed].slice(0, 100);
-          localStorage.setItem('eld_disputed', JSON.stringify(_eldDisputed));
-          const disputeTab = document.getElementById('eld-tab-disputed');
-          if (disputeTab) {
-            disputeTab.classList.add('has-disputes');
-            disputeTab.textContent = `Disputas ⚠️ (${_eldDisputed.length})`;
-          }
+      // Disputas vindas das notificações em array separado
+      const newDisputes = filtered.filter(n => normalizeEldStatus(n.status) === 'dispute');
+      if (newDisputes.length > 0) {
+        const existingDisputeIds2 = new Set(_eldDisputes.map(d => String(d.id)));
+        const reallyNewDisp = newDisputes.filter(d => !existingDisputeIds2.has(String(d.id)));
+        if (reallyNewDisp.length > 0) {
+          _eldDisputes = [...reallyNewDisp, ..._eldDisputes].slice(0, 100);
+          localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
         }
       }
 
       // Toast e som
       newNotifs.filter(n => !n.read).forEach(n => showEldToast(n));
       if (newNotifs.some(n => !n.read)) typeof playUiSound === 'function' && playUiSound();
-    }
-
-    // ── Disputas — aba dedicada em tempo real ───────────────────────
-    const disputasApi = dDisputas.disputas || [];
-    // Também busca disputas das notificações (evento Disputed)
-    const notifDisputes = (dNotif.notificacoes || [])
-      .filter(n => (n.evento || '').includes('Disputed') || (n.status || '').match(/disput/i));
-
-    // Mescla disputas da API + das notificações
-    const allDisputeSources = [
-      ...disputasApi.map(d => ({
-        id:            String(d.id),
-        icon:          '⚠️',
-        label:         'Em disputa',
-        title:         d.produto || d.title || 'Produto',
-        price:         d.valor ? 'US$' + parseFloat(d.valor).toFixed(2) : (d.price || ''),
-        status:        'dispute',
-        comprador:     d.comprador || d.buyer || '',
-        ts:            new Date(d.data || d.ts || Date.now()).getTime(),
-        disputeTs:     d.disputeTs ? new Date(d.disputeTs).getTime() : null,
-        disputeReason: d.motivo || d.reason || d.disputeReason || '',
-        read:          true,
-        _fromApi:      true,
-      })),
-      ...notifDisputes.map(n => ({
-        id:            String(n.id || Math.random()),
-        icon:          '⚠️',
-        label:         'Em disputa',
-        title:         n.produto || 'Produto',
-        price:         n.valor ? 'US$' + parseFloat(n.valor).toFixed(2) : '',
-        status:        'dispute',
-        comprador:     n.comprador || '',
-        ts:            new Date(n.data || Date.now()).getTime(),
-        disputeTs:     null,
-        disputeReason: '',
-        read:          false,
-        _fromApi:      false,
-      })),
-    ];
-
-    if (allDisputeSources.length > 0) {
-      const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-      const existingIds = new Set(_eldDisputed.map(d => String(d.id)));
-      const novasDisputas = allDisputeSources.filter(d =>
-        !dismissed.includes(String(d.id)) && !existingIds.has(String(d.id))
-      );
-
-      // Sempre sincroniza _eldDisputed com a API (fonte da verdade)
-      _eldDisputed = allDisputeSources
-        .filter(d => !dismissed.includes(String(d.id)))
-        .reduce((acc, d) => {
-          if (!acc.find(x => x.id === d.id)) acc.push(d);
-          return acc;
-        }, [])
-        .slice(0, 100);
-      localStorage.setItem('eld_disputed', JSON.stringify(_eldDisputed));
-
-      // Notifica novas disputas com toast de alerta
-      novasDisputas.forEach(d => {
-        showEldToast({...d, label: '⚠️ Nova disputa aberta!'});
-        // Som de alerta especial para disputas
-        typeof playUiSound === 'function' && playUiSound();
-      });
-    }
-
-    // Atualiza badge da aba Disputados
-    const disputeTab = document.getElementById('eld-tab-disputed');
-    if (disputeTab) {
-      disputeTab.classList.toggle('has-disputes', _eldDisputed.length > 0);
-      const dCount = _eldDisputed.length;
-      disputeTab.textContent = dCount > 0 ? `Disputas ⚠️ (${dCount})` : 'Disputas ⚠️';
     }
 
     renderEldPanel();
@@ -6035,9 +5940,16 @@ function renderEldStats() {
   const rEl = document.getElementById('eld-stat-revenue');
   const tEl = document.getElementById('eld-stat-total');
   const pEl = document.getElementById('eld-stat-pending');
+  const dEl = document.getElementById('eld-stat-disputes');
+  const dWrap = document.getElementById('eld-stat-disputes-wrap');
   if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
   if (tEl) tEl.textContent = vendasHoje.length;
   if (pEl) pEl.textContent = _eldPending.length;
+  if (dEl) dEl.textContent = _eldDisputes.length;
+  if (dWrap) dWrap.style.display = _eldDisputes.length > 0 ? '' : 'none';
+  // Destaca a aba de Disputas quando tiver itens
+  const disputeTabBtn = document.querySelector('.eld-tab-btn[data-tab="disputes"]');
+  if (disputeTabBtn) disputeTabBtn.classList.toggle('has-items', _eldDisputes.length > 0);
 }
 
 function renderEldList() {
@@ -6063,8 +5975,8 @@ function renderEldList() {
     ? _eldVendas
     : _eldTab === 'pending'
     ? _eldPending
-    : _eldTab === 'disputed'
-    ? _eldDisputed
+    : _eldTab === 'disputes'
+    ? _eldDisputes
     : _eldTab === 'cancelled'
     ? _eldCancelled
     : _eldNotifs.filter(n => normalizeEldStatus(n.status) === _eldTab);
@@ -6092,45 +6004,6 @@ function renderEldList() {
     const unread = !n.read ? 'unread' : '';
     const buyer  = n.comprador || n.buyer || '';
     const isPending = _eldTab === 'pending';
-    const isDisputed = _eldTab === 'disputed';
-
-    if (isDisputed) {
-      // Calcula prazo (72h da abertura da disputa)
-      const deadline = n.disputeTs ? n.disputeTs + 72*3600*1000 : (n.ts + 72*3600*1000);
-      const remaining = deadline - Date.now();
-      const hoursLeft = Math.max(0, Math.floor(remaining / 3600000));
-      const minsLeft  = Math.max(0, Math.floor((remaining % 3600000) / 60000));
-      const timerStr  = remaining <= 0 ? '⏰ Prazo expirado!' : `⏱ Prazo para resposta: ${hoursLeft}h ${minsLeft}min`;
-      const timerColor = remaining < 6*3600*1000 ? '#ff5555' : '#c084fc';
-      const reason = n.disputeReason || n.reason || 'Comprador abriu disputa neste pedido.';
-      return `
-        <div class="eld-notif ${unread} dispute" style="flex-direction:column;gap:5px;padding:10px 12px 10px 14px">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-            <div style="flex:1;min-width:0">
-              <div class="eld-notif-label dispute" style="margin-bottom:3px;display:flex;align-items:center;gap:4px">⚠️ Pedido em disputa</div>
-              <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.45;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
-            </div>
-            <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:#c084fc;flex-shrink:0;margin-top:14px;letter-spacing:-0.5px">${escHtml(n.price || '')}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:10px;color:#5a5a6a;font-weight:500">
-            ${buyer ? `<span style="display:flex;align-items:center;gap:3px;color:#7878a0">👤 ${escHtml(buyer)}</span>` : ''}
-            <span class="eld-ts" data-ts="${n.ts}" style="display:flex;align-items:center;gap:3px">🕐 ${ago}</span>
-          </div>
-          <div class="eld-dispute-reason">${escHtml(reason)}</div>
-          <div class="eld-dispute-timer" style="color:${timerColor}">${timerStr}</div>
-          <div class="eld-dispute-actions">
-            <button class="eld-btn-review" data-dispute-review="${escHtml(String(n.id))}"
-              onclick="window.open('https://www.eldorado.gg/br/dashboard/orders/disputes','_blank')">
-              🔍 Revisar na Eldorado
-            </button>
-            <button class="eld-btn-refund" data-dispute-refund="${escHtml(String(n.id))}"
-              onclick="disputeRefund('${escHtml(String(n.id))}')">
-              ↩ Reembolsar
-            </button>
-          </div>
-          <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar">✕</button>
-        </div>`;
-    }
 
     if (isPending) {
       return `
@@ -6335,18 +6208,12 @@ function dismissEldNotif(id) {
   } else if (_eldTab === 'completed') {
     _eldVendas = _eldVendas.filter(n => String(n.id) !== String(id));
     localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
-  } else if (_eldTab === 'disputed') {
-    _eldDisputed = _eldDisputed.filter(n => String(n.id) !== String(id));
-    localStorage.setItem('eld_disputed', JSON.stringify(_eldDisputed));
+  } else if (_eldTab === 'disputes') {
+    _eldDisputes = _eldDisputes.filter(n => String(n.id) !== String(id));
+    localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
     if (!dismissed.includes(String(id))) dismissed.push(String(id));
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
-    // Atualiza badge da aba
-    const disputeTab = document.getElementById('eld-tab-disputed');
-    if (disputeTab) {
-      disputeTab.classList.toggle('has-disputes', _eldDisputed.length > 0);
-      disputeTab.textContent = _eldDisputed.length > 0 ? `Disputas ⚠️ (${_eldDisputed.length})` : 'Disputas ⚠️';
-    }
   } else if (_eldTab === 'cancelled') {
     _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
     localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
@@ -6362,41 +6229,6 @@ function dismissEldNotif(id) {
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
     if (!dismissed.includes(String(id))) dismissed.push(String(id));
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
-  }
-  renderEldPanel();
-  updateEldBell();
-}
-
-// ── REEMBOLSAR DISPUTA ────────────────────────────────────────────────────────
-async function disputeRefund(id) {
-  if (!confirm('Confirmar reembolso deste pedido em disputa?')) return;
-  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-  let ok = false;
-  if (uid) {
-    try {
-      const resp = await fetch(ELD_WORKER + '/reembolsar-disputa', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
-        body:    JSON.stringify({ orderId: id }),
-      });
-      const data = await resp.json();
-      if (resp.ok && data.ok) ok = true;
-    } catch(e) {}
-  }
-  if (!ok) {
-    // Redireciona para o painel da Eldorado se não conseguir via API
-    if (confirm('Não foi possível reembolsar automaticamente.\nAbrir painel de disputas da Eldorado?')) {
-      window.open('https://www.eldorado.gg/br/dashboard/orders/disputes', '_blank');
-    }
-    return;
-  }
-  // Remove da lista de disputas
-  _eldDisputed = _eldDisputed.filter(n => String(n.id) !== String(id));
-  localStorage.setItem('eld_disputed', JSON.stringify(_eldDisputed));
-  const disputeTab = document.getElementById('eld-tab-disputed');
-  if (disputeTab) {
-    disputeTab.classList.toggle('has-disputes', _eldDisputed.length > 0);
-    disputeTab.textContent = _eldDisputed.length > 0 ? `Disputas ⚠️ (${_eldDisputed.length})` : 'Disputas ⚠️';
   }
   renderEldPanel();
   updateEldBell();
@@ -6476,20 +6308,18 @@ function clearEldCookie() {
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
     _eldVendas = [];
     localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+  } else if (_eldTab === 'disputes') {
+    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    _eldDisputes.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    _eldDisputes = [];
+    localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
   } else if (_eldTab === 'pending') {
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
     _eldPending.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
     _eldPending = [];
     localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
-  } else if (_eldTab === 'disputed') {
-    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    _eldDisputed.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
-    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
-    _eldDisputed = [];
-    localStorage.setItem('eld_disputed', JSON.stringify(_eldDisputed));
-    const disputeTab = document.getElementById('eld-tab-disputed');
-    if (disputeTab) { disputeTab.classList.remove('has-disputes'); disputeTab.textContent = 'Disputas ⚠️'; }
   } else if (_eldTab === 'cancelled') {
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
     _eldCancelled.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
