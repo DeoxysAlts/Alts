@@ -1544,8 +1544,13 @@
             <svg width="14" height="14" fill="none" stroke="#1fd679" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <span id="vd-chart-title">Receita por hora</span>
           </div>
-          <div id="vd-chart" style="height:180px;display:flex;align-items:flex-end;gap:2px;padding-bottom:0;position:relative"></div>
+          <div id="vd-chart" style="width:100%;position:relative;overflow:visible"></div>
           <div id="vd-chart-labels" style="display:none"></div>
+          <!-- Tabs Receitas / Pedidos concluídos -->
+          <div style="display:flex;gap:0;margin-top:14px;border-top:0.5px solid rgba(255,255,255,0.07);padding-top:10px">
+            <button id="vd-metric-receitas" onclick="setVdMetric('receitas')" style="padding:6px 16px;border:none;border-bottom:2px solid #1fd679;background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s">Receitas</button>
+            <button id="vd-metric-pedidos" onclick="setVdMetric('pedidos')" style="padding:6px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s">Pedidos concluídos</button>
+          </div>
         </div>
 
         <!-- Produtos mais vendidos -->
@@ -3242,6 +3247,25 @@ function closeStatsView() {
 
 // ── VENDAS DO DIA ─────────────────────────────────────────────────────────────
 let _vdPeriodo = 'hoje';
+let _vdMetric  = 'receitas'; // 'receitas' | 'pedidos'
+
+function setVdMetric(m) {
+  _vdMetric = m;
+  ['receitas','pedidos'].forEach(t => {
+    const btn = document.getElementById('vd-metric-' + t);
+    if (!btn) return;
+    if (t === m) {
+      btn.style.borderBottomColor = '#1fd679';
+      btn.style.color = 'var(--text)';
+      btn.style.fontWeight = '600';
+    } else {
+      btn.style.borderBottomColor = 'transparent';
+      btn.style.color = 'var(--muted)';
+      btn.style.fontWeight = '500';
+    }
+  });
+  renderVendasDia();
+}
 
 function showVendasDia() {
   playUiSound();
@@ -3351,7 +3375,7 @@ function renderVendasDia() {
     </div>
   `).join('');
 
-  // ── GRÁFICO POR HORA ──────────────────────────────────────────────────────
+  // ── GRÁFICO DE LINHA SVG ──────────────────────────────────────────────────
   const chartEl  = document.getElementById('vd-chart');
   const labelEl  = document.getElementById('vd-chart-labels');
   const chartTitle = document.getElementById('vd-chart-title');
@@ -3408,28 +3432,127 @@ function renderVendasDia() {
       sorted.forEach(d => buckets[d] = byDate[d]);
     }
 
+    // Suporte a pedidos: cria buckets paralelo de contagem
+    const countBuckets = {};
+    Object.keys(buckets).forEach(k => countBuckets[k] = 0);
+    if (_vdPeriodo === 'hoje' || _vdPeriodo === 'ontem') {
+      vendas.forEach(v => { const h = new Date(v.ts).getHours(); if (h in countBuckets) countBuckets[h] = (countBuckets[h]||0)+1; });
+    } else if (_vdPeriodo === '3dias') {
+      vendas.forEach(v => {
+        const vDate = new Date(v.ts); vDate.setHours(0,0,0,0);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const diff = Math.round((today-vDate)/86400000);
+        const key = diff===0?'Hoje':diff===1?'Ontem':vDate.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+        if (key in countBuckets) countBuckets[key]=(countBuckets[key]||0)+1;
+      });
+    } else if (_vdPeriodo === 'semana') {
+      vendas.forEach(v => { const d=new Date(v.ts).toLocaleDateString('pt-BR',{weekday:'short'}); if (d in countBuckets) countBuckets[d]=(countBuckets[d]||0)+1; });
+    } else {
+      vendas.forEach(v => { const d=new Date(v.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); if (d in countBuckets) countBuckets[d]=(countBuckets[d]||0)+1; });
+    }
+
     const keys = Object.keys(buckets);
-    const vals = keys.map(k => buckets[k]);
+    const usePedidos = _vdMetric === 'pedidos';
+    const vals = keys.map(k => usePedidos ? (countBuckets[k]||0) : buckets[k]);
     const maxVal = Math.max(...vals, 0.01);
 
-    // Gráfico redesenhado: valor em cima, barra, hora embaixo
-    chartEl.style.cssText = 'height:180px;display:flex;align-items:flex-end;gap:2px;padding:20px 0 0 0;position:relative;overflow:visible';
-    chartEl.innerHTML = keys.map((k, i) => {
-      const h = Math.max(6, (vals[i] / maxVal) * 130);
-      const isActive = vals[i] > 0;
-      const label = typeof k === 'number' ? k + 'h' : k;
-      const valLabel = isActive ? (vals[i] < 10 ? '$' + vals[i].toFixed(2) : '$' + vals[i].toFixed(1)) : '';
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:0;position:relative;min-width:0"
-        onmouseover="this.querySelector('.vd-tip').style.opacity='1';this.querySelector('.vd-bar').style.filter='brightness(1.3)'"
-        onmouseout="this.querySelector('.vd-tip').style.opacity='0';this.querySelector('.vd-bar').style.filter='none'">
-        <div class="vd-tip" style="position:absolute;bottom:calc(${h}px + 26px);background:#1fd679;color:#000;font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:10">US$${vals[i].toFixed(2)}</div>
-        ${isActive ? `<div style="font-size:8px;color:#1fd679;font-weight:700;margin-bottom:2px;white-space:nowrap">${valLabel}</div>` : '<div style="height:14px"></div>'}
-        <div class="vd-bar" style="width:100%;max-width:24px;background:${isActive ? '#1fd679' : 'rgba(31,214,121,.1)'};border-radius:3px 3px 0 0;height:${h}px;transition:height .3s,filter .15s"></div>
-        <div style="font-size:9px;color:${isActive ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.2)'};margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center">${label}</div>
-      </div>`;
-    }).join('');
+    // ── SVG LINE CHART ────────────────────────────────────────────────────────
+    chartEl.style.cssText = 'width:100%;position:relative;overflow:visible';
+    chartEl.innerHTML = '';
 
-    if (labelEl) labelEl.innerHTML = ''; // labels agora estão dentro das barras
+    const W = 560, H = 170, padL = 48, padR = 12, padT = 18, padB = 28;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const n = keys.length;
+
+    // Y-axis: 4 grid lines
+    const nYTicks = 4;
+    let gridLines = '', yLabels = '';
+    for (let i = 0; i <= nYTicks; i++) {
+      const yVal = (maxVal / nYTicks) * i;
+      const yPx  = padT + plotH - (yVal / maxVal) * plotH;
+      gridLines += `<line x1="${padL}" y1="${yPx.toFixed(1)}" x2="${W - padR}" y2="${yPx.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+      const labelTxt = yVal >= 1000 ? `$${(yVal/1000).toFixed(1)}k` : `$${yVal.toFixed(yVal < 10 ? 2 : 0)}`;
+      yLabels += `<text x="${padL - 6}" y="${(yPx + 4).toFixed(1)}" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${labelTxt}</text>`;
+    }
+
+    // Points
+    const pts = keys.map((k, i) => {
+      const x = n === 1 ? padL + plotW / 2 : padL + (i / (n - 1)) * plotW;
+      const y = padT + plotH - (vals[i] / maxVal) * plotH;
+      return { x, y, v: vals[i], label: typeof k === 'number' ? k + 'h' : k };
+    });
+
+    // Smooth bezier line
+    function bezierPath(points) {
+      if (points.length < 2) return points.length === 1 ? `M${points[0].x},${points[0].y}` : '';
+      let d = `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1], curr = points[i];
+        const cpx = (prev.x + curr.x) / 2;
+        d += ` C${cpx.toFixed(2)},${prev.y.toFixed(2)} ${cpx.toFixed(2)},${curr.y.toFixed(2)} ${curr.x.toFixed(2)},${curr.y.toFixed(2)}`;
+      }
+      return d;
+    }
+
+    const linePath = bezierPath(pts);
+    // Area = line path + close to bottom
+    const areaPath = pts.length
+      ? linePath + ` L${pts[pts.length-1].x.toFixed(2)},${(padT + plotH).toFixed(2)} L${pts[0].x.toFixed(2)},${(padT + plotH).toFixed(2)} Z`
+      : '';
+
+    // X labels (show a subset to avoid crowding)
+    let xLabels = '';
+    const maxXLabels = Math.min(n, 8);
+    const xStep = Math.max(1, Math.floor(n / maxXLabels));
+    pts.forEach((p, i) => {
+      if (i % xStep === 0 || i === n - 1) {
+        xLabels += `<text x="${p.x.toFixed(1)}" y="${(padT + plotH + 18).toFixed(1)}" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="DM Sans,sans-serif">${escHtml(String(p.label))}</text>`;
+      }
+    });
+
+    // Tooltip dots (invisible hit area + visible dot)
+    let dots = '', tooltips = '';
+    pts.forEach((p, i) => {
+      const hasVal = p.v > 0;
+      const tipId = 'vd-svgtip-' + i;
+      const tipTxt = usePedidos ? `${p.v} pedido${p.v!==1?'s':''}` : `US$${p.v.toFixed(2)}`;
+      const tipX = Math.min(Math.max(p.x, 30), W - 30);
+      const tipY = Math.max(p.y - 14, padT + 4);
+      dots += `
+        <circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="10" fill="transparent" stroke="none"
+          onmouseover="document.getElementById('${tipId}').style.display='block'"
+          onmouseout="document.getElementById('${tipId}').style.display='none'"/>
+        <circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${hasVal ? 3.5 : 2}" fill="${hasVal ? '#1fd679' : 'rgba(31,214,121,0.3)'}" stroke="${hasVal ? '#0e0e10' : 'none'}" stroke-width="2" pointer-events="none"/>
+      `;
+      tooltips += `
+        <g id="${tipId}" style="display:none;pointer-events:none">
+          <rect x="${(tipX - 28).toFixed(1)}" y="${(tipY - 11).toFixed(1)}" width="56" height="18" rx="4" fill="#1fd679"/>
+          <text x="${tipX.toFixed(1)}" y="${(tipY + 2).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#000" font-family="DM Sans,sans-serif">${escHtml(tipTxt)}</text>
+        </g>
+      `;
+    });
+
+    const uniqueId = 'vdgrad' + Date.now();
+    chartEl.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px;display:block;overflow:visible">
+        <defs>
+          <linearGradient id="${uniqueId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1fd679" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="#1fd679" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        ${yLabels}
+        ${xLabels}
+        ${areaPath ? `<path d="${areaPath}" fill="url(#${uniqueId})" stroke="none"/>` : ''}
+        ${linePath ? `<path d="${linePath}" fill="none" stroke="#1fd679" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+        ${dots}
+        ${tooltips}
+      </svg>
+    `;
+
+    if (labelEl) labelEl.innerHTML = '';
   }
 
   // ── TOP PRODUTOS ──────────────────────────────────────────────────────────
