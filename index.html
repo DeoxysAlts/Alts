@@ -5595,6 +5595,8 @@ function renderEldList() {
 
   const filtered = _eldTab === 'notifs'
     ? _eldNotifs.filter(n => {
+        // Vendas concluídas NÃO aparecem nas notifs — ficam só em Concluídos
+        if (normalizeEldStatus(n.status) === 'completed') return false;
         if (!n.read) {
           // Remove 'other' sem título real e sem preço
           if (normalizeEldStatus(n.status) === 'other') {
@@ -5614,7 +5616,15 @@ function renderEldList() {
     ? _eldCancelled
     : _eldNotifs.filter(n => normalizeEldStatus(n.status) === _eldTab);
 
-  if (filtered.length === 0) {
+  // Deduplica por id para evitar itens repetidos
+  const seen = new Set();
+  const deduped = filtered.filter(n => {
+    const key = String(n.id || n.title + '|' + n.ts);
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+
+  if (deduped.length === 0) {
     list.innerHTML = `
       <div style="text-align:center;padding:40px 16px;color:#4a4a55;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px">
         <div style="font-size:28px;opacity:.5">🔔</div>
@@ -5624,7 +5634,7 @@ function renderEldList() {
     return;
   }
 
-  list.innerHTML = filtered.map(n => {
+  list.innerHTML = deduped.map(n => {
     const ago    = eldTimeAgo(n.ts);
     const unread = !n.read ? 'unread' : '';
     const buyer  = n.comprador || n.buyer || '';
