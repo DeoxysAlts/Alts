@@ -5925,11 +5925,13 @@ async function pollEldorado() {
     if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
     if (tEl) tEl.textContent = vendasHoje.length;
 
-    // Pendentes — respeita dismissed e atualiza em tempo real
+    // Pendentes — acumula: nunca remove da lista local, só adiciona novos
+    // Remoção só acontece via "Confirmar entrega" ou "Cancelar" pelo usuário
     const pendentesApi = dPend.pendentes || [];
     const dismissedPend = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    const existingPendIds = new Set(_eldPending.map(p => String(p.id)));
     const novosItemsPend = pendentesApi
-      .filter(p => !dismissedPend.includes(String(p.id)))
+      .filter(p => !dismissedPend.includes(String(p.id)) && !existingPendIds.has(String(p.id)))
       .map(p => ({
         id:        String(p.id),
         icon:      '⏳',
@@ -5941,23 +5943,25 @@ async function pollEldorado() {
         ts:        new Date(p.data || Date.now()).getTime(),
         read:      true,
       }));
-    _eldPending = novosItemsPend;
+    // Só adiciona novos — não sobrescreve o array inteiro
+    if (novosItemsPend.length > 0) {
+      _eldPending = [..._eldPending, ...novosItemsPend].slice(0, 100);
+      localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    }
+    // Filtra dismissed do array atual (caso usuário tenha dismissado enquanto a API não atualizou)
+    _eldPending = _eldPending.filter(p => !dismissedPend.includes(String(p.id)));
     localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
 
-    // Novos pendentes também aparecem nas Notifs (não lidos)
-    // IDs dos pendentes ATIVOS nunca ficam no seen_pend — seen_pend só guarda IDs que já saíram da fila
+    // Novos pendentes aparecem nas Notifs UMA VEZ — seen_pend nunca é limpo para IDs ativos
     const existingNotifIds = new Set(_eldNotifs.map(n => String(n.id)));
-    const seenPendRaw      = JSON.parse(localStorage.getItem('eld_seen_pend') || '[]');
-    // Remove do seen_pend qualquer ID que ainda está ativo (pode ter voltado como novo pedido)
-    const ativosIds        = new Set(novosItemsPend.map(p => String(p.id)));
-    const seenPendSet      = new Set(seenPendRaw.filter(id => !ativosIds.has(id)));
-    // Considera novo: não está nas Notifs E não foi notificado antes
+    const seenPendSet      = new Set(JSON.parse(localStorage.getItem('eld_seen_pend') || '[]'));
+    // Novo = não está nas Notifs E nunca foi notificado (seen_pend persiste mesmo com item ativo)
     const novosNasNotifs   = novosItemsPend.filter(p => !existingNotifIds.has(String(p.id)) && !seenPendSet.has(String(p.id)));
     if (novosNasNotifs.length > 0) {
       const comUnread = novosNasNotifs.map(p => ({...p, read: false, status: 'pending', icon: '⏳', label: 'Entrega pendente'}));
       _eldNotifs = [...comUnread, ..._eldNotifs].slice(0, 50);
       localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
-      // Marca como vistos para não duplicar
+      // Marca como visto permanentemente — não volta mais mesmo que API flutue
       const newSeenPend = [...seenPendSet, ...novosNasNotifs.map(p => String(p.id))].slice(-200);
       localStorage.setItem('eld_seen_pend', JSON.stringify(newSeenPend));
       novosNasNotifs.forEach(p => showEldToast({...p, read: false, icon: '⏳', label: 'Entrega pendente'}));
