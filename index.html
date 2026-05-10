@@ -4739,6 +4739,10 @@ function processExtensionNotifs(notifs) {
     const id = String(n.id || Math.random());
     if (_eldSeenIds.includes(id)) continue;
     if (dismissed.includes(id)) continue;
+    // Evita duplicatas por título+status (extensão pode mandar mesmo evento sem ID fixo)
+    const dupKey = (n.title || '') + '|' + (n.status || '') + '|' + (n.ts || '');
+    if (_eldSeenIds.includes(dupKey)) continue;
+    _eldSeenIds.push(dupKey);
 
     // Mapeia formato da extensão para formato do site
     const mapped = {
@@ -4838,9 +4842,8 @@ async function pollEldorado() {
     // ── Vendas sincronizadas da API ────────────────────────────────
     const vendasApi = dVendas.vendas || [];
     if (vendasApi.length > 0) {
-      // Detecta vendas novas (não vistas ainda) para toasts
-      const existingVendaIds = new Set((_eldVendas || []).map(v => String(v.id)));
-      const novasVendas = vendasApi.filter(v => !existingVendaIds.has(String(v.id)));
+      // Detecta vendas novas usando _eldSeenIds para não repetir toast
+      const novasVendas = vendasApi.filter(v => !_eldSeenIds.includes('venda-' + String(v.id)));
 
       _eldVendas = vendasApi.map(v => ({
         id:        String(v.id),
@@ -4869,8 +4872,13 @@ async function pollEldorado() {
           read:      false,
         };
         showEldToast(notif);
+        _eldSeenIds.push('venda-' + String(v.id));
       });
-      if (novasVendas.length > 0) typeof playUiSound === 'function' && playUiSound();
+      if (novasVendas.length > 0) {
+        typeof playUiSound === 'function' && playUiSound();
+        _eldSeenIds = _eldSeenIds.slice(-500);
+        localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
+      }
 
       // Atualiza stat de vendas do dia
       const today = new Date(); today.setHours(0,0,0,0);
