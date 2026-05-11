@@ -29,6 +29,57 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Titlebar Electron */
+  .electron-titlebar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 32px;
+    background: #0a0a0c;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+    z-index: 9999;
+    -webkit-app-region: drag;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px 0 16px;
+  }
+  .electron-titlebar.visible { display: flex; }
+  .electron-titlebar-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.5px;
+    -webkit-app-region: drag;
+  }
+  .electron-titlebar-controls {
+    display: flex;
+    gap: 6px;
+    -webkit-app-region: no-drag;
+  }
+  .electron-titlebar-controls button {
+    width: 28px; height: 22px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    transition: all .15s;
+  }
+  .electron-titlebar-controls button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .electron-titlebar-controls .btn-close:hover { background: #e81123; color: #fff; }
+  body.is-electron { padding-top: 32px; }
+  body.is-electron #brainrots-stats-view,
+  body.is-electron #vendas-dia-view {
+    top: 32px !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: auto !important;
+  }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -1295,6 +1346,16 @@
 </div>
 
 
+<!-- Electron Titlebar -->
+<div class="electron-titlebar" id="electron-titlebar">
+  <span class="electron-titlebar-title">⬡ DEOXYS ALTS</span>
+  <div class="electron-titlebar-controls">
+    <button onclick="electronMinimize()" title="Minimizar">─</button>
+    <button onclick="electronMaximize()" title="Maximizar">□</button>
+    <button class="btn-close" onclick="electronClose()" title="Fechar">✕</button>
+  </div>
+</div>
+
 <div class="app" id="main-app" style="display:none">
   <div class="header">
     <div class="header-left">
@@ -2259,6 +2320,8 @@ checkResetLink();
 auth.onAuthStateChanged(async function(user) {
   if (user) {
     currentUser = user;
+    // Envia UID ao processo Electron para autenticar no Worker
+    if (window.electronAPI?.setUid) window.electronAPI.setUid(user.uid);
     playUiSound();
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
@@ -2271,10 +2334,19 @@ auth.onAuthStateChanged(async function(user) {
     // Init presence tracking
     initPresence(user.uid);
     await loadData();
+    // Inicia polling da Eldorado aqui, após currentUser estar definido
+    startEldPolling();
+    pollEldorado();
+    loadEldPerfil();
   } else {
     // Destroy presence on logout
     if (currentUser) destroyPresence(currentUser.uid);
     currentUser = null;
+    // Para polling da Eldorado
+    if (typeof _eldPollTimer !== 'undefined' && _eldPollTimer) {
+      clearInterval(_eldPollTimer);
+      _eldPollTimer = null;
+    }
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('main-app').style.display = 'none';
     data = { accounts: [] };
@@ -2956,6 +3028,9 @@ function showStatsView() {
   
   // Show fullscreen stats view
   statsView.style.display = 'block';
+  // Adjust for Electron titlebar
+  const eTitleH = document.body.classList.contains('is-electron') ? '32px' : '0px';
+  statsView.style.top = eTitleH;
   document.body.style.overflow = 'hidden';
 
   // Reset to geral tab
@@ -3084,7 +3159,7 @@ function renderStatsContent() {
         const borderColor = mutationBorders[mut] || 'rgba(255,255,255,.13)';
         const isGradient = color.startsWith('linear-gradient');
         const numberStyle = isGradient ? `background:${color};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;` : `color:${color};`;
-        html += `<div onclick="openMutationDetail('${mut.replace(/'/g,"\\'")}')" style="background:var(--surface);border:0.5px solid ${borderColor};border-radius:var(--rad-sm);padding:10px;text-align:center;transition:transform .15s,box-shadow .15s,border-color .15s;cursor:pointer;position:relative" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.4)';this.style.borderColor='${borderColor.replace('0.35','0.7').replace('0.4','0.8').replace('0.13','0.5')}'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='${borderColor}'"><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${mut}</div><div style="font-size:18px;font-weight:700;${numberStyle}">${count}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${percent}%</div><div style="position:absolute;bottom:6px;right:8px;font-size:9px;color:var(--muted);opacity:.5;letter-spacing:.3px">ver ›</div></div>`;
+        html += `<div onclick="openMutationDetail('${mut.replace(/'/g,"\\'")}')" style="background:var(--surface);border:0.5px solid ${borderColor};border-radius:var(--rad-sm);padding:10px 10px 26px;text-align:center;transition:transform .15s,box-shadow .15s,border-color .15s;cursor:pointer;position:relative" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.4)';this.style.borderColor='${borderColor.replace('0.35','0.7').replace('0.4','0.8').replace('0.13','0.5')}'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='${borderColor}'"><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${mut}</div><div style="font-size:18px;font-weight:700;${numberStyle}">${count}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${percent}%</div><div style="position:absolute;bottom:7px;right:8px;font-size:9px;color:var(--muted);opacity:.6;letter-spacing:.3px">ver ›</div></div>`;
       });
       html += `</div></div>`;
     }
@@ -3284,7 +3359,10 @@ function setVdMetric(m) {
 
 function showVendasDia() {
   playUiSound();
-  document.getElementById('vendas-dia-view').style.display = 'block';
+  const vdView = document.getElementById('vendas-dia-view');
+  vdView.style.display = 'block';
+  const eTitleH = document.body.classList.contains('is-electron') ? '32px' : '0px';
+  vdView.style.top = eTitleH;
   document.body.style.overflow = 'hidden';
   _vdPeriodo = 'hoje';
   setVdPeriodo('hoje');
@@ -5318,6 +5396,18 @@ function doImport() {
 
 
 <script>
+// ── ELECTRON TITLEBAR ────────────────────────────────────────────────────────
+(function() {
+  if (window.electronAPI && window.electronAPI.isElectron) {
+    document.getElementById('electron-titlebar').classList.add('visible');
+    document.body.classList.add('is-electron');
+  }
+})();
+
+function electronMinimize() { window.electronAPI?.minimize(); }
+function electronMaximize() { window.electronAPI?.maximize(); }
+function electronClose()    { window.electronAPI?.close(); }
+
 // ── ELDORADO NOTIFICATION SYSTEM ─────────────────────────────────────────────
 // Recebe dados da extensão Chrome em tempo real via window.postMessage
 // Fallback: worker se extensão não estiver instalada
@@ -5338,6 +5428,17 @@ let _eldPanelOpen   = false;
 let _eldPollTimer   = null;
 let _eldTab         = 'notifs';
 let _eldExtInstalled = false; // detecta se extensão está presente
+
+// Ao iniciar: garante que IDs de pendentes salvos nunca fiquem no dismissed
+(function cleanDismissedOnBoot() {
+  if (_eldPending.length === 0) return;
+  const pendIds = new Set(_eldPending.map(p => String(p.id)));
+  const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  const cleaned = dismissed.filter(id => !pendIds.has(String(id)));
+  if (cleaned.length !== dismissed.length) {
+    localStorage.setItem('eld_dismissed', JSON.stringify(cleaned));
+  }
+})();
 
 // ── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
 (function initEldorado() {
@@ -5371,15 +5472,13 @@ let _eldExtInstalled = false; // detecta se extensão está presente
       if (incoming.length > 0) {
         const existingIds = new Set(_eldPending.map(p => String(p.id)));
         const novosExt = incoming
-          .filter(p => !dismissedPendExt.includes(String(p.id)) && !existingIds.has(String(p.id)));
+          .filter(p => !existingIds.has(String(p.id)));
         if (novosExt.length > 0) {
           _eldPending = [..._eldPending, ...novosExt].slice(0, 100);
           localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
         }
       }
-      // Filtra dismissed do array atual
-      _eldPending = _eldPending.filter(p => !dismissedPendExt.includes(String(p.id)));
-      localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+      // Não filtra _eldPending por dismissed — dismissed é apenas para notifs visuais
 
       // Novos pendentes também aparecem nas Notifs
       const existingNotifIds = new Set(_eldNotifs.map(n => String(n.id)));
@@ -5402,8 +5501,8 @@ let _eldExtInstalled = false; // detecta se extensão está presente
 
   // Sempre inicia polling via Worker (disputas vencidas, sincronização)
   // A extensão continua funcionando em paralelo para notifs em tempo real
-  startEldPolling();
-  pollEldorado();
+  // NOTA: startEldPolling() e loadEldPerfil() são chamados no onAuthStateChanged
+  // para garantir que currentUser já está disponível.
 
   document.addEventListener('click', (e) => {
     const wrap = document.getElementById('eld-bell-wrap');
@@ -5609,6 +5708,8 @@ async function pollEldorado() {
     const dCancel = rCancel.ok ? await rCancel.json() : { total: 0, canceladas: [] };
     const dVendas = rVendas.ok ? await rVendas.json() : { total: 0, vendas: [] };
     const dHistorico = rHistorico.ok ? await rHistorico.json() : { historico: [] };
+
+
 
     // ── Processa histórico completo do worker ─────────────────────
     // Isso popula o eld_historico com vendas + cancelamentos do passado
@@ -5927,55 +6028,76 @@ async function pollEldorado() {
     if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
     if (tEl) tEl.textContent = vendasHoje.length;
 
-    // Pendentes — acumula: nunca remove da lista local, só adiciona novos
-    // Remoção só acontece via "Confirmar entrega" ou "Cancelar" pelo usuário
-    const pendentesApi = dPend.pendentes || [];
-    const dismissedPend = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    const existingPendIds = new Set(_eldPending.map(p => String(p.id)));
-    const novosItemsPend = pendentesApi
-      .filter(p => !dismissedPend.includes(String(p.id)) && !existingPendIds.has(String(p.id)))
-      .map(p => ({
-        id:        String(p.id),
-        icon:      '⏳',
-        label:     'Entrega pendente',
-        title:     p.produto || 'Produto',
-        price:     p.valor ? 'US$' + parseFloat(p.valor).toFixed(2) : '',
-        status:    'pending',
-        comprador: p.comprador || '',
-        ts:        new Date(p.data || Date.now()).getTime(),
-        read:      true,
-      }));
-    // Só adiciona novos — não sobrescreve o array inteiro
-    if (novosItemsPend.length > 0) {
-      _eldPending = [..._eldPending, ...novosItemsPend].slice(0, 100);
-      localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
-    }
-    // Filtra dismissed do array atual (caso usuário tenha dismissado enquanto a API não atualizou)
-    _eldPending = _eldPending.filter(p => !dismissedPend.includes(String(p.id)));
-    localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    // Pendentes — sincroniza com a API (fonte da verdade)
+    // A API define quais pedidos estão ativos; sempre reflete o estado real
+    // Tenta vários nomes de campo que o worker pode retornar
+    const pendentesApi = dPend.pendentes || dPend.orders || dPend.items || dPend.data || dPend.results || (Array.isArray(dPend) ? dPend : []);
+    console.log('[ELD DEBUG] pendentesApi final length:', pendentesApi.length, '| campos do dPend:', Object.keys(dPend));
+    // Mapeia os pendentes da API preservando campos locais se o item já existia
+    // dismissed não filtra pendentes da API — a API é a fonte da verdade
+    const pendentesApiMapped = pendentesApi
+      .map(p => {
+        const existing = _eldPending.find(x => String(x.id) === String(p.id));
+        return {
+          id:        String(p.id),
+          icon:      '⏳',
+          label:     'Entrega pendente',
+          title:     p.produto || (existing && existing.title) || 'Produto',
+          price:     p.valor ? 'US$' + parseFloat(p.valor).toFixed(2) : ((existing && existing.price) || ''),
+          status:    'pending',
+          comprador: p.comprador || (existing && existing.comprador) || '',
+          ts:        new Date(p.data || Date.now()).getTime(),
+          read:      existing ? existing.read : true,
+        };
+      });
 
-    // Novos pendentes aparecem nas Notifs UMA VEZ — seen_pend nunca é limpo para IDs ativos
+    // Detecta novos (para notificar apenas uma vez)
+    const existingPendIds = new Set(_eldPending.map(p => String(p.id)));
+    const novosItemsPend = pendentesApiMapped.filter(p => !existingPendIds.has(String(p.id)));
+
+    // Substitui pelo estado atual da API (fonte da verdade)
+    _eldPending = pendentesApiMapped.slice(0, 100);
+    localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    // Garante que IDs de pendentes ativos nunca fiquem no dismissed
+    const activePendIds = new Set(_eldPending.map(p => String(p.id)));
+    if (activePendIds.size > 0) {
+      const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+      const cleanedDismissed = dismissed.filter(id => !activePendIds.has(id));
+      if (cleanedDismissed.length !== dismissed.length) {
+        localStorage.setItem('eld_dismissed', JSON.stringify(cleanedDismissed));
+      }
+    }
+
+    // Novos pendentes aparecem em _eldNotifs E disparam toast
+    // Limpar Notifs nunca os remove — ficam protegidos pela flag status:'pending'
     const existingNotifIds = new Set(_eldNotifs.map(n => String(n.id)));
-    const seenPendSet      = new Set(JSON.parse(localStorage.getItem('eld_seen_pend') || '[]'));
-    // Novo = não está nas Notifs E nunca foi notificado (seen_pend persiste mesmo com item ativo)
-    const novosNasNotifs   = novosItemsPend.filter(p => !existingNotifIds.has(String(p.id)) && !seenPendSet.has(String(p.id)));
+    const seenPendSet = new Set(JSON.parse(localStorage.getItem('eld_seen_pend') || '[]'));
+    const novosNasNotifs = novosItemsPend.filter(p => !existingNotifIds.has(String(p.id)) && !seenPendSet.has(String(p.id)));
     if (novosNasNotifs.length > 0) {
       const comUnread = novosNasNotifs.map(p => ({...p, read: false, status: 'pending', icon: '⏳', label: 'Entrega pendente'}));
       _eldNotifs = [...comUnread, ..._eldNotifs].slice(0, 50);
       localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
-      // Marca como visto permanentemente — não volta mais mesmo que API flutue
       const newSeenPend = [...seenPendSet, ...novosNasNotifs.map(p => String(p.id))].slice(-200);
       localStorage.setItem('eld_seen_pend', JSON.stringify(newSeenPend));
       novosNasNotifs.forEach(p => showEldToast({...p, read: false, icon: '⏳', label: 'Entrega pendente'}));
       typeof playUiSound === 'function' && playUiSound();
     }
-    const pendTotal = dPend.total || pendentesApi.length || 0;
+    // Re-adiciona pendentes ativos que saíram de _eldNotifs (ex: após limpar notifs)
+    _eldPending.forEach(p => {
+      if (!existingNotifIds.has(String(p.id)) && !_eldNotifs.find(n => String(n.id) === String(p.id))) {
+        _eldNotifs.unshift({...p, read: false, status: 'pending', icon: '⏳', label: 'Entrega pendente'});
+      }
+    });
+    localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs.slice(0, 50)));
+    const pendTotal = _eldPending.length;
     const penbadge = document.getElementById('eld-pending-badge');
     const penbtn   = document.getElementById('eld-pending-btn');
     const pEl      = document.getElementById('eld-stat-pending');
     if (penbadge) { penbadge.textContent = pendTotal > 9 ? '9+' : String(pendTotal); penbadge.classList.toggle('visible', pendTotal > 0); }
     if (penbtn)   { penbtn.style.opacity = pendTotal > 0 ? '1' : '0.5'; penbtn.title = `${pendTotal} pendente(s)`; }
     if (pEl)      { pEl.textContent = pendTotal; }
+    // Atualiza painel se a aba ativa for pendentes
+    if (_eldTab === 'pending') renderEldPanel();
 
     // Notificações
     const notifResults = dNotif.notificacoes || [];
@@ -6482,10 +6604,16 @@ async function cancelEldOrder(id) {
   updateEldBell();
 }
 function dismissEldNotif(id) {
+  const isPendingId = _eldPending.some(p => String(p.id) === String(id));
+
   if (_eldTab === 'notifs') {
-    // Só remove das notifs — NÃO remove de pendentes, concluídos ou cancelados
     _eldNotifs = _eldNotifs.filter(n => String(n.id) !== String(id));
     localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+    if (!isPendingId) {
+      const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+      if (!dismissed.includes(String(id))) dismissed.push(String(id));
+      localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    }
   } else if (_eldTab === 'completed') {
     _eldVendas = _eldVendas.filter(n => String(n.id) !== String(id));
     localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
@@ -6498,11 +6626,12 @@ function dismissEldNotif(id) {
   } else if (_eldTab === 'cancelled') {
     _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
     localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
-    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    if (!dismissed.includes(String(id))) dismissed.push(String(id));
-    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    if (!isPendingId) {
+      const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+      if (!dismissed.includes(String(id))) dismissed.push(String(id));
+      localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    }
   } else if (_eldTab === 'pending') {
-    // Na aba pendentes o X cancela o item — remove de pendentes e notifs
     _eldPending = _eldPending.filter(n => String(n.id) !== String(id));
     _eldNotifs  = _eldNotifs.filter(n => String(n.id) !== String(id));
     localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
@@ -6517,11 +6646,18 @@ function dismissEldNotif(id) {
 
 // ── MARCAR LIDAS ──────────────────────────────────────────────────────────────
 function eldMarkAllRead() {
-  // Salva os IDs atuais como descartados permanentemente
+  const pendingIdSet = new Set(_eldPending.map(p => String(p.id)));
   const dismissedIds = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-  _eldNotifs.forEach(n => { if (n.id && !dismissedIds.includes(n.id)) dismissedIds.push(n.id); });
+  // Nunca adiciona ao dismissed IDs que são pendentes ativos
+  _eldNotifs.forEach(n => {
+    if (!n.id || pendingIdSet.has(String(n.id))) return;
+    if (!dismissedIds.includes(n.id)) dismissedIds.push(n.id);
+  });
   localStorage.setItem('eld_dismissed', JSON.stringify(dismissedIds.slice(-500)));
-  _eldNotifs = [];
+  // Remove das notifs tudo exceto pendentes ativos, e marca eles como lidos
+  _eldNotifs = _eldNotifs
+    .filter(n => pendingIdSet.has(String(n.id)))
+    .map(n => ({ ...n, read: true }));
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   renderEldPanel();
   updateEldBell();
@@ -6530,25 +6666,26 @@ function eldMarkAllRead() {
 // ── CONFIG MODAL ──────────────────────────────────────────────────
 // ── BROWSER LOGIN ────────────────────────────────────────────────────────────
 function eldBrowserLogin() {
-  // Se estiver no Electron desktop, usa IPC para login nativo
-  if (typeof require !== 'undefined') {
-    try {
-      const { ipcRenderer } = require('electron');
-      const icon = document.getElementById('eld-login-icon');
-      const msg  = document.getElementById('eld-login-msg');
-      icon.textContent = '⏳';
-      msg.innerHTML = 'Abrindo janela de login da Eldorado...';
-
-      ipcRenderer.send('abrir-login-eldorado');
-
-      ipcRenderer.once('eldorado-logado', () => {
-        icon.textContent = '✅';
-        msg.innerHTML = '<strong style="color:#22c55e">Conectado com sucesso!</strong><br><span style="font-size:11px;color:var(--muted)">Cookies sincronizados automaticamente.</span>';
-        startEldPolling(); pollEldorado(); loadEldPerfil();
-        setTimeout(closeEldConfig, 2000);
+  // Se estiver no Electron desktop, usa API nativa
+  if (window.electronAPI && window.electronAPI.isElectron) {
+    const icon = document.getElementById('eld-login-icon');
+    const msg  = document.getElementById('eld-login-msg');
+    icon.textContent = '⏳';
+    msg.innerHTML = 'Abrindo janela de login da Eldorado...<br><span style="font-size:11px;color:var(--muted)">Faça login normalmente — os cookies serão capturados automaticamente.</span>';
+    window.electronAPI.openEldoradoLogin();
+    window.electronAPI.onEldoradoLogado(() => {
+      icon.textContent = '✅';
+      msg.innerHTML = '<strong style="color:#22c55e">Conectado com sucesso!</strong><br><span style="font-size:11px;color:var(--muted)">Cookies sincronizados automaticamente.</span>';
+      startEldPolling(); pollEldorado(); loadEldPerfil();
+      setTimeout(closeEldConfig, 2000);
+    });
+    if (typeof window.electronAPI.onEldLoginErro === 'function') {
+      window.electronAPI.onEldLoginErro((errMsg) => {
+        icon.textContent = '⚠️';
+        msg.innerHTML = `<span style="color:#f87171">${errMsg || 'Erro ao conectar. Tente novamente.'}</span>`;
       });
-      return;
-    } catch(e) {}
+    }
+    return;
   }
   // Fallback web (extensão ou manual)
   const status = document.getElementById('eld-config-status');
@@ -6690,16 +6827,16 @@ function clearEldCookie() {
 
 
   if (_eldTab === 'notifs') {
-    // Salva IDs como dismissed para não voltarem — NUNCA dismissar pendentes
-    const pendingIds = new Set(_eldPending.map(p => String(p.id)));
-    const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    _eldNotifs.forEach(n => {
-      if (pendingIds.has(String(n.id))) return; // pendentes nunca são dismissados aqui
-      if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id));
+    var _pendingIdSet = new Set(_eldPending.map(function(p){ return String(p.id); }));
+    var dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+    _eldNotifs.forEach(function(n) {
+      // Nunca adiciona ao dismissed IDs que são pendentes ativos
+      if (_pendingIdSet.has(String(n.id))) return;
+      if (dismissed.indexOf(String(n.id)) === -1) dismissed.push(String(n.id));
     });
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
-    // Mantém nas notifs apenas os que são pendentes ativos
-    _eldNotifs = _eldNotifs.filter(n => pendingIds.has(String(n.id)));
+    // Remove das notifs mas preserva os que são pendentes ativos (para reaparecer na aba Pendentes)
+    _eldNotifs = _eldNotifs.filter(function(n) { return _pendingIdSet.has(String(n.id)); });
     localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   } else if (_eldTab === 'completed') {
     const pendingIdsComp = new Set(_eldPending.map(p => String(p.id)));
