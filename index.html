@@ -6377,17 +6377,43 @@ async function confirmEldDelivery(id) {
   _eldPending = _eldPending.filter(p => String(p.id) !== String(id));
   localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
 
+  // Adiciona no dismissed para o poll não re-adicionar
+  const dismissedConf = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  if (!dismissedConf.includes(String(id))) {
+    dismissedConf.push(String(id));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissedConf.slice(-500)));
+  }
+  // Marca como visto permanentemente no seen_pend também
+  const seenPendConf = JSON.parse(localStorage.getItem('eld_seen_pend') || '[]');
+  if (!seenPendConf.includes(String(id))) {
+    seenPendConf.push(String(id));
+    localStorage.setItem('eld_seen_pend', JSON.stringify(seenPendConf.slice(-200)));
+  }
+
   // Adiciona em concluídos
   const source = pendingItem || _eldNotifs.find(n => String(n.id) === String(id));
   const existing = _eldVendas.find(v => String(v.id) === String(id));
   if (existing) {
     _eldVendas = _eldVendas.map(v => String(v.id) === String(id) ? {...v, delivered: true} : v);
   } else if (source) {
-    _eldVendas = [{...source, delivered: true, status: 'completed', icon: '✅', label: 'Venda concluída'}, ..._eldVendas].slice(0, 100);
+    _eldVendas = [{...source, delivered: true, status: 'completed', icon: '✅', label: 'Venda concluída', ts: source.ts || Date.now()}, ..._eldVendas].slice(0, 100);
   }
   localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
 
-  setTimeout(() => { renderEldPanel(); updateEldBell(); }, eldOk ? 800 : 0);
+  // Remove da tela imediatamente, sem esperar o setTimeout
+  renderEldPanel();
+  updateEldBell();
+
+  // Se confirmou com sucesso na Eldorado, mostra feedback visual brevemente
+  if (eldOk) {
+    const confirmedBtn = document.querySelector(`[data-confirm="${id}"]`);
+    if (confirmedBtn) {
+      confirmedBtn.innerHTML = '✅ Confirmado!';
+      confirmedBtn.style.background = 'rgba(31,214,121,0.25)';
+      confirmedBtn.style.borderColor = 'rgba(31,214,121,0.6)';
+    }
+    setTimeout(() => { renderEldPanel(); updateEldBell(); }, 800);
+  }
 }
 
 // ── CANCELAR PEDIDO ───────────────────────────────────────────────────────────
@@ -6421,6 +6447,19 @@ async function cancelEldOrder(id) {
   const cancelledItem = _eldPending.find(p => String(p.id) === String(id));
   _eldPending = _eldPending.filter(p => String(p.id) !== String(id));
   localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+
+  // Adiciona no dismissed para o poll não re-adicionar
+  const dismissedCanc = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  if (!dismissedCanc.includes(String(id))) {
+    dismissedCanc.push(String(id));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissedCanc.slice(-500)));
+  }
+  // Marca como visto permanentemente no seen_pend também
+  const seenPendCanc = JSON.parse(localStorage.getItem('eld_seen_pend') || '[]');
+  if (!seenPendCanc.includes(String(id))) {
+    seenPendCanc.push(String(id));
+    localStorage.setItem('eld_seen_pend', JSON.stringify(seenPendCanc.slice(-200)));
+  }
 
   // Adiciona nos cancelados
   const item = cancelledItem || { id, title: '', status: 'cancelled' };
