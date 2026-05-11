@@ -6564,11 +6564,16 @@ function clearEldCookie() {
 
 
   if (_eldTab === 'notifs') {
-    // Salva IDs como dismissed para não voltarem
+    // Salva IDs como dismissed para não voltarem — NUNCA dismissar pendentes
+    const pendingIds = new Set(_eldPending.map(p => String(p.id)));
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    _eldNotifs.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    _eldNotifs.forEach(n => {
+      if (pendingIds.has(String(n.id))) return; // pendentes nunca são dismissados aqui
+      if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id));
+    });
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
-    _eldNotifs = [];
+    // Mantém nas notifs apenas os que são pendentes ativos
+    _eldNotifs = _eldNotifs.filter(n => pendingIds.has(String(n.id)));
     localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   } else if (_eldTab === 'completed') {
     // Salva IDs como dismissed para não voltarem
