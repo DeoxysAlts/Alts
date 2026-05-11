@@ -5323,8 +5323,10 @@ function doImport() {
 // Fallback: worker se extensão não estiver instalada
 
 const ELD_WORKER  = 'https://quiet-pine-158a.hokagem222.workers.dev';
-const ELD_POLL_MS = 5000; // 5s — polling rápido para notificações em tempo real
+const ELD_POLL_MS = 10000; // 10s
+const ELD_POLL_SLOW = 60000; // 60s para endpoints pesados
 let _eldRateLimitBackoff = false;
+let _eldPollCount = 0;
 
 let _eldNotifs      = JSON.parse(localStorage.getItem('eld_notifs') || '[]');
 let _eldSeenIds     = JSON.parse(localStorage.getItem('eld_seen')   || '[]');
@@ -5573,12 +5575,17 @@ async function pollEldorado() {
     const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
     if (!uid) return; // não logado, não faz nada
     const eldHeaders = { 'x-user-id': uid };
+    _eldPollCount++;
+    const isSlowPoll = (_eldPollCount % 6 === 0); // a cada ~60s
+
+    // Sempre busca pendentes e canceladas (disputas/notificações em tempo real)
+    // Vendas e histórico só a cada 60s para não gerar rate limit
     const [rNotif, rPend, rCancel, rVendas, rHistorico] = await Promise.all([
       fetch(ELD_WORKER + '/notificacoes', { headers: eldHeaders }),
       fetch(ELD_WORKER + '/pendentes',    { headers: eldHeaders }),
       fetch(ELD_WORKER + '/canceladas',   { headers: eldHeaders }),
-      fetch(ELD_WORKER + '/vendas',       { headers: eldHeaders }),
-      fetch(ELD_WORKER + '/historico',    { headers: eldHeaders }),
+      isSlowPoll ? fetch(ELD_WORKER + '/vendas',    { headers: eldHeaders }) : Promise.resolve({ ok: true, json: () => Promise.resolve({ vendas: [], total: 0 }) }),
+      isSlowPoll ? fetch(ELD_WORKER + '/historico', { headers: eldHeaders }) : Promise.resolve({ ok: true, json: () => Promise.resolve({ historico: [] }) }),
     ]);
 
     if (!rNotif.ok) {
@@ -5592,7 +5599,7 @@ async function pollEldorado() {
           _eldRateLimitBackoff = false;
           startEldPolling();
           pollEldorado();
-        }, 3 * 60 * 1000);
+        }, 60 * 1000); // backoff de 1 minuto
       }
       return;
     }
@@ -6523,6 +6530,27 @@ function eldMarkAllRead() {
 // ── CONFIG MODAL ──────────────────────────────────────────────────
 // ── BROWSER LOGIN ────────────────────────────────────────────────────────────
 function eldBrowserLogin() {
+  // Se estiver no Electron desktop, usa IPC para login nativo
+  if (typeof require !== 'undefined') {
+    try {
+      const { ipcRenderer } = require('electron');
+      const icon = document.getElementById('eld-login-icon');
+      const msg  = document.getElementById('eld-login-msg');
+      icon.textContent = '⏳';
+      msg.innerHTML = 'Abrindo janela de login da Eldorado...';
+
+      ipcRenderer.send('abrir-login-eldorado');
+
+      ipcRenderer.once('eldorado-logado', () => {
+        icon.textContent = '✅';
+        msg.innerHTML = '<strong style="color:#22c55e">Conectado com sucesso!</strong><br><span style="font-size:11px;color:var(--muted)">Cookies sincronizados automaticamente.</span>';
+        startEldPolling(); pollEldorado(); loadEldPerfil();
+        setTimeout(closeEldConfig, 2000);
+      });
+      return;
+    } catch(e) {}
+  }
+  // Fallback web (extensão ou manual)
   const status = document.getElementById('eld-config-status');
   const icon   = document.getElementById('eld-login-icon');
   const msg    = document.getElementById('eld-login-msg');
