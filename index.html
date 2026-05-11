@@ -5708,7 +5708,7 @@ async function pollEldorado() {
       _eldCancelled = canceladasApi
         .filter(c => !dismissed.includes(String(c.id)) && c.status !== 'dispute' && normalizeEldStatus(c.status) !== 'dispute')
         .map(c => ({
-          id:        String(c.id),
+          id:        'c-' + String(c.id),
           icon:      '❌',
           label:     'Pedido cancelado',
           title:     c.produto || 'Produto',
@@ -6463,7 +6463,10 @@ async function cancelEldOrder(id) {
 
   // Adiciona nos cancelados
   const item = cancelledItem || { id, title: '', status: 'cancelled' };
-  _eldCancelled = [{ ...item, status: 'cancelled', icon: '❌', label: 'Pedido cancelado', read: false }, ..._eldCancelled].slice(0, 100);
+  const cancelItemWithPrefix = { ...item, id: 'c-' + String(item.id || id), status: 'cancelled', icon: '❌', label: 'Pedido cancelado', read: false };
+  if (!_eldCancelled.find(x => x.id === cancelItemWithPrefix.id)) {
+    _eldCancelled = [cancelItemWithPrefix, ..._eldCancelled].slice(0, 100);
+  }
   localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
 
   renderEldPanel();
