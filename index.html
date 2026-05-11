@@ -1302,56 +1302,26 @@
       <div class="tagline">organize suas alts e brainrots</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;margin-left:auto">
-      <div id="user-info" style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px">
+      <div id="user-info" style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
         <!-- Online counter pill -->
         <div class="online-pill" id="online-pill" title="jogadores online agora">
           <div class="online-dot"></div>
           <span id="online-count">...</span> online
         </div>
-        <button id="mute-btn" onclick="toggleMute()" title="silenciar/ativar sons" style="background:var(--surface2);border:0.5px solid var(--border2);color:var(--muted);padding:0 10px;height:30px;border-radius:var(--rad-sm);cursor:pointer;font-size:15px;font-family:'DM Sans',sans-serif;transition:background .15s,color .15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='var(--surface2)'">🔊</button>
-        <!-- Discord button -->
-        <button onclick="openDiscord()" title="Entrar no servidor Discord" style="
-          position: relative;
-          background: linear-gradient(135deg, #5865F2 0%, #4752c4 100%);
-          border: none;
-          padding: 0 13px;
-          height: 30px;
-          border-radius: var(--rad-sm);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 11px;
-          font-weight: 600;
-          color: #fff;
-          letter-spacing: .4px;
-          transition: transform .15s, box-shadow .15s, opacity .15s;
-          box-shadow: 0 2px 12px rgba(88,101,242,.45);
-          overflow: hidden;
-          white-space: nowrap;
-        "
-        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 20px rgba(88,101,242,.7)'"
-        onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(88,101,242,.45)'"
-        onmousedown="this.style.transform='scale(.96)'"
-        onmouseup="this.style.transform='translateY(-1px)'">
-          <!-- shimmer layer -->
-          <span style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.18) 50%,transparent 60%);background-size:200% 100%;animation:discord-shimmer 2.8s infinite linear;pointer-events:none"></span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))">
-            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.056a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-          </svg>
-          <span style="position:relative">Discord</span>
-        </button>
+        <!-- Mute -->
+        <button id="mute-btn" onclick="toggleMute()" title="silenciar/ativar sons" style="background:transparent;border:0.5px solid var(--border2);color:var(--muted);width:34px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">🔊</button>
+
 
         <!-- ── ELDORADO BELL ─────────────────────────────── -->
         <div class="eld-bell-wrap" id="eld-bell-wrap">
-          <button class="eld-bell-btn" id="eld-pending-btn" onclick="toggleEldPanel();setEldTab('notifs')" title="Pedidos pendentes de entrega" style="margin-right:4px;background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.3);color:#fbbf24;position:relative">
-            ⏳
-            <span class="eld-bell-badge" id="eld-pending-badge" style="background:#fbbf24;color:#000">0</span>
-          </button>
-          <button class="eld-bell-btn" id="eld-bell-btn" onclick="toggleEldPanel()" title="Notificações da Eldorado">
+          <!-- Sino unificado: abre painel -->
+          <button id="eld-bell-btn" onclick="toggleEldPanel()" title="Notificações Eldorado" style="position:relative;background:rgba(255,255,255,0.04);border:0.5px solid var(--border2);color:var(--text);width:34px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
             🔔
-            <span class="eld-bell-badge" id="eld-bell-badge">0</span>
+            <span class="eld-bell-badge" id="eld-bell-badge" style="display:none">0</span>
+          </button>
+          <!-- Badge de pendentes: hidden, mantido para compatibilidade com JS -->
+          <button id="eld-pending-btn" style="display:none">
+            <span class="eld-bell-badge" id="eld-pending-badge">0</span>
           </button>
 
           <!-- DROPDOWN PANEL -->
@@ -1404,7 +1374,10 @@
             <div class="eld-panel-footer">
               <button class="eld-footer-btn" onclick="eldMarkAllRead()">Marcar lidas</button>
               <button class="eld-footer-btn" onclick="window.open('https://www.eldorado.gg/br/dashboard/orders','_blank')">Eldorado ↗</button>
-              <button class="eld-footer-btn" style="background:rgba(88,101,242,0.1);border-color:rgba(88,101,242,0.25);color:#818cf8" onclick="openEldConfig()">⚙️ Config</button>
+              <button class="eld-footer-btn" style="background:rgba(88,101,242,0.1);border-color:rgba(88,101,242,0.25);color:#818cf8;display:flex;align-items:center;gap:5px" onclick="window.open('https://discord.gg/r3BUgsZyYH','_blank')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.056a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                Discord
+              </button>
               <button class="eld-footer-btn" style="background:rgba(255,40,40,0.08);border-color:rgba(255,40,40,0.2);color:var(--accent)" onclick="clearEldCookie()">Limpar</button>
             </div>
           </div>
@@ -1412,54 +1385,26 @@
         <!-- ── /ELDORADO BELL ─────────────────────────────── -->
 
       </div>
-      <button onclick="showVendasDia()" title="Vendas do dia — Eldorado" id="btn-vendas-dia" style="
-        background:rgba(31,214,121,.08);
-        border:0.5px solid rgba(31,214,121,.3);
-        color:#1fd679;
-        padding:0 14px;
-        height:40px;
-        border-radius:var(--rad-sm);
-        cursor:pointer;
-        font-size:13px;
-        white-space:nowrap;
-        transition:background .15s,color .15s;
-        display:flex;
-        align-items:center;
-        gap:6px;
-        font-family:'DM Sans',sans-serif;
-        font-weight:500;
-        position:relative;
-      "
-      onmouseover="this.style.background='rgba(31,214,121,.15)'"
-      onmouseout="this.style.background='rgba(31,214,121,.08)'">
+      <button onclick="showVendasDia()" title="Vendas do dia — Eldorado" id="btn-vendas-dia" style="background:rgba(31,214,121,.06);border:0.5px solid rgba(31,214,121,.2);color:#1fd679;padding:0 14px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-weight:500;position:relative"
+      onmouseover="this.style.background='rgba(31,214,121,.12)'" onmouseout="this.style.background='rgba(31,214,121,.06)'">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         Vendas do Dia
         <span id="vendas-dia-badge" style="display:none;background:#1fd679;color:#000;font-size:9px;font-weight:700;border-radius:99px;padding:1px 5px;min-width:14px;text-align:center"></span>
       </button>
-      <button onclick="showStatsView()" title="Ver estatísticas totais" style="
-        background:var(--surface);
-        border:0.5px solid var(--border2);
-        color:var(--text);
-        padding:0 14px;
-        height:40px;
-        border-radius:var(--rad-sm);
-        cursor:pointer;
-        font-size:13px;
-        white-space:nowrap;
-        transition:background .15s,color .15s;
-        display:flex;
-        align-items:center;
-        gap:6px;
-        font-family:'DM Sans',sans-serif;
-        font-weight:500;
-      "
-      onmouseover="this.style.background='var(--surface2)'"
-      onmouseout="this.style.background='var(--surface)'">
+      <button onclick="showStatsView()" title="Ver estatísticas totais" style="background:transparent;border:0.5px solid var(--border2);color:var(--muted);padding:0 14px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-weight:500"
+      onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Estatísticas
       </button>
-      <button class="btn-primary" onclick="openModal()">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <button onclick="openEldConfig()" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;color:#fff;padding:0 16px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(14,165,233,0.3);transition:all .15s;white-space:nowrap"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(14,165,233,0.5)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(14,165,233,0.3)'">
+        🌐 Browser Eldorado
+      </button>
+      <button onclick="openModal()" style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;padding:0 16px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(16,185,129,0.3);transition:all .15s;white-space:nowrap"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(16,185,129,0.5)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(16,185,129,0.3)'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         nova conta
       </button>
     </div>
@@ -1691,13 +1636,20 @@
 
 
 <!-- modal -->
-<!-- ── GEAR FAB ─────────────────────────────────────────────────── -->
-<button class="gear-fab" onclick="openSettings()" title="configurações">
-  <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-  </svg>
-</button>
+<!-- ── FABs (canto inferior direito) ──────────────────────────── -->
+<div style="position:fixed;bottom:28px;right:28px;z-index:50;display:flex;gap:10px;align-items:center">
+  <!-- Discord FAB -->
+  <button onclick="window.open('https://discord.gg/r3BUgsZyYH','_blank')" title="Servidor Discord" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#5865F2,#4752c4);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(88,101,242,0.45);transition:all .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 28px rgba(88,101,242,0.65)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(88,101,242,0.45)'">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.056a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+  </button>
+  <!-- Gear FAB -->
+  <button class="gear-fab" onclick="openSettings()" title="configurações" style="position:relative;bottom:auto;right:auto">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+</div>
 
 <!-- ── SETTINGS MODAL ─────────────────────────────────────────── -->
 <div id="settings-modal-bg" onclick="closeSettingsBg(event)">
@@ -1977,8 +1929,7 @@ function toggleEmailVisibility() {
 // ── DISCORD ───────────────────────────────────────────────────────────────────
 function openDiscord() {
   playUiSound();
-  // Tenta abrir o perfil no app Discord
-  window.open('https://discord.com/channels/1501906427290062939/1501906428091306097', '_blank');
+  window.open('https://discord.gg/r3BUgsZyYH', '_blank');
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
@@ -5307,31 +5258,52 @@ function doImport() {
 
 <!-- ELDORADO CONFIG MODAL -->
 <div id="eld-config-modal-bg" class="modal-bg" onclick="if(event.target===this)closeEldConfig()">
-  <div class="modal" style="width:420px">
-    <h3>⚙️ Conectar Eldorado</h3>
+  <div style="background:var(--surface);width:400px;border-radius:16px;border:0.5px solid rgba(14,165,233,0.15);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
 
-    <div id="eld-login-status-box" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--rad-sm);padding:16px 14px;margin-bottom:14px;text-align:center">
-      <div id="eld-login-icon" style="font-size:32px;margin-bottom:8px">🔗</div>
-      <div id="eld-login-msg" style="font-size:13px;color:var(--muted);line-height:1.6">Clique em <strong style="color:var(--text)">Browser Login</strong> para abrir a Eldorado.<br>Faça login normalmente — os cookies serão capturados automaticamente.</div>
-    </div>
-
-    <div id="eld-config-status" style="display:none;font-size:12px;margin-top:8px;margin-bottom:8px"></div>
-
-    <button class="btn-primary" style="width:100%;margin-bottom:10px;padding:12px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px" onclick="eldBrowserLogin()">
-      🌐 Browser Login
-    </button>
-
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:14px">
-      Ou cole o cookie manualmente:
-    </div>
-    <textarea id="eld-cookie-input" placeholder="Cole aqui o cookie completo..." style="width:100%;height:60px;background:var(--surface2);border:0.5px solid var(--border);color:var(--text);border-radius:var(--rad-sm);padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:11px;outline:none;resize:vertical;margin-top:0;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent-border)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-
-    <div class="modal-btns" style="justify-content:space-between;margin-top:12px">
-      <button class="btn-ghost" style="color:var(--danger);border-color:rgba(248,113,113,.3)" onclick="clearEldCookie()">Desconectar</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn-ghost" onclick="closeEldConfig()">Fechar</button>
-        <button class="btn-primary" onclick="saveEldConfig()">Salvar cookie</button>
+    <!-- Header -->
+    <div style="padding:20px 22px 16px;background:linear-gradient(135deg,rgba(14,165,233,0.08),rgba(2,132,199,0.03));border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(14,165,233,0.3);flex-shrink:0">🌐</div>
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--text);font-family:'Syne',sans-serif;letter-spacing:-0.3px">Conectar Eldorado</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Login automático via browser</div>
       </div>
+      <button onclick="closeEldConfig()" style="margin-left:auto;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,0.07)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:20px 22px">
+      <!-- Status -->
+      <div id="eld-login-status-box" style="background:rgba(14,165,233,0.04);border:0.5px solid rgba(14,165,233,0.12);border-radius:12px;padding:20px;text-align:center;margin-bottom:18px">
+        <div id="eld-login-icon" style="font-size:26px;margin-bottom:10px;line-height:1">🔗</div>
+        <div id="eld-login-msg" style="font-size:12px;color:var(--muted);line-height:1.75">Clique em <strong style="color:var(--text)">Browser Login</strong> para abrir a Eldorado.<br>Faça login normalmente — os cookies serão capturados automaticamente.</div>
+      </div>
+
+      <div id="eld-config-status" style="display:none;font-size:12px;margin-bottom:14px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px"></div>
+
+      <!-- Botão principal -->
+      <button onclick="eldBrowserLogin()" style="width:100%;margin-bottom:18px;padding:14px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:9px;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 3px 16px rgba(14,165,233,0.35);transition:all .18s;letter-spacing:0.1px"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 22px rgba(14,165,233,0.5)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 3px 16px rgba(14,165,233,0.35)'">
+        🌐 Browser Login
+      </button>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="flex:1;height:0.5px;background:rgba(255,255,255,0.06)"></div>
+        <span style="font-size:10px;color:#3a3a50;font-weight:600;letter-spacing:0.8px">OU COLE MANUALMENTE</span>
+        <div style="flex:1;height:0.5px;background:rgba(255,255,255,0.06)"></div>
+      </div>
+
+      <textarea id="eld-cookie-input" placeholder="Cole aqui o cookie completo da Eldorado..." style="width:100%;height:64px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.07);color:var(--text);border-radius:10px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:11px;outline:none;resize:none;transition:border-color .2s" onfocus="this.style.borderColor='rgba(14,165,233,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.07)'"></textarea>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:0 22px 20px;display:flex;align-items:center;justify-content:space-between">
+      <button onclick="clearEldCookie()" style="background:transparent;border:0.5px solid rgba(248,113,113,0.2);color:rgba(248,113,113,0.6);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;transition:all .15s"
+        onmouseover="this.style.background='rgba(248,113,113,0.07)';this.style.borderColor='rgba(248,113,113,0.35)';this.style.color='#f87171'"
+        onmouseout="this.style.background='transparent';this.style.borderColor='rgba(248,113,113,0.2)';this.style.color='rgba(248,113,113,0.6)'">Desconectar</button>
+      <button onclick="saveEldConfig()" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;color:#fff;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(14,165,233,0.25);transition:all .15s"
+        onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Salvar cookie</button>
     </div>
   </div>
 </div>
@@ -6529,7 +6501,7 @@ function eldBrowserLogin() {
 
   // Abre popup da Eldorado
   const popup = window.open(
-    'https://www.eldorado.gg/br/login',
+    'https://www.eldorado.gg/login',
     'eldorado_login',
     'width=520,height=680,top=100,left=200,resizable=yes,scrollbars=yes'
   );
