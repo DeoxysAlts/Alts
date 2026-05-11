@@ -808,19 +808,28 @@
   .eld-bell-btn:hover { background: var(--surface); color: var(--text); }
   .eld-bell-badge {
     position: absolute;
-    top: -4px; right: -4px;
+    top: -6px; right: -6px;
     background: var(--accent);
     color: #fff;
-    font-family: 'Space Mono', monospace;
-    font-size: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
     font-weight: 700;
-    min-width: 15px; height: 15px;
+    min-width: 17px; height: 17px;
     border-radius: 99px;
     display: none; align-items: center; justify-content: center;
-    padding: 0 3px;
-    border: 1.5px solid var(--bg);
+    padding: 0 4px;
+    border: 2px solid var(--bg);
+    box-shadow: 0 2px 6px rgba(255,32,32,0.5);
+    z-index: 10;
   }
-  .eld-bell-badge.visible { display: flex; }
+  .eld-bell-badge.visible {
+    display: flex;
+    animation: badge-pop .2s cubic-bezier(.36,1.6,.6,1) forwards;
+  }
+  @keyframes badge-pop {
+    from { transform: scale(0.4); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
 
   /* PANEL */
   .eld-panel {
@@ -828,6 +837,7 @@
     top: calc(100% + 10px);
     right: 0;
     width: 380px;
+    max-height: calc(100vh - 80px);
     background: var(--eld-bg);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
@@ -1095,9 +1105,11 @@
   /* TOAST */
   .eld-toast-container {
     position: fixed;
-    bottom: 80px; right: 24px;
+    bottom: 80px;
+    right: 12px;
+    left: 12px;
     z-index: 600;
-    display: flex; flex-direction: column; gap: 8px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
     pointer-events: none;
   }
   .eld-toast {
@@ -1108,7 +1120,7 @@
     padding: 12px 16px;
     pointer-events: all;
     animation: eld-toast-in .25s ease;
-    max-width: 320px;
+    width: min(320px, 100%);
     box-shadow: 0 8px 32px rgba(0,0,0,.5);
   }
   .eld-toast.completed { border-left: 3px solid #22c55e; }
@@ -1134,7 +1146,7 @@
     display: none;
     position: fixed;
     bottom: 44px;
-    right: 24px;
+    right: 12px;
     z-index: 601;
     background: rgba(15,15,18,0.95);
     border: 0.5px solid rgba(248,113,113,0.45);
@@ -1393,7 +1405,7 @@
           <!-- Sino unificado: abre painel -->
           <button id="eld-bell-btn" onclick="toggleEldPanel()" title="Notificações Eldorado" style="position:relative;background:rgba(255,255,255,0.04);border:0.5px solid var(--border2);color:var(--text);width:34px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
             🔔
-            <span class="eld-bell-badge" id="eld-bell-badge" style="display:none">0</span>
+            <span class="eld-bell-badge" id="eld-bell-badge">0</span>
           </button>
           <!-- Badge de pendentes: hidden, mantido para compatibilidade com JS -->
           <button id="eld-pending-btn" style="display:none">
@@ -5841,6 +5853,39 @@ let _eldExtInstalled = false; // detecta se extensão está presente
   }
 })();
 
+// Ao iniciar: pré-popula _eldSeenIds com tudo que já está no histórico, notifs e dismissed
+// para evitar que vendas antigas reapareçam como novas após recarregar a página
+(function seedSeenIdsFromHistory() {
+  const historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+  const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
+  const seenSet = new Set(_eldSeenIds);
+
+  function markSeen(id) {
+    const raw = String(id);
+    const key = 'venda-' + raw;
+    if (!seenSet.has(key)) { _eldSeenIds.push(key); seenSet.add(key); }
+    if (!seenSet.has(raw))  { _eldSeenIds.push(raw);  seenSet.add(raw);  }
+  }
+
+  historico.forEach(h => markSeen(h.id));
+  _eldNotifs.forEach(n => markSeen(n.id));
+  _eldVendas.forEach(v => markSeen(v.id));
+  dismissed.forEach(id => markSeen(id));
+
+  _eldSeenIds = _eldSeenIds.slice(-2000);
+  localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
+
+  // Limpa disputas antigas que ficaram presas no localStorage sem confirmação real da API.
+  // Elas serão recarregadas corretamente pelo próximo poll se ainda estiverem ativas.
+  if (_eldDisputes.length > 0) {
+    // Só mantém disputas que foram adicionadas nos últimos 30 minutos
+    // (novas o suficiente para serem reais e não lixo de sessões antigas)
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    _eldDisputes = _eldDisputes.filter(d => (d.ts || 0) > cutoff);
+    localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
+  }
+})();
+
 // ── INICIALIZAÇÃO ─────────────────────────────────────────────────────────────
 (function initEldorado() {
   // Limpa _eldVendas antigos que vieram da API (títulos em branco)
@@ -5853,6 +5898,18 @@ let _eldExtInstalled = false; // detecta se extensão está presente
   // vindos de versões antigas do código que não filtravam corretamente
   const disputeIds = new Set(_eldDisputes.map(d => String(d.id)));
   const seenWonBoot = new Set(JSON.parse(localStorage.getItem('eld_won_seen') || '[]'));
+
+  // Remove do Notifs vendas concluídas que já estão no histórico — evita duplicatas
+  const _historicoIdsInit = new Set(JSON.parse(localStorage.getItem('eld_historico') || '[]').map(h => String(h.id)));
+  const _dismissedInit = new Set(JSON.parse(localStorage.getItem('eld_dismissed') || '[]').map(String));
+  _eldNotifs = _eldNotifs.filter(n => {
+    if ((n.status === 'completed' || n.status === 'venda') &&
+        (_historicoIdsInit.has(String(n.id)) || _dismissedInit.has(String(n.id)))) {
+      return false; // já está no histórico ou foi descartada — remove do Notifs
+    }
+    return true;
+  });
+  localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
 
   _eldNotifs = _eldNotifs.filter(n => {
     const st = (n.status || '').toLowerCase();
@@ -6464,35 +6521,10 @@ async function pollEldorado() {
           localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
         }
       } else {
-        // API não retornou nenhuma disputa ativa
-        // Verifica se alguma disputa anterior foi vencida (virou completed)
+        // API não retornou nenhuma disputa ativa — limpa o painel de disputas
+        // SEM assumir "vencida": só a API de dispute_won confirma isso explicitamente.
+        // Disputas que sumiram silenciosamente são simplesmente removidas do painel.
         if (_eldDisputes.length > 0) {
-          const seenWon = new Set(JSON.parse(localStorage.getItem('eld_won_seen') || '[]'));
-          _eldDisputes.forEach(d => {
-            if (!seenWon.has(String(d.id))) {
-              // Era disputa, sumiu das disputas ativas = disputa vencida!
-              const wonNotif = {
-                id:        'won-' + String(d.id),
-                icon:      '🏆',
-                label:     'Disputa vencida',
-                title:     d.title || 'Produto',
-                price:     d.price || '',
-                status:    'dispute_won',
-                comprador: d.comprador || '',
-                ts:        Date.now(),
-                read:      false,
-              };
-              const existingIds = new Set(_eldNotifs.map(n => String(n.id)));
-              if (!existingIds.has(wonNotif.id)) {
-                _eldNotifs = [wonNotif, ..._eldNotifs].slice(0, 50);
-                showEldToast(wonNotif);
-                typeof playUiSound === 'function' && playUiSound();
-              }
-              seenWon.add(String(d.id));
-            }
-          });
-          localStorage.setItem('eld_won_seen', JSON.stringify([...seenWon].slice(-200)));
-          localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
           _eldDisputes = [];
           localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
         }
@@ -6507,8 +6539,13 @@ async function pollEldorado() {
     let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
     const historicoIds = new Set(historico.map(h => String(h.id)));
     
-    // Detecta NOVAS vendas (que não estão no histórico)
-    const novasVendas = vendasApi.filter(v => !historicoIds.has(String(v.id)) && !_eldSeenIds.includes('venda-' + String(v.id)));
+    // Detecta NOVAS vendas: só as que não estão no histórico E não foram dispensadas
+    const dismissedVendasSet = new Set(JSON.parse(localStorage.getItem('eld_dismissed') || '[]').map(String));
+    const novasVendas = vendasApi.filter(v =>
+      !historicoIds.has(String(v.id)) &&
+      !_eldSeenIds.includes('venda-' + String(v.id)) &&
+      !dismissedVendasSet.has(String(v.id))
+    );
     
     // Adiciona novas vendas ao histórico com _tipo = 'venda'
     if (novasVendas.length > 0) {
@@ -6526,6 +6563,13 @@ async function pollEldorado() {
       }));
       historico = [...novasMapeadas, ...historico].slice(0, 2000);
       localStorage.setItem('eld_historico', JSON.stringify(historico));
+      // Marca imediatamente no _eldSeenIds para não re-processar no próximo poll
+      novasMapeadas.forEach(v => {
+        const key = 'venda-' + String(v.id);
+        if (!_eldSeenIds.includes(key)) _eldSeenIds.push(key);
+      });
+      _eldSeenIds = _eldSeenIds.slice(-2000);
+      localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
     }
 
     // Novas vendas vão para Notifs (não para _eldVendas diretamente)
@@ -6806,7 +6850,24 @@ async function loadEldPerfil() {
 function toggleEldPanel() { _eldPanelOpen ? closeEldPanel() : openEldPanel(); }
 function openEldPanel() {
   _eldPanelOpen = true;
-  document.getElementById('eld-panel').classList.add('open');
+  const panel = document.getElementById('eld-panel');
+  panel.classList.add('open');
+  // Garante que o painel não sai pela esquerda em janelas pequenas
+  requestAnimationFrame(() => {
+    const rect = panel.getBoundingClientRect();
+    if (rect.left < 8) {
+      panel.style.right = 'auto';
+      panel.style.left = '8px';
+    } else {
+      panel.style.right = '';
+      panel.style.left = '';
+    }
+    // Nunca sai pela direita
+    if (rect.right > window.innerWidth - 8) {
+      panel.style.right = '8px';
+      panel.style.left = 'auto';
+    }
+  });
 }
 function closeEldPanel() {
   _eldPanelOpen = false;
@@ -6947,12 +7008,30 @@ function renderEldList() {
     const isPending = _eldTab === 'pending';
 
     if (isPending) {
+      // Procura em qual(is) conta(s) o brainrot vendido está guardado
+      const _foundAccs = _findBrainrotAccounts(n.title || '');
+      // null = gen no título mas brainrot não cadastrado; [] = sem gen no título
+      const _accChip = _foundAccs === null
+        ? `<div style="margin-top:4px">
+            <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(248,113,113,0.1);border:0.5px solid rgba(248,113,113,0.3);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:#f87171;white-space:nowrap">
+              ⚠️ Brainrot não encontrado nas contas
+            </span>
+          </div>`
+        : _foundAccs.length > 0
+        ? `<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
+            ${_foundAccs.map(m => `
+              <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,0.13);border:0.5px solid rgba(99,102,241,0.35);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:#a5b4fc;white-space:nowrap">
+                📦 ${escHtml(m.accName)}<span style="opacity:.55;font-weight:400">· ${escHtml(m.brName)}</span>
+              </span>`).join('')}
+          </div>`
+        : '';
       return `
         <div class="eld-notif ${unread} pending" style="flex-direction:column;gap:6px;padding:10px 12px 10px 14px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
             <div style="flex:1;min-width:0">
               <div class="eld-notif-label pending" style="margin-bottom:3px;display:flex;align-items:center;gap:4px">⏳ Entrega pendente</div>
               <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.45;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
+              ${_accChip}
             </div>
             <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:var(--eld-yellow);flex-shrink:0;margin-top:14px;letter-spacing:-0.5px">${escHtml(n.price || '')}</div>
           </div>
@@ -7017,12 +7096,12 @@ function updateEldBell() {
   if (pbadge) { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
   if (penbadge) { penbadge.textContent = pending > 9 ? '9+' : String(pending); penbadge.classList.toggle('visible', pending > 0); }
   if (penbtn) { penbtn.style.opacity = pending > 0 ? '1' : '0.5'; }
-  // Atualiza badge do botão Vendas do Dia
+  // Atualiza badge do botão Vendas do Dia — usa eld_historico (mesma fonte da tela)
   const vdBadge = document.getElementById('vendas-dia-badge');
   if (vdBadge) {
     const today = new Date(); today.setHours(0,0,0,0);
-    const eldVendas = JSON.parse(localStorage.getItem('eld_vendas') || '[]');
-    const cnt = eldVendas.filter(v => (v.ts||0) >= today.getTime()).length;
+    const hist = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+    const cnt = hist.filter(v => (v.ts||0) >= today.getTime() && v._tipo !== 'cancelado').length;
     vdBadge.textContent = cnt;
     vdBadge.style.display = cnt > 0 ? 'inline-block' : 'none';
   }
@@ -7114,6 +7193,13 @@ async function confirmEldDelivery(id) {
   }
   localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
 
+  // ── AUTO-REMOVER BRAINROT DA CONTA ───────────────────────────────────────
+  // Tenta encontrar o brainrot nas contas pelo título da venda
+  const soldTitle = (pendingItem || {}).title || '';
+  if (soldTitle && typeof data !== 'undefined' && data.accounts) {
+    _tryAutoRemoveBrainrot(soldTitle);
+  }
+
   // Remove da tela imediatamente, sem esperar o setTimeout
   renderEldPanel();
   updateEldBell();
@@ -7128,6 +7214,86 @@ async function confirmEldDelivery(id) {
     }
     setTimeout(() => { renderEldPanel(); updateEldBell(); }, 800);
   }
+}
+
+// ── HELPERS DE MATCH BRAINROT ────────────────────────────────────────────────
+
+// Normaliza string: minúsculo, sem acento, sem pontuação, espaços simples
+function _normBr(s) {
+  return (s || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Extrai o gen/velocidade de uma string (ex: "495M/s" → "495M", "1.5B/s" → "1.5B")
+function _extractGen(s) {
+  const m = (s || '').match(/([0-9]+(?:[.,][0-9]+)?)\s*([MBKmbk])(?:\/s)?/);
+  if (!m) return null;
+  return (m[1].replace(',', '.')) + m[2].toUpperCase(); // ex: "495M", "1.5B"
+}
+
+// Normaliza gen salvo no brainrot para comparar (ex: "495M", "495m/s", "495 M" → "495M")
+function _normGen(g) {
+  return _extractGen(g) || _normBr(g);
+}
+
+// Retorna lista de { ai, bi, accName, brName } para todos os matches de um título.
+// Prioridade: match de nome + gen (M/s). Se não houver gen no título,
+// usa só o match de nome mais longo para evitar falsos positivos.
+function _findBrainrotAccounts(title) {
+  if (!title || typeof data === 'undefined' || !data.accounts) return [];
+  const nt = _normBr(title);
+
+  // Tenta extrair o gen/velocidade do título da Eldorado (ex: "495M/s" → "495M")
+  const titleGen = _extractGen(title);
+
+  // 1. Coleta todos os candidatos pelo nome
+  const candidates = [];
+  data.accounts.forEach((acc, ai) => {
+    (acc.brainrots || []).forEach((br, bi) => {
+      const nb = _normBr(br.name);
+      if (nb.length >= 3 && nt.includes(nb)) {
+        const brGen = _normGen(br.gen || '');
+        candidates.push({ ai, bi, accName: acc.name, brName: br.name, len: nb.length, brGen });
+      }
+    });
+  });
+
+  if (candidates.length === 0) return [];
+
+  // 2. Se o título tem gen (M/s), filtra pelos que têm o gen igual
+  if (titleGen) {
+    const genMatches = candidates.filter(c => c.brGen === titleGen);
+    if (genMatches.length > 0) {
+      // Dentro dos que batem no gen, pega o nome mais longo (mais específico)
+      const maxLen = Math.max(...genMatches.map(c => c.len));
+      return genMatches.filter(c => c.len >= maxLen - 3);
+    }
+    // Tem gen no título mas nenhum brainrot cadastrado com esse gen → retorna null
+    // para sinalizar "não encontrado" (diferente de [] que significa "sem gen no título")
+    return null;
+  }
+
+  // 3. Sem gen no título: usa só o nome mais longo
+  const maxLen = Math.max(...candidates.map(c => c.len));
+  return candidates.filter(c => c.len >= maxLen - 3);
+}
+
+// ── HELPER: remove brainrot vendido silenciosamente ──────────────────────────
+function _tryAutoRemoveBrainrot(soldTitle) {
+  const matches = _findBrainrotAccounts(soldTitle);
+  if (!matches || matches.length === 0) return;
+
+  // Pega o primeiro match (já é o mais específico pelo gen+nome)
+  const m = matches[0];
+  const brainrots = data.accounts[m.ai].brainrots;
+  const realBi = brainrots.findIndex(br => br.name === m.brName);
+  if (realBi === -1) return;
+
+  brainrots.splice(realBi, 1);
+  save(); render(); renderDetailPanel(); updateStats();
 }
 
 // ── CANCELAR PEDIDO ───────────────────────────────────────────────────────────
@@ -7422,6 +7588,19 @@ function _saveDismissedKeys(items) {
 function clearEldCookie() {
   var dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
 
+  // Helper: marca IDs no _eldSeenIds com prefixo 'venda-' para o poll não re-adicionar
+  function _markSeenIds(items) {
+    const seenSet = new Set(_eldSeenIds);
+    items.forEach(function(n) {
+      var raw = String(n.id);
+      var key = 'venda-' + raw;
+      if (!seenSet.has(key)) { _eldSeenIds.push(key); seenSet.add(key); }
+      if (!seenSet.has(raw))  { _eldSeenIds.push(raw);  seenSet.add(raw);  }
+    });
+    _eldSeenIds = _eldSeenIds.slice(-2000);
+    localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
+  }
+
   if (_eldTab === 'notifs') {
     var _pendingIdSet = new Set(_eldPending.map(function(p){ return String(p.id); }));
     var toDiscard = [];
@@ -7431,6 +7610,7 @@ function clearEldCookie() {
       toDiscard.push(n);
     });
     _saveDismissedKeys(toDiscard);
+    _markSeenIds(toDiscard);
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-2000)));
     _eldNotifs = _eldNotifs.filter(function(n) { return _pendingIdSet.has(String(n.id)); });
     localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
@@ -7440,6 +7620,7 @@ function clearEldCookie() {
     var toDiscardComp = _eldVendas.filter(n => !pendingIdsComp.has(String(n.id)));
     toDiscardComp.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
     _saveDismissedKeys(toDiscardComp);
+    _markSeenIds(toDiscardComp);
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-2000)));
     _eldVendas = [];
     localStorage.setItem('eld_vendas', JSON.stringify([]));
@@ -7502,6 +7683,15 @@ function clearAllEldNotifs() {
   localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-2000)));
   // Salva dupKeys para bloquear re-entrada via extensão mesmo após reinício
   _saveDismissedKeys(allItems);
+  // Marca todos no _eldSeenIds para o poll não re-adicionar
+  var seenSetAll = new Set(_eldSeenIds);
+  allItems.forEach(function(n) {
+    var raw = String(n.id); var key = 'venda-' + raw;
+    if (!seenSetAll.has(key)) { _eldSeenIds.push(key); seenSetAll.add(key); }
+    if (!seenSetAll.has(raw)) { _eldSeenIds.push(raw);  seenSetAll.add(raw); }
+  });
+  _eldSeenIds = _eldSeenIds.slice(-2000);
+  localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
   _eldNotifs    = [];
   _eldVendas    = [];
   _eldDisputes  = [];
