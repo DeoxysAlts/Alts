@@ -5307,28 +5307,29 @@ function doImport() {
 <!-- ELDORADO CONFIG MODAL -->
 <div id="eld-config-modal-bg" class="modal-bg" onclick="if(event.target===this)closeEldConfig()">
   <div class="modal" style="width:420px">
-    <h3>⚙️ Configurar Eldorado</h3>
+    <h3>⚙️ Conectar Eldorado</h3>
 
-    <div style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--rad-sm);padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.7">
-      <strong style="color:var(--text);display:block;margin-bottom:6px">Como obter seu cookie da Eldorado:</strong>
-      1. Abra <a href="https://www.eldorado.gg/br/dashboard/orders/sold" target="_blank" style="color:var(--accent)">eldorado.gg → Meus pedidos vendidos</a><br>
-      2. Pressione <strong style="color:var(--text)">F12</strong> → aba <strong style="color:var(--text)">Application</strong> → <strong style="color:var(--text)">Cookies</strong><br>
-      3. Clique no domínio <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">eldorado.gg</code><br>
-      4. Copie o valor do cookie <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">__Secure-next-auth.session-token</code><br>
-      5. Cole abaixo e clique em <strong style="color:var(--text)">Salvar</strong><br>
-      <span style="color:#f87171;margin-top:6px;display:block">⚠️ Nunca compartilhe este cookie com ninguém. Ele é pessoal.</span>
+    <div id="eld-login-status-box" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--rad-sm);padding:16px 14px;margin-bottom:14px;text-align:center">
+      <div id="eld-login-icon" style="font-size:32px;margin-bottom:8px">🔗</div>
+      <div id="eld-login-msg" style="font-size:13px;color:var(--muted);line-height:1.6">Clique em <strong style="color:var(--text)">Browser Login</strong> para abrir a Eldorado.<br>Faça login normalmente — os cookies serão capturados automaticamente.</div>
     </div>
 
-    <label>Cookie de sessão da Eldorado</label>
-    <textarea id="eld-cookie-input" placeholder="Cole aqui o valor do cookie..." style="width:100%;height:80px;background:var(--surface2);border:0.5px solid var(--border);color:var(--text);border-radius:var(--rad-sm);padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:12px;outline:none;resize:vertical;margin-top:4px;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent-border)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    <div id="eld-config-status" style="display:none;font-size:12px;margin-top:8px;margin-bottom:8px"></div>
 
-    <div id="eld-config-status" style="display:none;font-size:12px;margin-top:8px"></div>
+    <button class="btn-primary" style="width:100%;margin-bottom:10px;padding:12px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px" onclick="eldBrowserLogin()">
+      🌐 Browser Login
+    </button>
 
-    <div class="modal-btns" style="justify-content:space-between">
-      <button class="btn-ghost" style="color:var(--danger);border-color:rgba(248,113,113,.3)" onclick="clearEldCookie()">Remover</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:14px">
+      Ou cole o cookie manualmente:
+    </div>
+    <textarea id="eld-cookie-input" placeholder="Cole aqui o cookie completo..." style="width:100%;height:60px;background:var(--surface2);border:0.5px solid var(--border);color:var(--text);border-radius:var(--rad-sm);padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:11px;outline:none;resize:vertical;margin-top:0;transition:border-color .2s" onfocus="this.style.borderColor='var(--accent-border)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+
+    <div class="modal-btns" style="justify-content:space-between;margin-top:12px">
+      <button class="btn-ghost" style="color:var(--danger);border-color:rgba(248,113,113,.3)" onclick="clearEldCookie()">Desconectar</button>
       <div style="display:flex;gap:8px">
-        <button class="btn-ghost" onclick="closeEldConfig()">Cancelar</button>
-        <button class="btn-primary" onclick="saveEldConfig()">Salvar</button>
+        <button class="btn-ghost" onclick="closeEldConfig()">Fechar</button>
+        <button class="btn-primary" onclick="saveEldConfig()">Salvar cookie</button>
       </div>
     </div>
   </div>
@@ -6519,6 +6520,145 @@ function eldMarkAllRead() {
 }
 
 // ── CONFIG MODAL ──────────────────────────────────────────────────
+// ── BROWSER LOGIN ────────────────────────────────────────────────────────────
+function eldBrowserLogin() {
+  const status = document.getElementById('eld-config-status');
+  const icon   = document.getElementById('eld-login-icon');
+  const msg    = document.getElementById('eld-login-msg');
+
+  // Abre popup da Eldorado
+  const popup = window.open(
+    'https://www.eldorado.gg/br/login',
+    'eldorado_login',
+    'width=520,height=680,top=100,left=200,resizable=yes,scrollbars=yes'
+  );
+
+  if (!popup) {
+    status.style.display = 'block';
+    status.innerHTML = '<span style="color:#f87171">⚠️ Popup bloqueado! Permita popups para este site.</span>';
+    return;
+  }
+
+  icon.textContent = '⏳';
+  msg.innerHTML = 'Faça login na janela que abriu.<br><span style="color:var(--muted);font-size:11px">Aguardando login...</span>';
+  status.style.display = 'none';
+
+  let _checking = false;
+  let _attempts = 0;
+  const MAX_ATTEMPTS = 600; // 5 minutos
+
+  const interval = setInterval(async () => {
+    _attempts++;
+    if (_attempts > MAX_ATTEMPTS || popup.closed) {
+      clearInterval(interval);
+      if (_attempts > MAX_ATTEMPTS) {
+        icon.textContent = '⏰';
+        msg.innerHTML = '<span style="color:#f87171">Tempo esgotado. Tente novamente.</span>';
+      }
+      return;
+    }
+    if (_checking) return;
+    _checking = true;
+
+    try {
+      // Tenta ler a URL do popup para saber se o login foi concluído
+      let popupUrl = '';
+      try { popupUrl = popup.location.href; } catch(e) { _checking = false; return; }
+
+      // Se saiu da página de login = está logado
+      if (popupUrl && !popupUrl.includes('/login') && !popupUrl.includes('/register') && popupUrl.includes('eldorado.gg')) {
+        // Busca cookies via fetch autenticado no worker — manda a URL atual do popup como sinal
+        // O popup está logado, vamos buscar os cookies via extensão ou iframe
+        clearInterval(interval);
+
+        // Injeta script no popup para capturar document.cookie e mandar via postMessage
+        try {
+          popup.postMessage({ action: 'capture_cookies' }, 'https://www.eldorado.gg');
+        } catch(e) {}
+
+        // Escuta a resposta
+        const handler = async (ev) => {
+          if (ev.origin !== 'https://www.eldorado.gg') return;
+          if (!ev.data || !ev.data.cookies) return;
+          window.removeEventListener('message', handler);
+
+          const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+          if (!uid) { icon.textContent = '⚠️'; msg.innerHTML = '<span style="color:#f87171">Faça login no seu painel primeiro.</span>'; popup.close(); return; }
+
+          icon.textContent = '⏳';
+          msg.innerHTML = 'Salvando cookies...';
+
+          try {
+            const resp = await fetch(ELD_WORKER + '/auth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
+              body: JSON.stringify({ cookie: ev.data.cookies }),
+            });
+            const data = await resp.json();
+            if (resp.ok && data.ok) {
+              icon.textContent = '✅';
+              msg.innerHTML = '<strong style="color:#22c55e">Conectado com sucesso!</strong><br><span style="font-size:11px;color:var(--muted)">Monitoramento ativo.</span>';
+              popup.close();
+              startEldPolling();
+              pollEldorado();
+              setTimeout(closeEldConfig, 2000);
+            } else {
+              icon.textContent = '⚠️';
+              msg.innerHTML = `<span style="color:#f87171">Erro ao salvar: ${data.error || 'tente novamente'}</span>`;
+            }
+          } catch(e) {
+            icon.textContent = '⚠️';
+            msg.innerHTML = `<span style="color:#f87171">Erro de conexão: ${e.message}</span>`;
+          }
+          popup.close();
+        };
+        window.addEventListener('message', handler);
+
+        // Fallback: se o popup não mandar postMessage em 3s, tenta via extensão
+        setTimeout(() => {
+          window.removeEventListener('message', handler);
+          // Tenta capturar via extensão Chrome se disponível
+          if (typeof chrome !== 'undefined' && chrome.cookies) {
+            chrome.cookies.getAll({ domain: 'eldorado.gg' }, async (c1) => {
+              chrome.cookies.getAll({ domain: 'www.eldorado.gg' }, async (c2) => {
+                const all = [...(c1||[])];
+                (c2||[]).forEach(c => { if (!all.find(x => x.name === c.name)) all.push(c); });
+                if (!all.find(c => c.name === '__Host-EldoradoIdToken')) {
+                  icon.textContent = '⚠️'; msg.innerHTML = '<span style="color:#f87171">Login não detectado. Tente novamente.</span>';
+                  return;
+                }
+                const cookieStr = all.map(c => c.name + '=' + c.value).join('; ');
+                const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+                if (!uid) return;
+                const resp = await fetch(ELD_WORKER + '/auth', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
+                  body: JSON.stringify({ cookie: cookieStr }),
+                });
+                const data = await resp.json();
+                if (resp.ok && data.ok) {
+                  icon.textContent = '✅';
+                  msg.innerHTML = '<strong style="color:#22c55e">Conectado com sucesso!</strong>';
+                  popup.close();
+                  startEldPolling(); pollEldorado();
+                  setTimeout(closeEldConfig, 2000);
+                } else {
+                  icon.textContent = '⚠️'; msg.innerHTML = '<span style="color:#f87171">Erro ao salvar cookie.</span>';
+                }
+              });
+            });
+          } else {
+            // Sem extensão — orienta o usuário a copiar cookie manualmente
+            icon.textContent = '⚠️';
+            msg.innerHTML = 'Login detectado! Mas não foi possível capturar os cookies automaticamente.<br><span style="font-size:11px;color:var(--muted)">Instale a extensão ou cole o cookie manualmente abaixo.</span>';
+          }
+        }, 3000);
+      }
+    } catch(e) {}
+    _checking = false;
+  }, 500);
+}
+
 function openEldConfig() {
   closeEldPanel();
   document.getElementById('eld-config-modal-bg').classList.add('visible');
