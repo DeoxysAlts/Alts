@@ -6576,15 +6576,22 @@ function clearEldCookie() {
     _eldNotifs = _eldNotifs.filter(n => pendingIds.has(String(n.id)));
     localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   } else if (_eldTab === 'completed') {
-    // Salva IDs como dismissed para não voltarem
+    const pendingIdsComp = new Set(_eldPending.map(p => String(p.id)));
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    _eldVendas.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    _eldVendas.forEach(n => {
+      if (pendingIdsComp.has(String(n.id))) return;
+      if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id));
+    });
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
     _eldVendas = [];
     localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
   } else if (_eldTab === 'disputes') {
+    const pendingIdsDisp = new Set(_eldPending.map(p => String(p.id)));
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    _eldDisputes.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    _eldDisputes.forEach(n => {
+      if (pendingIdsDisp.has(String(n.id))) return;
+      if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id));
+    });
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
     _eldDisputes = [];
     localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
@@ -6595,8 +6602,12 @@ function clearEldCookie() {
     _eldPending = [];
     localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
   } else if (_eldTab === 'cancelled') {
+    const pendingIdsCancelled = new Set(_eldPending.map(p => String(p.id)));
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-    _eldCancelled.forEach(n => { if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id)); });
+    _eldCancelled.forEach(n => {
+      if (pendingIdsCancelled.has(String(n.id))) return;
+      if (!dismissed.includes(String(n.id))) dismissed.push(String(n.id));
+    });
     localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
     _eldCancelled = [];
     localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
