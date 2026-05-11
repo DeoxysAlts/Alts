@@ -1332,6 +1332,15 @@
               <button class="eld-close-btn" onclick="toggleEldPanel()">✕</button>
             </div>
 
+            <!-- PERFIL ELDORADO -->
+            <div id="eld-perfil-bar" style="display:none;padding:10px 14px;background:rgba(14,165,233,0.05);border-bottom:0.5px solid rgba(14,165,233,0.1);display:flex;align-items:center;gap:10px">
+              <div id="eld-perfil-avatar" style="width:32px;height:32px;border-radius:50%;background:rgba(14,165,233,0.15);border:1.5px solid rgba(14,165,233,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;overflow:hidden">👤</div>
+              <div style="flex:1;min-width:0">
+                <div id="eld-perfil-username" style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+                <div style="font-size:10px;color:#0ea5e9;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:#0ea5e9;display:inline-block"></span>Conectado</div>
+              </div>
+            </div>
+
             <!-- STATUS BAR -->
             <div class="eld-status-bar">
               <div class="eld-pulse"></div>
@@ -5558,6 +5567,7 @@ function processExtensionNotifs(notifs) {
 function startEldPolling() {
   if (_eldPollTimer) clearInterval(_eldPollTimer);
   _eldPollTimer = setInterval(pollEldorado, ELD_POLL_MS);
+  loadEldPerfil();
 }
 
 async function pollEldorado() {
@@ -6076,6 +6086,26 @@ function getStatusLabel(status) {
   return { completed:'Venda concluída', pending:'Entrega pendente', cancelled:'Pedido cancelado', dispute:'Em disputa', dispute_won:'Disputa vencida', dispute_lost:'Disputa perdida', other:'Atualização' }[normalizeEldStatus(status)] || 'Atualização';
 }
 
+// ── PERFIL ELDORADO ──────────────────────────────────────────────────────────
+async function loadEldPerfil() {
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  if (!uid) return;
+  try {
+    const resp = await fetch(ELD_WORKER + '/perfil', { headers: { 'x-user-id': uid } });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data.username) return;
+    const bar      = document.getElementById('eld-perfil-bar');
+    const avatar   = document.getElementById('eld-perfil-avatar');
+    const username = document.getElementById('eld-perfil-username');
+    if (bar)      { bar.style.display = 'flex'; }
+    if (username) { username.textContent = data.username; }
+    if (avatar && data.avatar) {
+      avatar.innerHTML = `<img src="${data.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    }
+  } catch(e) {}
+}
+
 // ── TOGGLE PAINEL ─────────────────────────────────────────────────────────────
 function toggleEldPanel() { _eldPanelOpen ? closeEldPanel() : openEldPanel(); }
 function openEldPanel() {
@@ -6513,33 +6543,82 @@ function eldBrowserLogin() {
   }
 
   icon.textContent = '⏳';
-  msg.innerHTML = 'Faça login na janela que abriu.<br><span style="color:var(--muted);font-size:11px">Aguardando login...</span>';
+  msg.innerHTML = 'Faça login na janela que abriu e clique em <strong style="color:var(--text)">Já fiz login</strong> abaixo.';
   status.style.display = 'none';
 
-  let _checking = false;
-  let _attempts = 0;
-  const MAX_ATTEMPTS = 600; // 5 minutos
+  // Botão manual "Já fiz login"
+  const jaFizBtn = document.createElement('button');
+  jaFizBtn.textContent = '✅ Já fiz login';
+  jaFizBtn.style.cssText = 'width:100%;margin-top:12px;padding:11px;font-size:13px;font-weight:700;font-family:DM Sans,sans-serif;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 3px 12px rgba(16,185,129,0.3);transition:all .15s';
+  jaFizBtn.onmouseover = () => { jaFizBtn.style.opacity = '0.85'; };
+  jaFizBtn.onmouseout  = () => { jaFizBtn.style.opacity = '1'; };
+  document.getElementById('eld-login-status-box').appendChild(jaFizBtn);
 
-  const interval = setInterval(async () => {
-    _attempts++;
-    if (_attempts > MAX_ATTEMPTS || popup.closed) {
-      clearInterval(interval);
-      if (_attempts > MAX_ATTEMPTS) {
-        icon.textContent = '⏰';
-        msg.innerHTML = '<span style="color:#f87171">Tempo esgotado. Tente novamente.</span>';
-      }
-      return;
+  async function capturarCookies() {
+    jaFizBtn.disabled = true;
+    jaFizBtn.textContent = '⏳ Capturando cookies...';
+    icon.textContent = '⏳';
+    msg.innerHTML = 'Capturando cookies da Eldorado...';
+
+    const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+    if (!uid) { icon.textContent = '⚠️'; msg.innerHTML = '<span style="color:#f87171">Faça login no painel primeiro.</span>'; return; }
+
+    // Tenta via extensão Chrome
+    if (typeof chrome !== 'undefined' && chrome.cookies) {
+      chrome.cookies.getAll({ domain: 'eldorado.gg' }, async (c1) => {
+        chrome.cookies.getAll({ domain: 'www.eldorado.gg' }, async (c2) => {
+          const all = [...(c1||[])];
+          (c2||[]).forEach(c => { if (!all.find(x => x.name === c.name)) all.push(c); });
+          if (!all.find(c => c.name === '__Host-EldoradoIdToken')) {
+            icon.textContent = '⚠️';
+            msg.innerHTML = '<span style="color:#f87171">Cookie não encontrado. Verifique se está logado na Eldorado.</span>';
+            jaFizBtn.disabled = false; jaFizBtn.textContent = '✅ Já fiz login';
+            return;
+          }
+          const cookieStr = all.map(c => c.name + '=' + c.value).join('; ');
+          try {
+            const resp = await fetch(ELD_WORKER + '/auth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
+              body: JSON.stringify({ cookie: cookieStr }),
+            });
+            const data = await resp.json();
+            if (resp.ok && data.ok) {
+              icon.textContent = '✅';
+              msg.innerHTML = '<strong style="color:#22c55e">Conectado com sucesso!</strong><br><span style="font-size:11px;color:var(--muted)">Monitoramento ativo.</span>';
+              jaFizBtn.remove();
+              if (popup && !popup.closed) popup.close();
+              startEldPolling(); pollEldorado();
+              setTimeout(closeEldConfig, 2000);
+            } else {
+              icon.textContent = '⚠️';
+              msg.innerHTML = '<span style="color:#f87171">Erro ao salvar cookie. Tente novamente.</span>';
+              jaFizBtn.disabled = false; jaFizBtn.textContent = '✅ Já fiz login';
+            }
+          } catch(e) {
+            icon.textContent = '⚠️';
+            msg.innerHTML = '<span style="color:#f87171">Erro de conexão.</span>';
+            jaFizBtn.disabled = false; jaFizBtn.textContent = '✅ Já fiz login';
+          }
+        });
+      });
+    } else {
+      icon.textContent = '⚠️';
+      msg.innerHTML = 'Extensão não encontrada.<br><span style="font-size:11px;color:var(--muted)">Cole o cookie manualmente abaixo.</span>';
+      jaFizBtn.disabled = false; jaFizBtn.textContent = '✅ Já fiz login';
     }
-    if (_checking) return;
-    _checking = true;
+  }
 
-    try {
-      // Tenta ler a URL do popup para saber se o login foi concluído
-      let popupUrl = '';
-      try { popupUrl = popup.location.href; } catch(e) { _checking = false; return; }
+  jaFizBtn.onclick = capturarCookies;
 
-      // Se saiu da página de login = está logado
-      if (popupUrl && !popupUrl.includes('/login') && !popupUrl.includes('/register') && popupUrl.includes('eldorado.gg')) {
+  // Mantém intervalo só para fechar se popup fechar
+  const interval = setInterval(async () => {
+    if (popup.closed) {
+      clearInterval(interval);
+    }
+
+    // stub para compatibilidade
+    if (false) {
         // Busca cookies via fetch autenticado no worker — manda a URL atual do popup como sinal
         // O popup está logado, vamos buscar os cookies via extensão ou iframe
         clearInterval(interval);
