@@ -933,14 +933,22 @@
 
   /* TABS */
   .eld-tabs {
-    display: flex; gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
     padding: 8px 10px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     background: var(--eld-surf);
     flex-shrink: 0;
   }
+  /* Disputas ocupa linha inteira — destaque */
+  .eld-tab-btn[data-tab="disputes"] {
+    grid-column: 1 / -1;
+    background: rgba(245,166,35,0.06);
+    border-color: rgba(245,166,35,0.15) !important;
+  }
   .eld-tab-btn {
-    flex: 1; padding: 5px 2px;
+    flex: 1; padding: 5px 4px;
     border: 1px solid transparent;
     border-radius: 6px;
     font-family: 'Manrope', sans-serif;
@@ -948,6 +956,7 @@
     text-transform: uppercase; letter-spacing: .5px;
     cursor: pointer; background: transparent; color: var(--muted);
     transition: all .15s;
+    white-space: nowrap;
   }
   .eld-tab-btn.active { background: var(--eld-surf3); border-color: rgba(255,255,255,0.11); color: var(--text); }
   .eld-tab-btn:hover:not(.active) { color: var(--text); }
@@ -1473,8 +1482,8 @@
               <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')">Notifs</button>
               <button class="eld-tab-btn" data-tab="completed" onclick="setEldTab('completed')">Concluídos ✅</button>
               <button class="eld-tab-btn" data-tab="pending" onclick="setEldTab('pending')">Pendentes ⏳</button>
-              <button class="eld-tab-btn" data-tab="disputes" onclick="setEldTab('disputes')">Disputas ⚠️<span class="eld-tab-dispute-badge" id="eld-disputes-tab-badge" style="display:none"></span></button>
               <button class="eld-tab-btn" data-tab="cancelled" onclick="setEldTab('cancelled')">Cancelados ❌</button>
+              <button class="eld-tab-btn" data-tab="disputes" onclick="setEldTab('disputes')">⚠️ Disputas<span class="eld-tab-dispute-badge" id="eld-disputes-tab-badge" style="display:none"></span></button>
             </div>
 
             <!-- NOTIF LIST -->
