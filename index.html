@@ -1990,6 +1990,13 @@
         <button id="vd-tab-semana" class="vd-period-btn"        onclick="setVdPeriodo('semana')">7 dias</button>
         <button id="vd-tab-mes"    class="vd-period-btn"        onclick="setVdPeriodo('mes')">Mês</button>
         <button id="vd-tab-tudo"   class="vd-period-btn"        onclick="setVdPeriodo('tudo')">Tudo</button>
+        <button id="vd-sync-btn" onclick="_vdForceSyncPeriodo()"
+          title="Sincronizar com Eldorado"
+          style="background:rgba(31,214,121,.07);border:0.5px solid rgba(31,214,121,.2);color:#1fd679;height:28px;padding:0 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:4px;margin-left:4px"
+          onmouseover="this.style.background='rgba(31,214,121,.18)'" onmouseout="this.style.background='rgba(31,214,121,.07)'">
+          <svg id="vd-sync-icon" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Sync
+        </button>
       </div>
 
       <div style="display:flex;gap:6px;margin-left:6px">
@@ -3825,6 +3832,126 @@ function setVdPeriodo(p) {
     if (t === p) { btn.classList.add('active'); }
     else         { btn.classList.remove('active'); }
   });
+  renderVendasDia();
+  // Para períodos históricos, busca dados frescos da Eldorado
+  if (p !== 'hoje') {
+    _vdFetchHistoricoPeriodo(p);
+  }
+}
+
+// Mapa de dias por período
+const _VD_PERIODO_DIAS = { ontem: 2, '3dias': 3, semana: 7, mes: 31, tudo: 90 };
+
+// Cache para não refetch no mesmo período em < 2 min
+let _vdHistoricoCache = {};
+
+async function _vdFetchHistoricoPeriodo(periodo) {
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  if (!uid) return;
+
+  const dias = _VD_PERIODO_DIAS[periodo];
+  if (!dias) return;
+
+  // Cache por 2 minutos por período
+  const cacheKey = periodo;
+  const now = Date.now();
+  if (_vdHistoricoCache[cacheKey] && (now - _vdHistoricoCache[cacheKey]) < 120000) return;
+
+  // Mostra indicador de sync no subtitle
+  const subtitle = document.getElementById('vd-subtitle');
+  const subtitleOrig = subtitle ? subtitle.textContent : '';
+  if (subtitle) subtitle.innerHTML = `<span style="opacity:.6;font-size:11px">⟳ Sincronizando com Eldorado...</span>`;
+
+  // Mostra loading na lista
+  const listaEl = document.getElementById('vd-lista');
+  if (listaEl && listaEl.innerHTML === '') {
+    listaEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;padding:8px 0">
+      ${[1,2,3,4].map(() => `
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(255,255,255,.03);border:0.5px solid rgba(255,255,255,.06);border-radius:10px;animation:shimmer 1.5s infinite">
+          <div style="width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.07);flex-shrink:0"></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+            <div style="height:10px;background:rgba(255,255,255,.07);border-radius:4px;width:60%"></div>
+            <div style="height:9px;background:rgba(255,255,255,.05);border-radius:4px;width:35%"></div>
+          </div>
+          <div style="width:60px;height:12px;background:rgba(255,255,255,.07);border-radius:4px"></div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  try {
+    const resp = await fetch(`${ELD_WORKER}/historico?dias=${dias}`, {
+      headers: { 'x-user-id': uid }
+    });
+
+    if (!resp.ok) {
+      // Tenta sem parâmetro (fallback para worker sem suporte a ?dias=)
+      const resp2 = await fetch(`${ELD_WORKER}/historico`, { headers: { 'x-user-id': uid } });
+      if (!resp2.ok) { if (subtitle) subtitle.textContent = subtitleOrig; renderVendasDia(); return; }
+      const d2 = await resp2.json();
+      _vdMergeHistorico(d2.historico || []);
+    } else {
+      const d = await resp.json();
+      _vdMergeHistorico(d.historico || []);
+    }
+
+    _vdHistoricoCache[cacheKey] = now;
+  } catch(e) {
+    console.warn('[VD] Erro ao buscar histórico:', e.message);
+  }
+
+  // Re-renderiza com dados frescos
+  renderVendasDia();
+}
+
+function _vdMergeHistorico(apiItems) {
+  if (!apiItems || apiItems.length === 0) return;
+
+  let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+  const cleared = new Set(JSON.parse(localStorage.getItem('eld_historico_cleared') || '[]'));
+  const hIds = new Set(historico.map(h => String(h.id)));
+
+  const novos = apiItems.filter(v => {
+    const sid = String(v.id);
+    const sidC = 'c-' + sid;
+    return !hIds.has(sid) && !hIds.has(sidC) && !cleared.has(sid) && !cleared.has(sidC);
+  }).map(v => ({
+    id:        v._tipo === 'cancelado' ? 'c-' + String(v.id) : String(v.id),
+    icon:      v._tipo === 'cancelado' ? '❌' : '✅',
+    label:     v._tipo === 'cancelado' ? 'Pedido cancelado' : 'Venda concluída',
+    title:     v.produto || 'Produto',
+    price:     v.valor   ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
+    status:    v.status  || (v._tipo === 'cancelado' ? 'cancelled' : 'completed'),
+    comprador: v.comprador || '',
+    ts:        new Date(v.data || Date.now()).getTime(),
+    read:      true,
+    _tipo:     v._tipo || 'venda',
+  }));
+
+  if (novos.length > 0) {
+    historico = [...novos, ...historico].slice(0, 3000);
+    localStorage.setItem('eld_historico', JSON.stringify(historico));
+  }
+}
+
+async function _vdForceSyncPeriodo() {
+  // Limpa cache do período atual para forçar refetch
+  if (_vdHistoricoCache) delete _vdHistoricoCache[_vdPeriodo];
+
+  // Anima ícone do botão sync
+  const syncIcon = document.getElementById('vd-sync-icon');
+  const syncBtn  = document.getElementById('vd-sync-btn');
+  if (syncIcon) syncIcon.style.animation = 'spin 0.7s linear infinite';
+  if (syncBtn)  syncBtn.style.opacity = '0.6';
+
+  if (_vdPeriodo === 'hoje') {
+    await pollEldorado();
+  } else {
+    await _vdFetchHistoricoPeriodo(_vdPeriodo);
+  }
+
+  if (syncIcon) syncIcon.style.animation = '';
+  if (syncBtn)  syncBtn.style.opacity = '1';
   renderVendasDia();
 }
 
@@ -6342,7 +6469,7 @@ async function pollEldorado() {
       fetch(ELD_WORKER + '/pendentes',    { headers: eldHeaders }),
       fetch(ELD_WORKER + '/canceladas',   { headers: eldHeaders }),
       isSlowPoll ? fetch(ELD_WORKER + '/vendas',    { headers: eldHeaders }) : Promise.resolve({ ok: true, json: () => Promise.resolve({ vendas: [], total: 0 }) }),
-      isSlowPoll ? fetch(ELD_WORKER + '/historico', { headers: eldHeaders }) : Promise.resolve({ ok: true, json: () => Promise.resolve({ historico: [] }) }),
+      isSlowPoll ? fetch(ELD_WORKER + '/historico?dias=30', { headers: eldHeaders }).catch(() => fetch(ELD_WORKER + '/historico', { headers: eldHeaders })) : Promise.resolve({ ok: true, json: () => Promise.resolve({ historico: [] }) }),
     ]);
 
     if (!rNotif.ok) {
@@ -6372,24 +6499,11 @@ async function pollEldorado() {
     // ── Processa histórico completo do worker ─────────────────────
     // Isso popula o eld_historico com vendas + cancelamentos do passado
     if (dHistorico.historico && dHistorico.historico.length > 0) {
-      let historico = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-      const hIds = new Set(historico.map(h => String(h.id)));
-      const novosDoHistorico = dHistorico.historico.filter(v => !hIds.has(String(v.id)));
-      if (novosDoHistorico.length > 0) {
-        const mapeados = novosDoHistorico.map(v => ({
-          id:        String(v.id),
-          icon:      v._tipo === 'cancelado' ? '❌' : '✅',
-          label:     v._tipo === 'cancelado' ? 'Pedido cancelado' : 'Venda concluída',
-          title:     (v.produto || 'Produto') || v.produto || 'Produto',
-          price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
-          status:    v.status || (v._tipo === 'cancelado' ? 'cancelled' : 'completed'),
-          comprador: v.comprador || '',
-          ts:        new Date(v.data || Date.now()).getTime(),
-          read:      true,
-          _tipo:     v._tipo || 'venda',
-        }));
-        historico = [...mapeados, ...historico].slice(0, 2000);
-        localStorage.setItem('eld_historico', JSON.stringify(historico));
+      _vdMergeHistorico(dHistorico.historico);
+      // Re-renderiza Vendas do Dia se estiver aberta em período histórico
+      const vdRoot = document.getElementById('vd-root');
+      if (vdRoot && vdRoot.classList.contains('vd-open') && _vdPeriodo !== 'hoje') {
+        renderVendasDia();
       }
     }
 
