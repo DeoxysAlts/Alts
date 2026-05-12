@@ -953,6 +953,19 @@
   .eld-tab-btn:hover:not(.active) { color: var(--text); }
   .eld-tab-btn[data-tab="disputes"].has-items { color: #f5a623; }
   .eld-tab-btn[data-tab="disputes"].has-items.active { background: rgba(245,166,35,0.15); border-color: rgba(245,166,35,0.3); color: #f5a623; }
+  .eld-tab-btn[data-tab="disputes"].has-new { animation: dispute-pulse 1.2s ease-in-out 3; }
+  @keyframes dispute-pulse {
+    0%,100% { background: transparent; border-color: transparent; }
+    50% { background: rgba(245,166,35,0.2); border-color: rgba(245,166,35,0.5); box-shadow: 0 0 8px rgba(245,166,35,0.35); }
+  }
+  .eld-tab-dispute-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #f5a623; color: #000;
+    font-size: 9px; font-weight: 800;
+    border-radius: 999px; min-width: 14px; height: 14px;
+    padding: 0 3px; margin-left: 3px;
+    vertical-align: middle; line-height: 1;
+  }
 
   /* NOTIF LIST */
   .eld-notif-list {
@@ -982,7 +995,7 @@
   .eld-notif.completed::before  { background: var(--eld-green); }
   .eld-notif.pending::before    { background: var(--eld-yellow); }
   .eld-notif.cancelled::before  { background: var(--eld-red); }
-  .eld-notif.dispute::before     { background: var(--eld-purple); }
+  .eld-notif.dispute::before     { background: #f5a623; }
   .eld-notif.dispute_won::before { background: var(--eld-green); }
   .eld-notif.other::before       { background: var(--eld-blue); }
   .eld-notif.unread::after {
@@ -993,7 +1006,7 @@
   .eld-notif.unread.completed::after  { background: var(--eld-green); box-shadow: 0 0 6px var(--eld-green); }
   .eld-notif.unread.pending::after    { background: var(--eld-yellow); box-shadow: 0 0 6px var(--eld-yellow); }
   .eld-notif.unread.cancelled::after  { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
-  .eld-notif.unread.dispute::after     { background: var(--eld-purple); }
+  .eld-notif.unread.dispute::after     { background: #f5a623; box-shadow: 0 0 6px #f5a623; }
   .eld-notif.unread.dispute_won::after  { background: var(--eld-green); box-shadow: 0 0 6px var(--eld-green); }
   .eld-notif.unread.dispute_lost::after { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
   .eld-notif.unread.other::after       { background: var(--eld-blue); }
@@ -1032,7 +1045,7 @@
   .eld-notif-icon.completed { background: rgba(31,214,121,0.12); }
   .eld-notif-icon.pending   { background: rgba(245,166,35,0.12); }
   .eld-notif-icon.cancelled { background: rgba(255,85,85,0.12); }
-  .eld-notif-icon.dispute      { background: rgba(157,125,255,0.12); }
+  .eld-notif-icon.dispute      { background: rgba(245,166,35,0.15); }
   .eld-notif-icon.dispute_won   { background: rgba(31,214,121,0.12); }
   .eld-notif-icon.dispute_lost  { background: rgba(255,85,85,0.12); }
   .eld-notif-icon.other        { background: rgba(74,158,255,0.12); }
@@ -1048,7 +1061,7 @@
   .eld-notif-label.completed { color: var(--eld-green); }
   .eld-notif-label.pending   { color: var(--eld-yellow); }
   .eld-notif-label.cancelled { color: var(--eld-red); }
-  .eld-notif-label.dispute      { color: var(--eld-purple); }
+  .eld-notif-label.dispute      { color: #f5a623; }
   .eld-notif-label.dispute_won   { color: var(--eld-green); }
   .eld-notif-label.dispute_lost  { color: var(--eld-red); }
   .eld-notif-label.other        { color: var(--eld-blue); }
@@ -1067,7 +1080,7 @@
   .eld-notif-price.completed { color: var(--eld-green); }
   .eld-notif-price.pending   { color: var(--eld-yellow); }
   .eld-notif-price.cancelled { color: var(--eld-red); opacity:.7; }
-  .eld-notif-price.dispute      { color: var(--eld-purple); }
+  .eld-notif-price.dispute      { color: #f5a623; }
   .eld-notif-price.dispute_won   { color: var(--eld-green); }
   .eld-notif-price.dispute_lost  { color: var(--eld-red); opacity:.7; }
   .eld-notif-price.other        { color: var(--eld-blue); }
@@ -1460,7 +1473,7 @@
               <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')">Notifs</button>
               <button class="eld-tab-btn" data-tab="completed" onclick="setEldTab('completed')">Concluídos ✅</button>
               <button class="eld-tab-btn" data-tab="pending" onclick="setEldTab('pending')">Pendentes ⏳</button>
-              <button class="eld-tab-btn" data-tab="disputes" onclick="setEldTab('disputes')">Disputas ⚠️</button>
+              <button class="eld-tab-btn" data-tab="disputes" onclick="setEldTab('disputes')">Disputas ⚠️<span class="eld-tab-dispute-badge" id="eld-disputes-tab-badge" style="display:none"></span></button>
               <button class="eld-tab-btn" data-tab="cancelled" onclick="setEldTab('cancelled')">Cancelados ❌</button>
             </div>
 
@@ -6503,6 +6516,17 @@ async function pollEldorado() {
           // (só o resultado final — vencida ou perdida — vai para Notifs)
           mapped.forEach(d => showEldToast(d));
           typeof playUiSound === 'function' && playUiSound();
+          // ── Abre painel e vai direto pra aba Disputas ──────────────
+          openEldPanel();
+          setEldTab('disputes');
+          // Pulsa a aba pra chamar atenção
+          const _dispBtn = document.querySelector('.eld-tab-btn[data-tab="disputes"]');
+          if (_dispBtn) {
+            _dispBtn.classList.remove('has-new');
+            void _dispBtn.offsetWidth; // força reflow pra reiniciar animação
+            _dispBtn.classList.add('has-new');
+            _dispBtn.addEventListener('animationend', () => _dispBtn.classList.remove('has-new'), { once: true });
+          }
         } else {
           // Sincroniza disputas existentes
           _eldDisputes = disputasApi
@@ -6943,6 +6967,16 @@ function renderEldStats() {
   // Destaca a aba de Disputas quando tiver itens
   const disputeTabBtn = document.querySelector('.eld-tab-btn[data-tab="disputes"]');
   if (disputeTabBtn) disputeTabBtn.classList.toggle('has-items', _eldDisputes.length > 0);
+  // Atualiza badge de contagem na aba Disputas
+  const dispTabBadge = document.getElementById('eld-disputes-tab-badge');
+  if (dispTabBadge) {
+    if (_eldDisputes.length > 0) {
+      dispTabBadge.textContent = _eldDisputes.length > 9 ? '9+' : String(_eldDisputes.length);
+      dispTabBadge.style.display = 'inline-flex';
+    } else {
+      dispTabBadge.style.display = 'none';
+    }
+  }
 }
 
 function renderEldList() {
@@ -7006,6 +7040,36 @@ function renderEldList() {
     const unread = !n.read ? 'unread' : '';
     const buyer  = n.comprador || n.buyer || '';
     const isPending = _eldTab === 'pending';
+    const isDispute = _eldTab === 'disputes';
+
+    if (isDispute) {
+      return `
+        <div class="eld-notif ${unread} dispute" style="flex-direction:column;gap:6px;padding:10px 12px 10px 14px;border-color:rgba(245,166,35,0.18);background:rgba(245,166,35,0.04)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div class="eld-notif-label dispute" style="margin-bottom:3px;display:flex;align-items:center;gap:4px">⚠️ Em disputa</div>
+              <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.45;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
+            </div>
+            <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:#f5a623;flex-shrink:0;margin-top:14px;letter-spacing:-0.5px">${escHtml(n.price || '')}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:10px;color:#5a5a6a;font-weight:500">
+            ${buyer ? `<span style="display:flex;align-items:center;gap:3px;color:#7878a0">👤 ${escHtml(buyer)}</span>` : ''}
+            <span class="eld-ts" data-ts="${n.ts}" style="display:flex;align-items:center;gap:3px">🕐 ${ago}</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:1px">
+            <button onclick="window.open('https://www.eldorado.gg/br/dashboard/orders','_blank')"
+              style="flex:1;padding:8px 10px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);color:#f5a623;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px"
+              onmouseover="this.style.background='rgba(245,166,35,0.2)';this.style.borderColor='rgba(245,166,35,0.5)'"
+              onmouseout="this.style.background='rgba(245,166,35,0.1)';this.style.borderColor='rgba(245,166,35,0.3)'">
+              ↗ Ver no Eldorado
+            </button>
+            <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar"
+              style="position:static;width:auto;padding:8px 10px;font-size:11px;font-weight:700;border-radius:8px;opacity:1;color:#666;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">
+              ✕
+            </button>
+          </div>
+        </div>`;
+    }
 
     if (isPending) {
       // Procura em qual(is) conta(s) o brainrot vendido está guardado
