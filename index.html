@@ -643,6 +643,54 @@
   /* Remove white background from trait PNG images */
   img[style*="mix-blend-mode:lighten"] { mix-blend-mode: lighten; }
 
+  /* ── ANALÍTICA CARD ── */
+  .vd-analitica-card {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: border-color .15s;
+  }
+  .vd-analitica-card:hover { border-color: var(--border2); }
+  .vd-analitica-card-icon {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .vd-analitica-card-body { flex: 1; min-width: 0; }
+  .vd-analitica-card-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .vd-analitica-card-val { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; line-height: 1.2; margin-top: 1px; }
+  .vd-analitica-card-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .vd-analitica-perfil-row {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+  }
+  .vd-analitica-perfil-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(31,214,121,.12);
+    border: 1px solid rgba(31,214,121,.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0; overflow: hidden;
+  }
+  .vd-analitica-rating-bar {
+    height: 4px; border-radius: 99px; background: rgba(255,255,255,.07);
+    margin-top: 4px; overflow: hidden;
+  }
+  .vd-analitica-rating-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, #f5c400, #1fd679);
+    transition: width .6s ease;
+  }
+
   /* scrollbar */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -933,22 +981,14 @@
 
   /* TABS */
   .eld-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
+    display: flex; gap: 4px;
     padding: 8px 10px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     background: var(--eld-surf);
     flex-shrink: 0;
   }
-  /* Disputas ocupa linha inteira — destaque */
-  .eld-tab-btn[data-tab="disputes"] {
-    grid-column: 1 / -1;
-    background: rgba(245,166,35,0.06);
-    border-color: rgba(245,166,35,0.15) !important;
-  }
   .eld-tab-btn {
-    flex: 1; padding: 5px 4px;
+    flex: 1; padding: 5px 2px;
     border: 1px solid transparent;
     border-radius: 6px;
     font-family: 'Manrope', sans-serif;
@@ -956,25 +996,11 @@
     text-transform: uppercase; letter-spacing: .5px;
     cursor: pointer; background: transparent; color: var(--muted);
     transition: all .15s;
-    white-space: nowrap;
   }
   .eld-tab-btn.active { background: var(--eld-surf3); border-color: rgba(255,255,255,0.11); color: var(--text); }
   .eld-tab-btn:hover:not(.active) { color: var(--text); }
   .eld-tab-btn[data-tab="disputes"].has-items { color: #f5a623; }
   .eld-tab-btn[data-tab="disputes"].has-items.active { background: rgba(245,166,35,0.15); border-color: rgba(245,166,35,0.3); color: #f5a623; }
-  .eld-tab-btn[data-tab="disputes"].has-new { animation: dispute-pulse 1.2s ease-in-out 3; }
-  @keyframes dispute-pulse {
-    0%,100% { background: transparent; border-color: transparent; }
-    50% { background: rgba(245,166,35,0.2); border-color: rgba(245,166,35,0.5); box-shadow: 0 0 8px rgba(245,166,35,0.35); }
-  }
-  .eld-tab-dispute-badge {
-    display: inline-flex; align-items: center; justify-content: center;
-    background: #f5a623; color: #000;
-    font-size: 9px; font-weight: 800;
-    border-radius: 999px; min-width: 14px; height: 14px;
-    padding: 0 3px; margin-left: 3px;
-    vertical-align: middle; line-height: 1;
-  }
 
   /* NOTIF LIST */
   .eld-notif-list {
@@ -1004,7 +1030,7 @@
   .eld-notif.completed::before  { background: var(--eld-green); }
   .eld-notif.pending::before    { background: var(--eld-yellow); }
   .eld-notif.cancelled::before  { background: var(--eld-red); }
-  .eld-notif.dispute::before     { background: #f5a623; }
+  .eld-notif.dispute::before     { background: var(--eld-purple); }
   .eld-notif.dispute_won::before { background: var(--eld-green); }
   .eld-notif.other::before       { background: var(--eld-blue); }
   .eld-notif.unread::after {
@@ -1015,7 +1041,7 @@
   .eld-notif.unread.completed::after  { background: var(--eld-green); box-shadow: 0 0 6px var(--eld-green); }
   .eld-notif.unread.pending::after    { background: var(--eld-yellow); box-shadow: 0 0 6px var(--eld-yellow); }
   .eld-notif.unread.cancelled::after  { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
-  .eld-notif.unread.dispute::after     { background: #f5a623; box-shadow: 0 0 6px #f5a623; }
+  .eld-notif.unread.dispute::after     { background: var(--eld-purple); }
   .eld-notif.unread.dispute_won::after  { background: var(--eld-green); box-shadow: 0 0 6px var(--eld-green); }
   .eld-notif.unread.dispute_lost::after { background: var(--eld-red); box-shadow: 0 0 6px var(--eld-red); }
   .eld-notif.unread.other::after       { background: var(--eld-blue); }
@@ -1054,7 +1080,7 @@
   .eld-notif-icon.completed { background: rgba(31,214,121,0.12); }
   .eld-notif-icon.pending   { background: rgba(245,166,35,0.12); }
   .eld-notif-icon.cancelled { background: rgba(255,85,85,0.12); }
-  .eld-notif-icon.dispute      { background: rgba(245,166,35,0.15); }
+  .eld-notif-icon.dispute      { background: rgba(157,125,255,0.12); }
   .eld-notif-icon.dispute_won   { background: rgba(31,214,121,0.12); }
   .eld-notif-icon.dispute_lost  { background: rgba(255,85,85,0.12); }
   .eld-notif-icon.other        { background: rgba(74,158,255,0.12); }
@@ -1070,7 +1096,7 @@
   .eld-notif-label.completed { color: var(--eld-green); }
   .eld-notif-label.pending   { color: var(--eld-yellow); }
   .eld-notif-label.cancelled { color: var(--eld-red); }
-  .eld-notif-label.dispute      { color: #f5a623; }
+  .eld-notif-label.dispute      { color: var(--eld-purple); }
   .eld-notif-label.dispute_won   { color: var(--eld-green); }
   .eld-notif-label.dispute_lost  { color: var(--eld-red); }
   .eld-notif-label.other        { color: var(--eld-blue); }
@@ -1089,7 +1115,7 @@
   .eld-notif-price.completed { color: var(--eld-green); }
   .eld-notif-price.pending   { color: var(--eld-yellow); }
   .eld-notif-price.cancelled { color: var(--eld-red); opacity:.7; }
-  .eld-notif-price.dispute      { color: #f5a623; }
+  .eld-notif-price.dispute      { color: var(--eld-purple); }
   .eld-notif-price.dispute_won   { color: var(--eld-green); }
   .eld-notif-price.dispute_lost  { color: var(--eld-red); opacity:.7; }
   .eld-notif-price.other        { color: var(--eld-blue); }
@@ -1482,8 +1508,8 @@
               <button class="eld-tab-btn active" data-tab="notifs" onclick="setEldTab('notifs')">Notifs</button>
               <button class="eld-tab-btn" data-tab="completed" onclick="setEldTab('completed')">Concluídos ✅</button>
               <button class="eld-tab-btn" data-tab="pending" onclick="setEldTab('pending')">Pendentes ⏳</button>
+              <button class="eld-tab-btn" data-tab="disputes" onclick="setEldTab('disputes')">Disputas ⚠️</button>
               <button class="eld-tab-btn" data-tab="cancelled" onclick="setEldTab('cancelled')">Cancelados ❌</button>
-              <button class="eld-tab-btn" data-tab="disputes" onclick="setEldTab('disputes')">⚠️ Disputas<span class="eld-tab-dispute-badge" id="eld-disputes-tab-badge" style="display:none"></span></button>
             </div>
 
             <!-- NOTIF LIST -->
@@ -1998,6 +2024,29 @@
         <div>
           <div class="vd-sidebar-section-title">Top produtos</div>
           <div id="vd-top-produtos" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+
+        <!-- Analítica 30 dias -->
+        <div id="vd-analitica-section">
+          <div class="vd-sidebar-section-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Analítica · 30 dias</span>
+            <button onclick="loadVdAnalitica()" id="vd-analitica-refresh-btn"
+              style="background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:4px;font-size:11px;display:flex;align-items:center;gap:3px;transition:color .15s"
+              onmouseover="this.style.color='#1fd679'" onmouseout="this.style.color='var(--muted)'" title="Atualizar dados">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Atualizar
+            </button>
+          </div>
+          <div id="vd-analitica-body">
+            <div id="vd-analitica-loading" style="color:var(--muted);font-size:12px;text-align:center;padding:12px 0;display:none">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="animation:spin 1s linear infinite;display:inline-block;margin-right:4px"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+              Buscando da Eldorado...
+            </div>
+            <div id="vd-analitica-cards" style="display:flex;flex-direction:column;gap:7px"></div>
+            <div id="vd-analitica-empty" style="display:none;color:var(--muted);font-size:11px;text-align:center;padding:10px 0">
+              Conecte a Eldorado para ver analítica
+            </div>
+          </div>
         </div>
 
       </div>
@@ -3758,6 +3807,8 @@ function showVendasDia() {
   document.body.style.overflow = 'hidden';
   _vdPeriodo = 'hoje';
   setVdPeriodo('hoje');
+  // Carrega analítica automaticamente
+  setTimeout(loadVdAnalitica, 300);
 }
 
 function closeVendasDia() {
@@ -6525,17 +6576,6 @@ async function pollEldorado() {
           // (só o resultado final — vencida ou perdida — vai para Notifs)
           mapped.forEach(d => showEldToast(d));
           typeof playUiSound === 'function' && playUiSound();
-          // ── Abre painel e vai direto pra aba Disputas ──────────────
-          openEldPanel();
-          setEldTab('disputes');
-          // Pulsa a aba pra chamar atenção
-          const _dispBtn = document.querySelector('.eld-tab-btn[data-tab="disputes"]');
-          if (_dispBtn) {
-            _dispBtn.classList.remove('has-new');
-            void _dispBtn.offsetWidth; // força reflow pra reiniciar animação
-            _dispBtn.classList.add('has-new');
-            _dispBtn.addEventListener('animationend', () => _dispBtn.classList.remove('has-new'), { once: true });
-          }
         } else {
           // Sincroniza disputas existentes
           _eldDisputes = disputasApi
@@ -6860,6 +6900,144 @@ function getStatusLabel(status) {
 }
 
 // ── PERFIL ELDORADO ──────────────────────────────────────────────────────────
+// ── ANALÍTICA 30 DIAS (Eldorado) ──────────────────────────────────────────────
+async function loadVdAnalitica() {
+  const cardsEl   = document.getElementById('vd-analitica-cards');
+  const loadingEl = document.getElementById('vd-analitica-loading');
+  const emptyEl   = document.getElementById('vd-analitica-empty');
+  if (!cardsEl) return;
+
+  // Mostra loading
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (emptyEl)   emptyEl.style.display   = 'none';
+  cardsEl.innerHTML = '';
+
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+
+  let perfil = null;
+  let analitica = null;
+
+  // 1) Tenta buscar /analitica do worker (pode existir)
+  if (uid) {
+    try {
+      const [rPerfil, rAnal] = await Promise.all([
+        fetch(ELD_WORKER + '/perfil',    { headers: { 'x-user-id': uid } }),
+        fetch(ELD_WORKER + '/analitica', { headers: { 'x-user-id': uid } }),
+      ]);
+      if (rPerfil.ok)  { perfil    = await rPerfil.json(); }
+      if (rAnal.ok)    { analitica = await rAnal.json(); }
+    } catch(e) {}
+  }
+
+  // 2) Fallback: calcula métricas com dados locais (últimos 30 dias)
+  const now30 = Date.now();
+  const ms30  = 30 * 24 * 60 * 60 * 1000;
+  const hist  = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+  const hist30 = hist.filter(v => (now30 - (v.ts||0)) <= ms30);
+
+  const localVendas     = hist30.filter(v => v._tipo !== 'cancelado');
+  const localCancelados = hist30.filter(v => v._tipo === 'cancelado');
+  const localDisputes   = JSON.parse(localStorage.getItem('eld_disputes') || '[]');
+
+  function parsePrice(p) {
+    const m = String(p || '').replace(/[^0-9,.]/g,'').replace(',','.');
+    return parseFloat(m) || 0;
+  }
+
+  const localReceita = localVendas.reduce((s, v) => s + parsePrice(v.price), 0);
+  const localCancelRate = hist30.length > 0 ? ((localCancelados.length / hist30.length) * 100) : 0;
+  const localDisputeRate = hist30.length > 0 ? ((localDisputes.length / Math.max(hist30.length,1)) * 100) : 0;
+
+  // Mescla com dados da API se disponível
+  const receita30   = analitica?.receita30   ?? localReceita;
+  const pedidos30   = analitica?.pedidos30   ?? localVendas.length;
+  const cancelRate  = analitica?.taxaCancelamento ?? localCancelRate;
+  const disputeRate = analitica?.taxaLitigio      ?? localDisputeRate;
+  const rating      = analitica?.rating ?? perfil?.rating ?? null;
+  const criticas    = analitica?.criticas ?? perfil?.reviews ?? null;
+  const username    = perfil?.username ?? null;
+  const avatar      = perfil?.avatar ?? null;
+
+  if (loadingEl) loadingEl.style.display = 'none';
+
+  const hasData = receita30 > 0 || pedidos30 > 0 || username;
+  if (!hasData && !uid) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+
+  // Perfil row (se tiver username)
+  let html = '';
+  if (username) {
+    const ratingVal = rating ? parseFloat(rating) : null;
+    const ratingPct = ratingVal ? Math.min(100, ratingVal) : 0;
+    const ratingColor = ratingVal >= 99 ? '#1fd679' : ratingVal >= 95 ? '#f5c400' : '#f87171';
+    html += `
+    <div class="vd-analitica-perfil-row">
+      <div class="vd-analitica-perfil-avatar" id="vd-anal-avatar-wrap">
+        ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : '⭐'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(username)}</div>
+        ${ratingVal ? `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
+            <span style="font-size:10px;color:${ratingColor};font-weight:700">${ratingVal.toFixed(1)}%</span>
+            ${criticas ? `<span style="font-size:10px;color:var(--muted)">${criticas} críticas</span>` : ''}
+          </div>
+          <div class="vd-analitica-rating-bar"><div class="vd-analitica-rating-fill" style="width:${ratingPct}%"></div></div>
+        ` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Cards de métricas
+  const cards = [
+    {
+      icon: '💰', bg: 'rgba(31,214,121,.12)', color: '#1fd679',
+      label: 'Receita · 30 dias',
+      val: 'US$' + receita30.toFixed(2),
+      sub: `${pedidos30} pedido${pedidos30 !== 1 ? 's' : ''} concluído${pedidos30 !== 1 ? 's' : ''}`,
+    },
+    {
+      icon: '📦', bg: 'rgba(125,211,252,.1)', color: '#7dd3fc',
+      label: 'Pedidos concluídos',
+      val: String(pedidos30),
+      sub: receita30 > 0 && pedidos30 > 0 ? 'ticket médio US$' + (receita30/pedidos30).toFixed(2) : 'sem pedidos',
+    },
+    {
+      icon: '⚠️', bg: 'rgba(245,196,0,.1)', color: '#f5c400',
+      label: 'Taxa de litígio',
+      val: disputeRate.toFixed(1) + '%',
+      sub: disputeRate < 5 ? '✓ Dentro do limite' : '⚠ Atenção: alto',
+    },
+    {
+      icon: '❌', bg: 'rgba(248,113,113,.1)', color: '#f87171',
+      label: 'Taxa de cancelamento',
+      val: cancelRate.toFixed(1) + '%',
+      sub: cancelRate < 15 ? '✓ Dentro do limite' : '⚠ Atenção: alto',
+    },
+  ];
+
+  html += cards.map(c => `
+    <div class="vd-analitica-card">
+      <div class="vd-analitica-card-icon" style="background:${c.bg};color:${c.color}">${c.icon}</div>
+      <div class="vd-analitica-card-body">
+        <div class="vd-analitica-card-label">${c.label}</div>
+        <div class="vd-analitica-card-val" style="color:${c.color}">${escHtml(String(c.val))}</div>
+        <div class="vd-analitica-card-sub">${escHtml(c.sub)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Nota da fonte
+  const fonte = analitica ? 'Eldorado' : 'dados locais';
+  html += `<div style="font-size:10px;color:var(--muted);text-align:right;padding-top:2px">
+    fonte: ${fonte} · última atualização agora
+  </div>`;
+
+  cardsEl.innerHTML = html;
+}
+
 async function loadEldPerfil() {
   const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
   if (!uid) return;
@@ -6976,16 +7154,6 @@ function renderEldStats() {
   // Destaca a aba de Disputas quando tiver itens
   const disputeTabBtn = document.querySelector('.eld-tab-btn[data-tab="disputes"]');
   if (disputeTabBtn) disputeTabBtn.classList.toggle('has-items', _eldDisputes.length > 0);
-  // Atualiza badge de contagem na aba Disputas
-  const dispTabBadge = document.getElementById('eld-disputes-tab-badge');
-  if (dispTabBadge) {
-    if (_eldDisputes.length > 0) {
-      dispTabBadge.textContent = _eldDisputes.length > 9 ? '9+' : String(_eldDisputes.length);
-      dispTabBadge.style.display = 'inline-flex';
-    } else {
-      dispTabBadge.style.display = 'none';
-    }
-  }
 }
 
 function renderEldList() {
@@ -7049,36 +7217,6 @@ function renderEldList() {
     const unread = !n.read ? 'unread' : '';
     const buyer  = n.comprador || n.buyer || '';
     const isPending = _eldTab === 'pending';
-    const isDispute = _eldTab === 'disputes';
-
-    if (isDispute) {
-      return `
-        <div class="eld-notif ${unread} dispute" style="flex-direction:column;gap:6px;padding:10px 12px 10px 14px;border-color:rgba(245,166,35,0.18);background:rgba(245,166,35,0.04)">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-            <div style="flex:1;min-width:0">
-              <div class="eld-notif-label dispute" style="margin-bottom:3px;display:flex;align-items:center;gap:4px">⚠️ Em disputa</div>
-              <div style="font-size:12px;font-weight:700;color:var(--text);line-height:1.45;word-break:break-word;white-space:normal">${escHtml(n.title)}</div>
-            </div>
-            <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:#f5a623;flex-shrink:0;margin-top:14px;letter-spacing:-0.5px">${escHtml(n.price || '')}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:10px;color:#5a5a6a;font-weight:500">
-            ${buyer ? `<span style="display:flex;align-items:center;gap:3px;color:#7878a0">👤 ${escHtml(buyer)}</span>` : ''}
-            <span class="eld-ts" data-ts="${n.ts}" style="display:flex;align-items:center;gap:3px">🕐 ${ago}</span>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:1px">
-            <button onclick="window.open('https://www.eldorado.gg/br/dashboard/orders','_blank')"
-              style="flex:1;padding:8px 10px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);color:#f5a623;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px"
-              onmouseover="this.style.background='rgba(245,166,35,0.2)';this.style.borderColor='rgba(245,166,35,0.5)'"
-              onmouseout="this.style.background='rgba(245,166,35,0.1)';this.style.borderColor='rgba(245,166,35,0.3)'">
-              ↗ Ver no Eldorado
-            </button>
-            <button class="eld-notif-dismiss" data-dismiss="${escHtml(String(n.id))}" title="Dispensar"
-              style="position:static;width:auto;padding:8px 10px;font-size:11px;font-weight:700;border-radius:8px;opacity:1;color:#666;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center">
-              ✕
-            </button>
-          </div>
-        </div>`;
-    }
 
     if (isPending) {
       // Procura em qual(is) conta(s) o brainrot vendido está guardado
