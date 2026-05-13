@@ -7,6 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>⬡ Deoxys Alts</title>
+<script src="https://cdn.talkjs.com/talk.js" charset="utf-8" async></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=DM+Sans:wght@400;500&family=Press+Start+2P&display=swap');
 
@@ -1112,6 +1113,389 @@
   }
   .eld-footer-btn:hover { background: var(--eld-surf3); color: var(--text); }
 
+  /* ── CHAT ELDORADO ───────────────────────────────────────────── */
+  #eld-chat-root {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #080809;
+    z-index: 310;
+    flex-direction: column;
+    font-family: 'Manrope', sans-serif;
+  }
+  #eld-chat-root.chat-open { display: flex; }
+
+  .chat-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 18px;
+    height: 52px;
+    background: #0d0d0f;
+    border-bottom: 0.5px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+  .chat-topbar-back {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background .15s, color .15s;
+  }
+  .chat-topbar-back:hover { background: rgba(255,255,255,.07); color: var(--text); }
+  .chat-topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chat-topbar-live {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: #1fd679;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    background: rgba(31,214,121,0.08);
+    border: 0.5px solid rgba(31,214,121,0.2);
+    border-radius: 99px;
+    padding: 2px 8px 2px 6px;
+  }
+  .chat-live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #1fd679;
+    animation: pulse-online 1.8s infinite;
+  }
+  .chat-topbar-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 99px;
+    padding: 2px 7px;
+    display: none;
+  }
+  .chat-topbar-badge.visible { display: inline-block; }
+  .chat-topbar-refresh {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.10);
+    color: var(--muted);
+    width: 32px; height: 32px;
+    border-radius: var(--rad-sm);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: background .15s, color .15s, transform .3s;
+  }
+  .chat-topbar-refresh:hover { background: rgba(255,255,255,.09); color: var(--text); }
+  .chat-topbar-refresh.spinning { animation: spin 0.7s linear; }
+
+  /* Layout split: lista de conversas | mensagens */
+  .chat-body {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+  @media (max-width: 700px) {
+    .chat-body { grid-template-columns: 1fr; }
+    .chat-conv-list { display: none; }
+    .chat-conv-list.mobile-show { display: flex; }
+    .chat-msgs-panel { display: none; }
+    .chat-msgs-panel.mobile-show { display: flex; }
+  }
+
+  /* Coluna esquerda: lista de conversas */
+  .chat-conv-list {
+    border-right: 0.5px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #0a0a0c;
+  }
+  .chat-conv-search {
+    padding: 10px 12px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.05);
+    flex-shrink: 0;
+  }
+  .chat-conv-search input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.09);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 0 12px 0 32px;
+    height: 34px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .chat-conv-search input:focus { border-color: rgba(31,214,121,0.35); }
+  .chat-conv-search-wrap { position: relative; }
+  .chat-conv-search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .chat-conv-items {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .chat-conv-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--muted); font-size: 12px; gap: 8px; padding: 2rem; text-align: center;
+  }
+  .chat-conv-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 0.5px solid rgba(255,255,255,0.04);
+    transition: background .15s;
+    position: relative;
+  }
+  .chat-conv-item:hover { background: rgba(255,255,255,0.03); }
+  .chat-conv-item.active { background: rgba(31,214,121,0.05); border-right: 2px solid #1fd679; }
+  .chat-conv-item.unread .chat-conv-name { color: #fff; font-weight: 700; }
+  .chat-conv-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(31,214,121,0.12);
+    border: 1.5px solid rgba(31,214,121,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    color: #1fd679;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+  }
+  .chat-conv-info { flex: 1; min-width: 0; }
+  .chat-conv-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chat-conv-preview {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+  .chat-conv-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .chat-conv-time { font-size: 10px; color: var(--muted); }
+  .chat-conv-unread-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #1fd679;
+    display: none;
+  }
+  .chat-conv-item.unread .chat-conv-unread-dot { display: block; }
+
+  /* Coluna direita: mensagens */
+  .chat-msgs-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #080809;
+  }
+  .chat-msgs-header {
+    padding: 10px 16px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+    background: #0a0a0c;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .chat-msgs-order-info { flex: 1; min-width: 0; }
+  .chat-msgs-buyer { font-size: 13px; font-weight: 700; color: var(--text); }
+  .chat-msgs-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .chat-msgs-open-btn {
+    background: rgba(14,165,233,0.08);
+    border: 0.5px solid rgba(14,165,233,0.25);
+    color: #38bdf8;
+    padding: 0 12px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .chat-msgs-open-btn:hover { background: rgba(14,165,233,0.16); }
+
+  .chat-msgs-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    scrollbar-width: thin;
+  }
+  .chat-msg-bubble {
+    max-width: 75%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    word-break: break-word;
+    position: relative;
+  }
+  .chat-msg-bubble.mine {
+    align-self: flex-end;
+    background: rgba(31,214,121,0.12);
+    border: 0.5px solid rgba(31,214,121,0.2);
+    color: #e0ffe8;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg-bubble.theirs {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.05);
+    border: 0.5px solid rgba(255,255,255,0.09);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg-meta {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .chat-msg-meta.mine { justify-content: flex-end; }
+  .chat-msg-sender { font-weight: 600; font-size: 10px; margin-bottom: 2px; }
+  .chat-msg-sender.theirs { color: #1fd679; }
+  .chat-msg-sender.mine { color: rgba(31,214,121,0.7); }
+
+  .chat-msgs-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 1; color: var(--muted); font-size: 13px; gap: 8px; text-align: center;
+  }
+  .chat-msgs-none {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 1; color: var(--muted); font-size: 13px; gap: 10px; text-align: center; padding: 2rem;
+  }
+
+  /* Input de nova mensagem */
+  .chat-input-area {
+    padding: 10px 14px;
+    border-top: 0.5px solid rgba(255,255,255,0.06);
+    background: #0a0a0c;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .chat-input-wrap { flex: 1; position: relative; }
+  .chat-input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.10);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    outline: none;
+    resize: none;
+    min-height: 40px;
+    max-height: 120px;
+    transition: border-color .2s;
+    line-height: 1.4;
+    scrollbar-width: thin;
+  }
+  .chat-input:focus { border-color: rgba(31,214,121,0.4); }
+  .chat-send-btn {
+    background: rgba(31,214,121,0.12);
+    border: 0.5px solid rgba(31,214,121,0.3);
+    color: #1fd679;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    transition: background .15s, transform .1s;
+    flex-shrink: 0;
+  }
+  .chat-send-btn:hover { background: rgba(31,214,121,0.22); }
+  .chat-send-btn:active { transform: scale(.93); }
+  .chat-send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Status do loading */
+  .chat-loading {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 20px; color: var(--muted); font-size: 12px;
+  }
+  .chat-loading-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: #1fd679;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  /* divider de data */
+  .chat-date-divider {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    margin: 8px 0 4px;
+    position: relative;
+  }
+  .chat-date-divider::before, .chat-date-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 0.5px;
+    background: rgba(255,255,255,0.07);
+  }
+  .chat-date-divider::before { left: 0; }
+  .chat-date-divider::after { right: 0; }
+
+  /* Toast do chat */
+  .chat-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1fd679;
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 99px;
+    z-index: 400;
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+  }
+  .chat-toast.visible { opacity: 1; }
+
   /* TOAST */
   .eld-toast-container {
     position: fixed;
@@ -1173,11 +1557,48 @@
   .eld-dismiss-all-btn:hover { background: rgba(248,113,113,0.15); }
   .eld-dismiss-all-btn.visible { display: block; }
 </style>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- Firebase — carrega via CDN com fallback para evitar erro no Electron -->
+<script>
+// No Electron (file://), scripts externos de CDN são bloqueados pelo webSecurity.
+// Solução: injetar os scripts dinamicamente e só inicializar o app depois que
+// todos carregarem. Isso substitui os <script src> estáticos que falham.
+(function() {
+  var FIREBASE_VER = '9.23.0';
+  var BASE = 'https://www.gstatic.com/firebasejs/' + FIREBASE_VER + '/';
+  var scripts = [
+    BASE + 'firebase-app-compat.js',
+    BASE + 'firebase-auth-compat.js',
+    BASE + 'firebase-firestore-compat.js',
+    BASE + 'firebase-database-compat.js',
+  ];
+
+  // Marca que o Firebase ainda não está pronto
+  window._firebaseReady = false;
+  window._firebaseError = false;
+
+  function loadScriptsSequentially(list, idx, onDone, onError) {
+    if (idx >= list.length) { onDone(); return; }
+    var s = document.createElement('script');
+    s.src = list[idx];
+    s.onload = function() { loadScriptsSequentially(list, idx + 1, onDone, onError); };
+    s.onerror = function(e) { onError(e, list[idx]); };
+    document.head.appendChild(s);
+  }
+
+  loadScriptsSequentially(scripts, 0,
+    function onDone() {
+      window._firebaseReady = true;
+      document.dispatchEvent(new Event('firebase-ready'));
+    },
+    function onError(e, url) {
+      window._firebaseError = true;
+      console.error('[Firebase] Falha ao carregar:', url, e);
+      // Tenta mostrar erro na tela de login
+      document.dispatchEvent(new Event('firebase-error'));
+    }
+  );
+})();
+</script>
 </head>
 <body>
 <!-- TELA DE REDEFINIÇÃO DE SENHA (MULTI-STEP) -->
@@ -1489,6 +1910,16 @@
         <!-- ── /ELDORADO BELL ─────────────────────────────── -->
 
       </div>
+      <!-- ── CHAT ELDORADO ─────────────────────────────────── -->
+      <button onclick="openEldChat()" title="Chat em tempo real — Eldorado" id="btn-eld-chat"
+        style="background:rgba(31,214,121,.06);border:0.5px solid rgba(31,214,121,.2);color:#1fd679;padding:0 14px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-weight:500;position:relative"
+        onmouseover="this.style.background='rgba(31,214,121,.12)'" onmouseout="this.style.background='rgba(31,214,121,.06)'">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Chat
+        <span id="chat-header-badge" style="display:none;background:#1fd679;color:#000;font-size:9px;font-weight:700;border-radius:99px;padding:1px 5px;min-width:14px;text-align:center"></span>
+      </button>
+      <!-- ── /CHAT ELDORADO ─────────────────────────────── -->
+
       <button onclick="showVendasDia()" title="Vendas do dia — Eldorado" id="btn-vendas-dia" style="background:rgba(31,214,121,.06);border:0.5px solid rgba(31,214,121,.2);color:#1fd679;padding:0 14px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-weight:500;position:relative"
       onmouseover="this.style.background='rgba(31,214,121,.12)'" onmouseout="this.style.background='rgba(31,214,121,.06)'">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
@@ -2274,9 +2705,46 @@ const firebaseConfig = {
   appId: "1:173383528660:web:e8384d2604df3884b24b41",
   databaseURL: "https://brainrot-deoxys-default-rtdb.firebaseio.com"
 };
-firebase.initializeApp(firebaseConfig);
-db = firebase.firestore();
-auth = firebase.auth();
+
+function _initFirebase() {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db   = firebase.firestore();
+    auth = firebase.auth();
+    // Dispara onAuthStateChanged e checkResetLink agora que o Firebase está pronto
+    _afterFirebaseInit();
+  } catch(e) {
+    console.error('[Firebase] initializeApp falhou:', e);
+    _showFirebaseError();
+  }
+}
+
+function _showFirebaseError() {
+  // Mostra mensagem de erro no lugar da tela de login
+  var loginScreen = document.getElementById('login-screen');
+  if (loginScreen) {
+    loginScreen.style.display = 'flex';
+    var errDiv = document.getElementById('firebase-load-error');
+    if (!errDiv) {
+      errDiv = document.createElement('div');
+      errDiv.id = 'firebase-load-error';
+      errDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#18181b;border:1px solid rgba(255,32,32,0.4);color:#f87171;padding:24px 32px;border-radius:12px;font-family:DM Sans,sans-serif;font-size:14px;text-align:center;z-index:9999;max-width:380px;line-height:1.6';
+      errDiv.innerHTML = '<div style="font-size:28px;margin-bottom:12px">⚠️</div><b>Erro ao carregar Firebase</b><br><small style="color:#888;font-size:12px">Verifique sua conexão com a internet e reinicie o app.<br>O app precisa de conexão na primeira abertura.</small><br><br><button onclick="location.reload()" style="background:#ff2020;border:none;color:#fff;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-family:DM Sans,sans-serif">Tentar novamente</button>';
+      document.body.appendChild(errDiv);
+    }
+  }
+}
+
+// Inicia assim que os scripts do Firebase terminarem de carregar
+if (window._firebaseReady) {
+  // Já carregou (raro, mas possível)
+  _initFirebase();
+} else if (window._firebaseError) {
+  _showFirebaseError();
+} else {
+  document.addEventListener('firebase-ready', _initFirebase, { once: true });
+  document.addEventListener('firebase-error', _showFirebaseError, { once: true });
+}
 
 // ── ONLINE PRESENCE (Firestore-based) ────────────────────────────────────────
 let _presenceDocRef = null;
@@ -2700,10 +3168,12 @@ async function doLogout() {
   await auth.signOut();
 }
 
-// Check if page was opened from a password reset link
-checkResetLink();
+// _afterFirebaseInit: chamado após firebase.initializeApp() — garante que auth/db existem
+function _afterFirebaseInit() {
+  // Check if page was opened from a password reset link
+  checkResetLink();
 
-auth.onAuthStateChanged(async function(user) {
+  auth.onAuthStateChanged(async function(user) {
   if (user) {
     currentUser = user;
     // Envia UID ao processo Electron para autenticar no Worker
@@ -2752,7 +3222,8 @@ auth.onAuthStateChanged(async function(user) {
     const oc = document.getElementById('online-count');
     if (oc) oc.textContent = '0';
   }
-});
+}); // fim auth.onAuthStateChanged
+} // fim _afterFirebaseInit
 
 // ── SAVE / LOAD ───────────────────────────────────────────────────────────────
 async function save() {
@@ -6568,6 +7039,23 @@ function _processEldRealtimeEvent(ev, docId) {
       }
       _eldDisputes = _eldDisputes.filter(d => String(d.id) !== String(id));
       localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
+
+    // ── Nova mensagem de chat ──────────────────────────────────────────────
+    } else if (type === 'chat_msg') {
+      // O worker detectou notificacao TalkJs/Message — marca a conversa como nao lida
+      const chatOrderId = String(ev.orderId || id);
+      if (chatOrderId && chatOrderId !== _chatActiveConvId) {
+        _chatUnreadIds.add(chatOrderId);
+        localStorage.setItem('chat_unread', JSON.stringify([..._chatUnreadIds]));
+        _chatUpdateHeaderBadge();
+        _chatShowToast('💬 Nova mensagem de ' + (ev.comprador || 'comprador'));
+        // Atualiza lista de conversas para refletir nova mensagem
+        _chatLoadConvs(true);
+      } else if (chatOrderId === _chatActiveConvId) {
+        // Conversa ativa — carrega mensagens imediatamente
+        _chatLoadMsgs(chatOrderId, true);
+      }
+      return; // nao processa como notif normal
     }
 
     renderEldPanel();
@@ -7476,6 +7964,8 @@ function renderEldList() {
     if (isPending) {
       // Procura em qual(is) conta(s) o brainrot vendido está guardado
       const _foundAccs = _findBrainrotAccounts(n.title || '');
+      // Auto-atualiza o gen do brainrot se a Eldorado tem valor mais preciso (ex: 718M → 718.7M)
+      _autoUpdateBrainrotGen(n.title || '', _foundAccs);
       // null = gen no título mas brainrot não cadastrado; [] = sem gen no título
       const _accChip = _foundAccs === null
         ? `<div style="margin-top:4px">
@@ -7726,6 +8216,22 @@ function _normGen(g) {
   return _extractGen(g) || _normBr(g);
 }
 
+// Compara dois gens tolerando decimais (ex: "718.7M" ≈ "718M", "1.5B" ≈ "1B")
+// Retorna true se a parte inteira do número é igual e a unidade é igual.
+function _genFuzzyMatch(g1, g2) {
+  if (!g1 || !g2) return false;
+  if (g1 === g2) return true;
+  const parse = (g) => {
+    const m = g.match(/^([0-9]+(?:\.[0-9]+)?)([MBK])$/i);
+    return m ? { num: parseFloat(m[1]), unit: m[2].toUpperCase() } : null;
+  };
+  const a = parse(g1), b = parse(g2);
+  if (!a || !b) return false;
+  if (a.unit !== b.unit) return false;
+  // Aceita match se a parte inteira é a mesma (718.7 → 718, 718 → 718)
+  return Math.floor(a.num) === Math.floor(b.num);
+}
+
 // Retorna lista de { ai, bi, accName, brName } para todos os matches de um título.
 // Prioridade: match de nome + gen (M/s). Se não houver gen no título,
 // usa só o match de nome mais longo para evitar falsos positivos.
@@ -7752,7 +8258,7 @@ function _findBrainrotAccounts(title) {
 
   // 2. Se o título tem gen (M/s), filtra pelos que têm o gen igual
   if (titleGen) {
-    const genMatches = candidates.filter(c => c.brGen === titleGen);
+    const genMatches = candidates.filter(c => _genFuzzyMatch(c.brGen, titleGen));
     if (genMatches.length > 0) {
       // Dentro dos que batem no gen, pega o nome mais longo (mais específico)
       const maxLen = Math.max(...genMatches.map(c => c.len));
@@ -7766,6 +8272,32 @@ function _findBrainrotAccounts(title) {
   // 3. Sem gen no título: usa só o nome mais longo
   const maxLen = Math.max(...candidates.map(c => c.len));
   return candidates.filter(c => c.len >= maxLen - 3);
+}
+
+// ── HELPER: auto-atualiza gen do brainrot com valor mais preciso da Eldorado ─
+// Ex: brainrot salvo com "718M/s" e Eldorado mostra "718.7M/s" → atualiza para "718.7M/s"
+function _autoUpdateBrainrotGen(title, matches) {
+  if (!matches || matches.length === 0) return;
+  const titleGen = _extractGen(title);
+  if (!titleGen) return;
+
+  let changed = false;
+  matches.forEach(m => {
+    const br = data.accounts[m.ai] && data.accounts[m.ai].brainrots[m.bi];
+    if (!br) return;
+    const currentGen = _normGen(br.gen || '');
+    // Só atualiza se bateu por fuzzy mas o valor exato é diferente (mais preciso)
+    if (currentGen !== titleGen && _genFuzzyMatch(currentGen, titleGen)) {
+      // Monta o gen formatado com /s (ex: "718.7M" → "718.7M/s")
+      const newGen = titleGen + '/s';
+      console.log(`[BrMatch] 🔄 Gen atualizado: "${br.gen}" → "${newGen}" (${br.name})`);
+      br.gen = newGen;
+      changed = true;
+    }
+  });
+  if (changed) {
+    save(); render(); renderDetailPanel(); updateStats();
+  }
 }
 
 // ── HELPER: remove brainrot vendido silenciosamente ──────────────────────────
@@ -8438,8 +8970,900 @@ setInterval(function() {
   try { _atualizarStatsDoDia(); } catch(e) {}
 }, 5000);
 
+// ══════════════════════════════════════════════════════════════════
+// CHAT ELDORADO — Tempo Real
+// ══════════════════════════════════════════════════════════════════
+
+// Estado do chat
+let _chatConvs        = [];
+let _chatActiveConvId = null;
+let _chatActiveOrderUrl = null;
+let _chatMsgsCache    = {};
+let _chatUnreadIds    = new Set(JSON.parse(localStorage.getItem('chat_unread') || '[]'));
+let _chatPollTimer    = null;
+let _chatMsgPollTimer = null;
+let _chatLastMsgSnippets = {};
+let _chatSending      = false;
+let _chatOpen         = false;
+const CHAT_POLL_MS    = 8000; // conversas a cada 8s
+const CHAT_MSG_POLL_MS =  2000; // mensagens a cada 2s quando conversa ativa
+
+// ── ABRIR/FECHAR ──────────────────────────────────────────────────
+function openEldChat() {
+  _chatOpen = true;
+  document.getElementById('eld-chat-root').classList.add('chat-open');
+  _chatLoadConvs();
+  if (_chatPollTimer) clearInterval(_chatPollTimer);
+  _chatPollTimer = setInterval(_chatLoadConvs, CHAT_POLL_MS);
+  // Tenta conexão direta ao TalkJS para mensagens em tempo real
+  if (typeof _talkjsConnect === 'function' && _talkjsHasCredentials()) {
+    _talkjsConnect();
+  }
+  // Inicializa sessão TalkJS SDK (pre-warm para quando selecionar conversa)
+  if (typeof _talkjsHasCredentials === 'function' && _talkjsHasCredentials()) {
+    _initTalkJSSession().then(s => {
+      if (s) console.log('[TalkJS SDK] Sessão pronta para chat em tempo real');
+    });
+  }
+}
+
+function closeEldChat() {
+  _chatOpen = false;
+  document.getElementById('eld-chat-root').classList.remove('chat-open');
+  clearInterval(_chatPollTimer);
+  clearInterval(_chatMsgPollTimer);
+  _chatPollTimer = null;
+  _chatMsgPollTimer = null;
+  // Destrói TalkJS chatbox/inbox
+  if (_talkjsChatbox) { _talkjsChatbox.destroy(); _talkjsChatbox = null; _talkjsMounted = false; }
+  if (_talkjsInbox) { _talkjsInbox.destroy(); _talkjsInbox = null; }
+  // Desconecta TalkJS direto para economizar recursos
+  if (typeof _talkjsDisconnect === 'function') _talkjsDisconnect();
+}
+
+function refreshEldChat() {
+  const btn = document.getElementById('chat-refresh-btn');
+  if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 700); }
+  _chatLoadConvs(true);
+  if (_chatActiveConvId) _chatLoadMsgs(_chatActiveConvId, true);
+  // Reconecta TalkJS se disponível
+  if (typeof _talkjsConnect === 'function' && _talkjsHasCredentials()) _talkjsConnect();
+}
+
+// ── CARREGAR CONVERSAS ────────────────────────────────────────────
+async function _chatLoadConvs(force) {
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  if (!uid) return;
+  try {
+    const [rPend, rHist] = await Promise.all([
+      fetch(ELD_WORKER + '/pendentes',  { headers: { 'x-user-id': uid }, cache: 'no-store' }),
+      fetch(ELD_WORKER + '/historico',  { headers: { 'x-user-id': uid }, cache: 'no-store' }),
+    ]);
+    const dPend = rPend.ok ? await rPend.json() : { pendentes: [] };
+    const dHist = rHist.ok ? await rHist.json() : { historico: [] };
+
+    const pendentes = dPend.pendentes || dPend.orders || [];
+    const historico = dHist.historico || dHist.orders || [];
+    const allOrders = [...pendentes, ...historico].slice(0, 80);
+
+    const seen = new Set();
+    const convs = [];
+    for (const o of allOrders) {
+      const id = String(o.id || o.orderId || '');
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      convs.push(_chatFormatConv(o));
+    }
+
+    // Detecta novas mensagens
+    let newMsgCount = 0;
+    for (const c of convs) {
+      const prev = _chatLastMsgSnippets[c.id];
+      if (prev !== undefined && prev !== c.lastMsgSnippet && c.id !== _chatActiveConvId) {
+        _chatUnreadIds.add(c.id);
+        newMsgCount++;
+      }
+      _chatLastMsgSnippets[c.id] = c.lastMsgSnippet;
+    }
+    if (newMsgCount > 0) {
+      localStorage.setItem('chat_unread', JSON.stringify([..._chatUnreadIds]));
+      _chatUpdateHeaderBadge();
+      _chatShowToast(`${newMsgCount} nova${newMsgCount > 1 ? 's' : ''} mensagem${newMsgCount > 1 ? 's' : ''} 💬`);
+    }
+
+    _chatConvs = convs;
+    renderChatConvList();
+    _chatUpdateHeaderBadge();
+  } catch(e) {
+    console.warn('[Chat Eld] erro ao carregar conversas:', e.message);
+  }
+}
+
+function _chatFormatConv(o) {
+  const id = String(o.id || o.orderId || '');
+  // Suporta campos PT (comprador, produto, valor, moeda) e EN (buyer, title, price)
+  const buyer = o.comprador || o.buyer || o.buyerUsername || o.username || o.customer || '?';
+  const title = o.produto   || o.title || o.product || o.item || o.name || 'Pedido';
+  // Monta preço: "valor"+"moeda" → "USD 12.00", ou "price" direto
+  let price = o.price || o.amount || '';
+  if (!price && o.valor != null) {
+    const moeda = o.moeda || 'USD';
+    const val   = parseFloat(String(o.valor).replace(',', '.'));
+    price = isNaN(val) ? String(o.valor) : `${moeda} ${val.toFixed(2)}`;
+  }
+  const msgs        = o.messages || o.chat || [];
+  const lastMsg     = o.lastMessage || (msgs.length ? msgs[msgs.length - 1] : null);
+  const lastMsgText = lastMsg ? (lastMsg.text || lastMsg.content || lastMsg.message || '') : '';
+  const lastMsgTime = lastMsg
+    ? (lastMsg.createdAt || lastMsg.ts || lastMsg.timestamp || 0)
+    : (o.updatedAt || o.data || o.createdAt || 0);
+  const orderUrl = o.url || ('https://www.eldorado.gg/br/dashboard/orders/sold/' + id);
+  return { id, buyer, title, price, lastMsgSnippet: lastMsgText.slice(0, 80), lastMsgTime, orderUrl, _raw: o };
+}
+
+// ── RENDERIZAR LISTA ──────────────────────────────────────────────
+function renderChatConvList() {
+  const container = document.getElementById('chat-conv-items');
+  if (!container) return;
+  const q = (document.getElementById('chat-search-input')?.value || '').toLowerCase();
+  const filtered = _chatConvs.filter(c =>
+    !q || c.buyer.toLowerCase().includes(q) || c.title.toLowerCase().includes(q) || c.id.includes(q)
+  );
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="chat-conv-empty"><div style="font-size:28px">💬</div><div>${_chatConvs.length === 0 ? 'Nenhuma conversa ainda.<br><small style="font-size:10px;opacity:.6">Conecte sua conta Eldorado para ver pedidos.</small>' : 'Nenhum resultado para "<b>' + escHtml(q) + '</b>"'}</div></div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(c => {
+    const unread   = _chatUnreadIds.has(c.id);
+    const active   = c.id === _chatActiveConvId;
+    const initials = (c.buyer || '?').slice(0,2).toUpperCase();
+    const timeStr  = c.lastMsgTime ? _chatFmtTime(c.lastMsgTime) : '';
+    const preview  = c.lastMsgSnippet || '';
+    return `<div class="chat-conv-item${active ? ' active' : ''}${unread ? ' unread' : ''}" onclick="selectChatConv('${escHtml(c.id)}')">
+      <div class="chat-conv-avatar">${escHtml(initials)}</div>
+      <div class="chat-conv-info">
+        <div class="chat-conv-name">${escHtml(c.buyer)}</div>
+        <div class="chat-conv-preview">${preview ? escHtml(preview.slice(0,55)) + (preview.length > 55 ? '…' : '') : '<em style="opacity:.4">Sem mensagens</em>'}</div>
+      </div>
+      <div class="chat-conv-meta">
+        <span class="chat-conv-time">${timeStr}</span>
+        <span class="chat-conv-unread-dot"></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SELECIONAR CONVERSA ───────────────────────────────────────────
+function selectChatConv(convId) {
+  _chatActiveConvId = convId;
+  _chatUnreadIds.delete(convId);
+  localStorage.setItem('chat_unread', JSON.stringify([..._chatUnreadIds]));
+  _chatUpdateHeaderBadge();
+  renderChatConvList();
+
+  // Destrói TalkJS chatbox anterior ao trocar de conversa
+  if (_talkjsChatbox) { _talkjsChatbox.destroy(); _talkjsChatbox = null; _talkjsMounted = false; }
+
+  document.getElementById('chat-msgs-none').style.display = 'none';
+  const activePanel = document.getElementById('chat-active-panel');
+  activePanel.style.display = 'flex';
+
+  const conv = _chatConvs.find(c => c.id === convId);
+  if (conv) {
+    document.getElementById('chat-active-avatar').textContent = (conv.buyer || '?').slice(0,2).toUpperCase();
+    document.getElementById('chat-active-buyer').textContent  = conv.buyer;
+    document.getElementById('chat-active-sub').textContent    = conv.title + (conv.price ? ' · ' + conv.price : '') + ' · #' + convId;
+    _chatActiveOrderUrl = conv.orderUrl;
+  }
+
+  // Tenta sincronizar o convId do TalkJS via API da Eldorado automaticamente
+  // Isso resolve o problema do Electron onde o WebSocket não pode ser interceptado
+  _chatSyncConvId(convId);
+
+  _chatLoadMsgs(convId, true);
+  clearInterval(_chatMsgPollTimer);
+  _chatMsgPollTimer = setInterval(() => _chatLoadMsgs(_chatActiveConvId), CHAT_MSG_POLL_MS);
+}
+
+// ── SINCRONIZAR CONV ID VIA API ───────────────────────────────────
+// Busca o conversationId do TalkJS direto na API da Eldorado
+// e salva no Worker para que o chat funcione sem interceptar WebSocket
+async function _chatSyncConvId(orderId) {
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  if (!uid) return;
+
+  // Verifica se já tem convId salvo no localStorage (cache local)
+  const cacheKey = 'talkjs_conv_' + orderId;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    console.log('[Chat] convId já em cache para', orderId, ':', cached);
+    return;
+  }
+
+  try {
+    // Pede ao Worker para buscar/salvar o convId via API da Eldorado
+    const res = await fetch(`${ELD_WORKER}/mensagens?orderId=${encodeURIComponent(orderId)}`, {
+      headers: { 'x-user-id': uid },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      // Se o worker retornou mensagens, o convId foi resolvido internamente
+      if (data.messages && data.messages.length > 0) {
+        localStorage.setItem(cacheKey, 'resolved');
+        console.log('[Chat] convId sincronizado via mensagens para', orderId);
+        return;
+      }
+    }
+  } catch(_) {}
+
+  // Tenta buscar o convId direto da API da Eldorado pelo frontend
+  // e sincronizar com o Worker via /sync-conv
+  try {
+    const endpoints = [
+      `https://www.eldorado.gg/api/orders/me/${orderId}`,
+      `https://www.eldorado.gg/api/orders/me/${orderId}/chat`,
+    ];
+    for (const url of endpoints) {
+      const r = await fetch(url, { credentials: 'include' });
+      if (!r.ok) continue;
+      const d = await r.json().catch(() => ({}));
+      const convId = d.chatId || d.talkjsConversationId || d.conversationId
+        || (d.chat && (d.chat.conversationId || d.chat.id))
+        || (d.conversationDetails && d.conversationDetails.id);
+      if (convId) {
+        console.log('[Chat] convId encontrado via API Eldorado:', convId, 'para orderId:', orderId);
+        // Salva no Worker
+        await fetch(`${ELD_WORKER}/sync-conv`, {
+          method: 'POST',
+          headers: { 'x-user-id': uid, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId, convId }),
+        }).catch(() => {});
+        localStorage.setItem(cacheKey, convId);
+        // Recarrega mensagens agora que temos o convId
+        if (_chatActiveConvId === orderId) {
+          setTimeout(() => _chatLoadMsgs(orderId, true), 500);
+        }
+        return;
+      }
+    }
+  } catch(e) {
+    console.warn('[Chat] falha ao buscar convId via API:', e.message);
+  }
+}
+
+// ── CARREGAR MENSAGENS ────────────────────────────────────────────
+async function _chatLoadMsgs(convId, force) {
+  if (!convId) return;
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  if (!uid) return;
+  const listEl = document.getElementById('chat-msgs-list');
+  if (!listEl) return;
+
+  // Se TalkJS Chatbox já está montado para esta conversa, não faz nada (TalkJS cuida)
+  if (_talkjsMounted && _talkjsChatbox && listEl.querySelector('#talkjs-chatbox-container')) {
+    return;
+  }
+
+  if (!_chatMsgsCache[convId] || force) {
+    listEl.innerHTML = '<div class="chat-loading"><div class="chat-loading-spinner"></div><span>Carregando mensagens...</span></div>';
+  }
+
+  try {
+    const res = await fetch(`${ELD_WORKER}/mensagens?orderId=${encodeURIComponent(convId)}`, {
+      headers: { 'x-user-id': uid },
+      cache: 'no-store',
+    });
+
+    let msgs = [];
+    if (res.ok) {
+      const data = await res.json();
+      msgs = data.messages || data.msgs || data.chat || data.mensagens || [];
+    } else if (res.status === 404) {
+      msgs = [];
+    } else {
+      const conv = _chatConvs.find(c => c.id === convId);
+      msgs = conv?._raw?.messages || conv?._raw?.chat || [];
+    }
+
+    // Se Worker retornou mensagens, mostra normalmente
+    if (msgs.length > 0) {
+      _chatMsgsCache[convId] = msgs;
+      _renderChatMsgs(convId, msgs);
+      return;
+    }
+
+    // Worker retornou vazio — tenta TalkJS SDK como fallback
+    if (typeof _talkjsHasCredentials === 'function' && _talkjsHasCredentials()) {
+      console.log('[TalkJS SDK] Worker retornou vazio, tentando TalkJS direto...');
+      const mounted = await _mountTalkJSChatbox(listEl, convId);
+      if (mounted) {
+        // TalkJS montado — para o polling pois TalkJS é real-time
+        clearInterval(_chatMsgPollTimer);
+        _chatMsgPollTimer = null;
+        return;
+      }
+    }
+
+    // Nem Worker nem TalkJS têm mensagens — mostra fallback com opção de conectar TalkJS
+    _chatMsgsCache[convId] = msgs;
+    const hasCreds = typeof _talkjsHasCredentials === 'function' && _talkjsHasCredentials();
+    listEl.innerHTML = `<div class="chat-msgs-empty">
+      <div style="font-size:32px">🙈</div>
+      <div style="font-weight:600;color:var(--text)">Sem mensagens neste pedido</div>
+      <div style="font-size:11px;max-width:300px;text-align:center;line-height:1.6">
+        ${hasCreds
+          ? 'O TalkJS não encontrou esta conversa. Tente abrir o pedido na Eldorado para sincronizar.'
+          : 'Para chat em tempo real, abra um pedido na <b>Eldorado</b> primeiro — isso captura as credenciais do chat automaticamente.'
+        }
+      </div>
+      <button onclick="openEldOrder()" style="margin-top:10px;background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">
+        🔗 Abrir na Eldorado
+      </button>
+    </div>`;
+
+  } catch(e) {
+    // Erro de rede no Worker — tenta TalkJS
+    if (typeof _talkjsHasCredentials === 'function' && _talkjsHasCredentials()) {
+      const mounted = await _mountTalkJSChatbox(listEl, convId);
+      if (mounted) {
+        clearInterval(_chatMsgPollTimer);
+        _chatMsgPollTimer = null;
+        return;
+      }
+    }
+    const conv = _chatConvs.find(c => c.id === convId);
+    const msgs = conv?._raw?.messages || conv?._raw?.chat || [];
+    _chatMsgsCache[convId] = msgs;
+    _renderChatMsgs(convId, msgs);
+    console.warn('[Chat Eld] msgs fallback:', e.message);
+  }
+}
+
+function _renderChatMsgs(convId, msgs) {
+  const listEl = document.getElementById('chat-msgs-list');
+  if (!listEl || _chatActiveConvId !== convId) return;
+
+  if (!msgs || msgs.length === 0) {
+    listEl.innerHTML = `<div class="chat-msgs-empty"><div style="font-size:32px">🙈</div><div style="font-weight:600;color:var(--text)">Sem mensagens neste pedido</div><div style="font-size:11px">Quando o comprador enviar uma mensagem, ela aparece aqui.</div></div>`;
+    return;
+  }
+
+  let lastDate = null;
+  const html = msgs.map(m => {
+    const text     = m.text || m.content || m.message || m.body || '';
+    const sender   = m.sender || m.from || m.author || m.role || 'buyer';
+    const isMine   = sender === 'seller' || sender === 'me' || sender === 'you' || m.isSeller === true || m.fromSeller === true;
+    const ts       = _chatParseTs(m.createdAt || m.ts || m.timestamp || m.date || 0);
+    const dateStr  = ts ? new Date(ts).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' }) : null;
+    const timeStr  = ts ? new Date(ts).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '';
+    const senderName = isMine ? 'Você' : (m.senderName || m.username || 'Comprador');
+
+    let divider = '';
+    if (dateStr && dateStr !== lastDate) {
+      lastDate = dateStr;
+      divider = `<div class="chat-date-divider">${dateStr}</div>`;
+    }
+
+    return `${divider}<div style="display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'}">
+      <div class="chat-msg-sender ${isMine ? 'mine' : 'theirs'}">${escHtml(senderName)}</div>
+      <div class="chat-msg-bubble ${isMine ? 'mine' : 'theirs'}">${escHtml(text)}</div>
+      <div class="chat-msg-meta ${isMine ? 'mine' : ''}">${timeStr}</div>
+    </div>`;
+  }).join('');
+
+  listEl.innerHTML = html;
+  listEl.scrollTop = listEl.scrollHeight;
+}
+
+// ── ENVIAR MENSAGEM ───────────────────────────────────────────────
+async function sendChatMessage() {
+  if (_chatSending) return;
+  const input   = document.getElementById('chat-input-box');
+  const sendBtn = document.getElementById('chat-send-btn');
+  const text    = (input?.value || '').trim();
+  if (!text || !_chatActiveConvId) return;
+  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+  if (!uid) { _chatShowToast('⚠️ Não autenticado'); return; }
+
+  _chatSending = true;
+  if (sendBtn) sendBtn.disabled = true;
+  input.value = '';
+  chatInputAutoResize(input);
+
+  const tempId = 'chat-opt-' + Date.now();
+  _chatAddOptimisticMsg(tempId, text);
+
+  try {
+    const res = await fetch(`${ELD_WORKER}/enviar-mensagem`, {
+      method: 'POST',
+      headers: { 'x-user-id': uid, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId: _chatActiveConvId, message: text }),
+    });
+
+    if (res.ok) {
+      setTimeout(() => _chatLoadMsgs(_chatActiveConvId, true), 600);
+    } else if (res.status === 404) {
+      // Chat ainda nao disponivel via API — abre Eldorado diretamente
+      document.getElementById(tempId)?.remove();
+      _chatShowToast('💬 Abrindo Eldorado para enviar a mensagem...');
+      setTimeout(() => openEldOrder(), 800);
+    } else {
+      const d = await res.json().catch(() => ({}));
+      _chatShowToast('❌ ' + (d.error || d.message || `Erro ${res.status}`));
+      document.getElementById(tempId)?.remove();
+    }
+  } catch(e) {
+    _chatShowToast('❌ Erro de rede — tente pela Eldorado');
+    document.getElementById(tempId)?.remove();
+    console.warn('[Chat Eld] enviar:', e.message);
+  } finally {
+    _chatSending = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+function _chatAddOptimisticMsg(id, text) {
+  const listEl = document.getElementById('chat-msgs-list');
+  if (!listEl) return;
+  listEl.querySelectorAll('.chat-msgs-empty').forEach(e => e.remove());
+  const timeStr = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  const div = document.createElement('div');
+  div.id = id;
+  div.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;opacity:.7';
+  div.innerHTML = `
+    <div class="chat-msg-sender mine">Você</div>
+    <div class="chat-msg-bubble mine">${escHtml(text)}</div>
+    <div class="chat-msg-meta mine">${timeStr} · enviando…</div>`;
+  listEl.appendChild(div);
+  listEl.scrollTop = listEl.scrollHeight;
+}
+
+function openEldOrder() {
+  window.open(_chatActiveOrderUrl || 'https://www.eldorado.gg/br/dashboard/orders/sold', '_blank');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function _chatParseTs(raw) {
+  if (!raw) return 0;
+  if (typeof raw === 'object' && raw.seconds) return raw.seconds * 1000;
+  const n = Number(raw);
+  if (!isNaN(n) && n > 0) return n < 9999999999 ? n * 1000 : n;
+  return new Date(raw).getTime() || 0;
+}
+
+function _chatFmtTime(ts) {
+  const ms = _chatParseTs(ts);
+  if (!ms) return '';
+  const d = new Date(ms);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString())
+    return d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+}
+
+function _chatUpdateHeaderBadge() {
+  const count = _chatUnreadIds.size;
+  const badge    = document.getElementById('chat-header-badge');
+  const topBadge = document.getElementById('chat-topbar-badge');
+  if (badge)    { badge.textContent = count; badge.style.display = count > 0 ? 'inline-block' : 'none'; }
+  if (topBadge) { topBadge.textContent = count; topBadge.classList.toggle('visible', count > 0); }
+}
+
+let _chatToastTimer = null;
+function _chatShowToast(msg) {
+  const el = document.getElementById('chat-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(_chatToastTimer);
+  _chatToastTimer = setTimeout(() => el.classList.remove('visible'), 3500);
+}
+
+function chatInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function chatInputAutoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// Init badge no load
+(function() { _chatUpdateHeaderBadge(); })();
+
+// ── TALKJS REAL-TIME SYNC ─────────────────────────────────────────
+// Intercepta WebSocket da Eldorado para:
+// 1. Capturar authToken/appId do TalkJS
+// 2. Escutar mensagens em tempo real
+// 3. Reconectar diretamente ao TalkJS para chat real-time
+(function() {
+  const _origWS = window.WebSocket;
+  let _talkjsWsUrl    = localStorage.getItem('talkjs_ws_url') || null;
+  let _talkjsAppId    = localStorage.getItem('talkjs_appId') || null;
+  let _talkjsToken    = localStorage.getItem('talkjs_token') || null;
+  let _talkjsUserId   = localStorage.getItem('talkjs_userId') || null;
+  let _talkjsDirectWs = null;
+  let _talkjsReconnectTimer = null;
+  const TALKJS_RECONNECT_MS = 5000;
+
+  // ── Processa mensagem do WebSocket TalkJS ───────────────────────
+  function _handleTalkJSData(raw) {
+    try {
+      // TalkJS pode mandar múltiplos formatos: JSON, arrays de eventos, etc.
+      let parsed;
+      if (typeof raw === 'string') {
+        // Tenta JSON
+        try { parsed = JSON.parse(raw); } catch(_) { return; }
+      } else return;
+
+      // TalkJS manda arrays de eventos ou objetos com type
+      const events = Array.isArray(parsed) ? parsed : [parsed];
+      for (const ev of events) {
+        if (!ev || typeof ev !== 'object') continue;
+
+        // Detecta mensagem nova — TalkJS usa vários formatos de evento
+        const type = ev.type || ev.event || ev.t || '';
+        const isMsg = type === 'message.sent' || type === 'message' || type === 'msg'
+          || type === 'message.created' || ev.text || ev.body || ev.content;
+
+        if (isMsg || ev.messages) {
+          // Tem mensagem nova — recarrega se chat está aberto
+          if (_chatOpen && _chatActiveConvId) {
+            console.log('[TalkJS RT] 📩 Nova mensagem detectada via WebSocket');
+            _chatLoadMsgs(_chatActiveConvId, true);
+            _chatLoadConvs(true);
+          }
+        }
+
+        // Detecta qualquer update de conversa
+        const isConvUpdate = type.includes('conversation') || type.includes('participant')
+          || type.includes('read') || type.includes('typing');
+        if (isConvUpdate && _chatOpen) {
+          _chatLoadConvs(true);
+        }
+      }
+    } catch(e) {
+      // Silencioso — mensagens não-JSON são comuns
+    }
+  }
+
+  // ── Intercepta criação de WebSocket ─────────────────────────────
+  window.WebSocket = function(url, protocols) {
+    const ws = protocols ? new _origWS(url, protocols) : new _origWS(url);
+
+    if (url && url.includes('talkjs')) {
+      console.log('[TalkJS RT] 🔌 WebSocket TalkJS interceptado');
+      try {
+        const u = new URL(url.replace('wss://', 'https://'));
+        const token = u.searchParams.get('authToken');
+        const appId = u.searchParams.get('appId');
+        if (token && appId) {
+          // Extrai userId do path: wss://c1.talkjs.com/v3/{appId}/users/{userId}/sessions/...
+          const pathParts = u.pathname.split('/');
+          const usersIdx = pathParts.indexOf('users');
+          const userId = usersIdx >= 0 && pathParts[usersIdx + 1] ? decodeURIComponent(pathParts[usersIdx + 1]) : null;
+
+          _talkjsToken = token;
+          _talkjsAppId = appId;
+          _talkjsWsUrl = url;
+          if (userId) _talkjsUserId = userId;
+          localStorage.setItem('talkjs_ws_url', url);
+          localStorage.setItem('talkjs_appId', appId);
+          localStorage.setItem('talkjs_token', token);
+          if (userId) localStorage.setItem('talkjs_userId', userId);
+          console.log('[TalkJS RT] 🔑 Credenciais capturadas — appId:', appId, 'userId:', userId);
+
+          const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+          if (uid) {
+            fetch(ELD_WORKER + '/sync-talkjs', {
+              method: 'POST',
+              headers: { 'x-user-id': uid, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ authToken: token, appId }),
+            }).catch(() => {});
+          }
+        }
+      } catch(_) {}
+
+      // Escuta mensagens em tempo real neste WebSocket
+      ws.addEventListener('message', function(event) {
+        _handleTalkJSData(event.data);
+      });
+
+      ws.addEventListener('close', function() {
+        console.log('[TalkJS RT] 🔌 WebSocket TalkJS fechou — tentando reconectar');
+        _scheduleTalkJSReconnect();
+      });
+    }
+
+    return ws;
+  };
+  window.WebSocket.prototype = _origWS.prototype;
+
+  // ── Conexão direta ao TalkJS ────────────────────────────────────
+  function _connectTalkJSDirect() {
+    if (!_talkjsWsUrl) return;
+    if (_talkjsDirectWs && (_talkjsDirectWs.readyState === 0 || _talkjsDirectWs.readyState === 1)) return;
+
+    try {
+      console.log('[TalkJS RT] 🔗 Conectando diretamente ao TalkJS...');
+      _talkjsDirectWs = new _origWS(_talkjsWsUrl);
+
+      _talkjsDirectWs.addEventListener('open', function() {
+        console.log('[TalkJS RT] ✅ Conexão direta TalkJS ativa');
+        _chatShowToast('💬 Chat conectado em tempo real');
+      });
+
+      _talkjsDirectWs.addEventListener('message', function(event) {
+        _handleTalkJSData(event.data);
+      });
+
+      _talkjsDirectWs.addEventListener('close', function() {
+        console.log('[TalkJS RT] ❌ Conexão direta TalkJS perdida');
+        _talkjsDirectWs = null;
+        _scheduleTalkJSReconnect();
+      });
+
+      _talkjsDirectWs.addEventListener('error', function() {
+        _talkjsDirectWs = null;
+      });
+    } catch(e) {
+      console.warn('[TalkJS RT] Erro ao conectar:', e.message);
+      _talkjsDirectWs = null;
+    }
+  }
+
+  function _scheduleTalkJSReconnect() {
+    if (_talkjsReconnectTimer) return;
+    _talkjsReconnectTimer = setTimeout(() => {
+      _talkjsReconnectTimer = null;
+      if (_chatOpen) _connectTalkJSDirect();
+    }, TALKJS_RECONNECT_MS);
+  }
+
+  // ── Expõe funções para o chat usar ──────────────────────────────
+  window._talkjsConnect = _connectTalkJSDirect;
+  window._talkjsDisconnect = function() {
+    if (_talkjsDirectWs) { _talkjsDirectWs.close(); _talkjsDirectWs = null; }
+    clearTimeout(_talkjsReconnectTimer); _talkjsReconnectTimer = null;
+  };
+  window._talkjsHasCredentials = function() { return !!_talkjsWsUrl && !!_talkjsAppId && !!_talkjsUserId; };
+  window._talkjsGetCreds = function() { return { appId: _talkjsAppId, userId: _talkjsUserId, token: _talkjsToken }; };
+})();
+
+// ── VISIBILITY-BASED REFRESH ──────────────────────────────────────
+// Recarrega mensagens imediatamente quando o usuário volta ao app
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && _chatOpen && _chatActiveConvId) {
+    _chatLoadMsgs(_chatActiveConvId, true);
+    _chatLoadConvs(true);
+  }
+});
+
+// ── TALKJS SDK INTEGRATION ───────────────────────────────────────
+// Integra diretamente com o SDK do TalkJS para mensagens em tempo real
+// Bypassa o Worker e conecta direto ao TalkJS
+let _talkjsSession = null;
+let _talkjsChatbox = null;
+let _talkjsInbox   = null;
+let _talkjsReady   = false;
+let _talkjsMounted = false;
+
+async function _initTalkJSSession() {
+  if (_talkjsSession) return _talkjsSession;
+  if (typeof Talk === 'undefined') {
+    console.warn('[TalkJS SDK] SDK não carregado ainda');
+    return null;
+  }
+  const creds = _talkjsGetCreds();
+  if (!creds.appId || !creds.userId) {
+    console.warn('[TalkJS SDK] Sem credenciais — abra um pedido na Eldorado primeiro');
+    return null;
+  }
+  try {
+    await Talk.ready;
+    const me = new Talk.User({ id: creds.userId });
+    _talkjsSession = new Talk.Session({
+      appId: creds.appId,
+      me: me,
+      token: creds.token,
+    });
+    _talkjsReady = true;
+    console.log('[TalkJS SDK] ✅ Sessão criada com sucesso');
+
+    // Escuta mensagens novas globalmente
+    _talkjsSession.onMessage(function(msg) {
+      console.log('[TalkJS SDK] 📩 Nova mensagem:', msg.body?.substring(0, 50));
+      // Atualiza lista de conversas (para snippet/badge)
+      if (_chatOpen) _chatLoadConvs(true);
+    });
+
+    return _talkjsSession;
+  } catch(e) {
+    console.error('[TalkJS SDK] Erro ao criar sessão:', e);
+    _talkjsSession = null;
+    return null;
+  }
+}
+
+// Monta o TalkJS Inbox no painel de mensagens (substitui o chat via Worker)
+async function _mountTalkJSInbox(container) {
+  const session = await _initTalkJSSession();
+  if (!session) return false;
+
+  try {
+    // Destrói chatbox/inbox anterior se existir
+    if (_talkjsChatbox) { _talkjsChatbox.destroy(); _talkjsChatbox = null; }
+    if (_talkjsInbox) { _talkjsInbox.destroy(); _talkjsInbox = null; }
+
+    _talkjsInbox = session.createInbox({
+      showFeedHeader: false,
+      showChatHeader: true,
+      theme: 'default',
+    });
+
+    // Aplica tema escuro via CSS
+    container.innerHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.id = 'talkjs-inbox-container';
+    wrapper.style.cssText = 'width:100%;height:100%;min-height:400px;border-radius:8px;overflow:hidden;';
+    container.appendChild(wrapper);
+
+    await _talkjsInbox.mount(wrapper);
+    _talkjsMounted = true;
+    console.log('[TalkJS SDK] ✅ Inbox montado');
+    return true;
+  } catch(e) {
+    console.error('[TalkJS SDK] Erro ao montar inbox:', e);
+    return false;
+  }
+}
+
+// Monta um Chatbox para uma conversa específica (por orderId)
+async function _mountTalkJSChatbox(container, orderId) {
+  const session = await _initTalkJSSession();
+  if (!session) return false;
+
+  try {
+    if (_talkjsChatbox) { _talkjsChatbox.destroy(); _talkjsChatbox = null; }
+
+    // Tenta encontrar a conversa pelo orderId — TalkJS pode usar vários formatos
+    // Tenta os padrões mais comuns da Eldorado
+    const possibleIds = [orderId, 'order_' + orderId, 'order-' + orderId, 'eld_' + orderId];
+    let conversation = null;
+
+    for (const cid of possibleIds) {
+      try {
+        conversation = session.getOrCreateConversation(cid);
+        break;
+      } catch(_) {}
+    }
+
+    if (!conversation) {
+      console.warn('[TalkJS SDK] Conversa não encontrada para orderId:', orderId);
+      return false;
+    }
+
+    _talkjsChatbox = session.createChatbox(conversation, {
+      showChatHeader: false,
+      theme: 'default',
+    });
+
+    container.innerHTML = '';
+    const wrapper = document.createElement('div');
+    wrapper.id = 'talkjs-chatbox-container';
+    wrapper.style.cssText = 'width:100%;height:100%;min-height:300px;border-radius:8px;overflow:hidden;';
+    container.appendChild(wrapper);
+
+    await _talkjsChatbox.mount(wrapper);
+    console.log('[TalkJS SDK] ✅ Chatbox montado para', orderId);
+    return true;
+  } catch(e) {
+    console.error('[TalkJS SDK] Erro ao montar chatbox:', e);
+    return false;
+  }
+}
+
 </script>
 
+
+<!-- ── CHAT ELDORADO PANEL ────────────────────────────────────────── -->
+<div id="eld-chat-root">
+  <!-- Topbar -->
+  <div class="chat-topbar">
+    <button class="chat-topbar-back" onclick="closeEldChat()" title="Voltar">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="chat-topbar-title">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat Eldorado
+      <span class="chat-topbar-badge" id="chat-topbar-badge"></span>
+      <span class="chat-topbar-live">
+        <span class="chat-live-dot"></span>
+        LIVE
+      </span>
+    </div>
+    <button class="chat-topbar-refresh" id="chat-refresh-btn" onclick="refreshEldChat()" title="Atualizar conversas">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+  </div>
+
+  <!-- Body: lista de conversas + mensagens -->
+  <div class="chat-body">
+    <!-- Coluna esquerda: conversas -->
+    <div class="chat-conv-list" id="chat-conv-list-col">
+      <div class="chat-conv-search">
+        <div class="chat-conv-search-wrap">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="chat-search-input" placeholder="Buscar comprador ou pedido..." oninput="renderChatConvList()">
+        </div>
+      </div>
+      <div class="chat-conv-items" id="chat-conv-items">
+        <div class="chat-conv-empty">
+          <div style="font-size:28px">💬</div>
+          <div>Carregando conversas...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coluna direita: mensagens -->
+    <div class="chat-msgs-panel" id="chat-msgs-panel">
+      <!-- Estado vazio: nenhuma conversa selecionada -->
+      <div class="chat-msgs-none" id="chat-msgs-none">
+        <div style="font-size:36px">💬</div>
+        <div style="font-weight:700;color:var(--text)">Selecione uma conversa</div>
+        <div style="font-size:12px">Escolha um pedido na lista ao lado para ver as mensagens</div>
+      </div>
+
+      <!-- Conversa ativa -->
+      <div id="chat-active-panel" style="display:none;flex-direction:column;height:100%">
+        <!-- Header da conversa ativa -->
+        <div class="chat-msgs-header" id="chat-active-header">
+          <div style="width:34px;height:34px;border-radius:50%;background:rgba(31,214,121,0.12);border:1.5px solid rgba(31,214,121,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;color:#1fd679;flex-shrink:0" id="chat-active-avatar">?</div>
+          <div class="chat-msgs-order-info">
+            <div class="chat-msgs-buyer" id="chat-active-buyer">—</div>
+            <div class="chat-msgs-sub" id="chat-active-sub">—</div>
+          </div>
+          <button class="chat-msgs-open-btn" id="chat-open-order-btn" onclick="openEldOrder()">
+            🔗 Ver pedido
+          </button>
+        </div>
+
+        <!-- Lista de mensagens -->
+        <div class="chat-msgs-list" id="chat-msgs-list">
+          <div class="chat-loading" id="chat-msgs-loading">
+            <div class="chat-loading-spinner"></div>
+            <span>Carregando mensagens...</span>
+          </div>
+        </div>
+
+        <!-- Input de resposta -->
+        <div class="chat-input-area">
+          <div class="chat-input-wrap">
+            <textarea
+              class="chat-input"
+              id="chat-input-box"
+              placeholder="Digite uma resposta..."
+              rows="1"
+              onkeydown="chatInputKeydown(event)"
+              oninput="chatInputAutoResize(this)"
+            ></textarea>
+          </div>
+          <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()" title="Enviar (Enter)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ── /CHAT ELDORADO PANEL ────────────────────────────────────────── -->
+
+<!-- Chat toast -->
+<div class="chat-toast" id="chat-toast"></div>
 
 </div><!-- /main-app -->
 
