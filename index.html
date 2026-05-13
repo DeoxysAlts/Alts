@@ -1172,337 +1172,6 @@
   }
   .eld-dismiss-all-btn:hover { background: rgba(248,113,113,0.15); }
   .eld-dismiss-all-btn.visible { display: block; }
-
-  /* ── CHAT ELDORADO ─────────────────────────────────────────────────────────── */
-  #eld-chat-fab {
-    position: fixed;
-    bottom: 90px;
-    right: 16px;
-    z-index: 700;
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0ea5e9, #0284c7);
-    border: none;
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(14,165,233,0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform .18s, box-shadow .18s;
-  }
-  #eld-chat-fab:hover { transform: translateY(-2px) scale(1.06); box-shadow: 0 8px 28px rgba(14,165,233,0.6); }
-  #eld-chat-fab-badge {
-    position: absolute;
-    top: -4px; right: -4px;
-    background: var(--accent);
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    border-radius: 99px;
-    padding: 2px 5px;
-    min-width: 16px;
-    text-align: center;
-    display: none;
-    line-height: 1.4;
-    border: 1.5px solid var(--bg);
-  }
-  #eld-chat-fab-badge.visible { display: block; }
-
-  #eld-chat-panel {
-    position: fixed;
-    bottom: 150px;
-    right: 16px;
-    width: 360px;
-    max-width: calc(100vw - 32px);
-    height: 520px;
-    max-height: calc(100vh - 170px);
-    background: #111116;
-    border: 0.5px solid rgba(14,165,233,0.25);
-    border-radius: 16px;
-    z-index: 699;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 0 0.5px rgba(255,255,255,.04) inset;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(16px) scale(.97);
-    transition: opacity .2s, transform .2s;
-  }
-  #eld-chat-panel.open {
-    opacity: 1;
-    pointer-events: all;
-    transform: none;
-  }
-
-  /* header do painel */
-  .chat-panel-header {
-    padding: 12px 14px 10px;
-    border-bottom: 0.5px solid rgba(255,255,255,.07);
-    background: #0d0d12;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .chat-panel-header-icon {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, rgba(14,165,233,.2), rgba(2,132,199,.1));
-    border: 0.5px solid rgba(14,165,233,.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-  .chat-panel-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.2;
-  }
-  .chat-panel-subtitle {
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 1px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .chat-online-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #22c55e;
-    display: inline-block;
-    animation: chat-blink 2s ease-in-out infinite;
-  }
-  @keyframes chat-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .4; }
-  }
-
-  /* seletor de conversa */
-  .chat-order-selector {
-    flex-shrink: 0;
-    padding: 8px 10px;
-    border-bottom: 0.5px solid rgba(255,255,255,.06);
-    background: #0f0f14;
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .chat-order-selector::-webkit-scrollbar { display: none; }
-  .chat-order-chip {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 99px;
-    border: 0.5px solid rgba(255,255,255,.1);
-    background: rgba(255,255,255,.04);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 500;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: all .15s;
-    flex-shrink: 0;
-  }
-  .chat-order-chip:hover { border-color: rgba(14,165,233,.4); color: var(--text); background: rgba(14,165,233,.07); }
-  .chat-order-chip.active { border-color: rgba(14,165,233,.6); color: #7dd3fc; background: rgba(14,165,233,.12); }
-  .chat-order-chip-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .chat-order-chip-unread {
-    background: var(--accent);
-    color: #fff;
-    font-size: 8px;
-    font-weight: 700;
-    border-radius: 99px;
-    padding: 1px 4px;
-    min-width: 14px;
-    text-align: center;
-    margin-left: 2px;
-  }
-
-  /* corpo das mensagens */
-  .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 12px 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,.1) transparent;
-  }
-  .chat-msg {
-    display: flex;
-    flex-direction: column;
-    max-width: 82%;
-    gap: 2px;
-    animation: chat-msg-in .18s ease;
-  }
-  @keyframes chat-msg-in {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: none; }
-  }
-  .chat-msg.mine { align-self: flex-end; align-items: flex-end; }
-  .chat-msg.theirs { align-self: flex-start; align-items: flex-start; }
-  .chat-msg-bubble {
-    padding: 8px 11px;
-    border-radius: 12px;
-    font-size: 12.5px;
-    line-height: 1.5;
-    word-break: break-word;
-  }
-  .chat-msg.mine .chat-msg-bubble {
-    background: linear-gradient(135deg, #0ea5e9, #0369a1);
-    color: #fff;
-    border-bottom-right-radius: 4px;
-  }
-  .chat-msg.theirs .chat-msg-bubble {
-    background: rgba(255,255,255,.07);
-    color: var(--text);
-    border-bottom-left-radius: 4px;
-    border: 0.5px solid rgba(255,255,255,.1);
-  }
-  .chat-msg-meta {
-    font-size: 9.5px;
-    color: rgba(255,255,255,.28);
-    padding: 0 3px;
-  }
-  .chat-msg.mine .chat-msg-meta { text-align: right; }
-
-  /* estado vazio */
-  .chat-empty-state {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--muted);
-    font-size: 12px;
-    text-align: center;
-    padding: 20px;
-  }
-
-  /* digitando */
-  .chat-typing-indicator {
-    display: none;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 14px;
-    font-size: 11px;
-    color: var(--muted);
-    flex-shrink: 0;
-  }
-  .chat-typing-indicator.visible { display: flex; }
-  .chat-typing-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--muted);
-    animation: typing-bounce .9s ease-in-out infinite;
-  }
-  .chat-typing-dot:nth-child(2) { animation-delay: .15s; }
-  .chat-typing-dot:nth-child(3) { animation-delay: .3s; }
-  @keyframes typing-bounce {
-    0%, 60%, 100% { transform: translateY(0); opacity: .4; }
-    30% { transform: translateY(-4px); opacity: 1; }
-  }
-
-  /* input bar */
-  .chat-input-bar {
-    flex-shrink: 0;
-    padding: 10px 10px;
-    border-top: 0.5px solid rgba(255,255,255,.07);
-    background: #0d0d12;
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-  }
-  #chat-input {
-    flex: 1;
-    background: rgba(255,255,255,.06);
-    border: 0.5px solid rgba(255,255,255,.1);
-    color: var(--text);
-    border-radius: 10px;
-    padding: 8px 11px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12.5px;
-    outline: none;
-    resize: none;
-    height: 36px;
-    max-height: 90px;
-    overflow-y: auto;
-    line-height: 1.45;
-    transition: border-color .2s;
-    scrollbar-width: thin;
-  }
-  #chat-input:focus { border-color: rgba(14,165,233,.5); }
-  #chat-send-btn {
-    width: 36px; height: 36px;
-    border-radius: 9px;
-    background: linear-gradient(135deg, #0ea5e9, #0284c7);
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: opacity .15s, transform .1s;
-  }
-  #chat-send-btn:hover { opacity: .88; transform: scale(1.04); }
-  #chat-send-btn:active { transform: scale(.96); }
-  #chat-send-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
-
-  /* loading bar */
-  .chat-load-bar {
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #0ea5e9, transparent);
-    background-size: 200% 100%;
-    animation: chat-load-slide 1.2s linear infinite;
-    flex-shrink: 0;
-  }
-  @keyframes chat-load-slide {
-    from { background-position: 200% 0; }
-    to { background-position: -200% 0; }
-  }
-
-  /* sistema de mensagens especiais */
-  .chat-system-msg {
-    align-self: center;
-    background: rgba(255,255,255,.04);
-    border: 0.5px solid rgba(255,255,255,.08);
-    border-radius: 99px;
-    padding: 3px 10px;
-    font-size: 10.5px;
-    color: var(--muted);
-    text-align: center;
-    max-width: 90%;
-  }
-  .chat-no-orders {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--muted);
-    font-size: 12px;
-    text-align: center;
-    padding: 24px;
-  }
 </style>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1740,12 +1409,6 @@
         <!-- Mute -->
         <button id="mute-btn" onclick="toggleMute()" title="silenciar/ativar sons" style="background:transparent;border:0.5px solid var(--border2);color:var(--muted);width:34px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">🔊</button>
 
-        <!-- ── CHAT ELDORADO ────────────────────────── -->
-        <button id="eld-chat-header-btn" onclick="toggleEldChat()" title="Chat Eldorado" style="position:relative;background:rgba(14,165,233,0.08);border:0.5px solid rgba(14,165,233,0.25);color:#7dd3fc;width:34px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s" onmouseover="this.style.background='rgba(14,165,233,.16)'" onmouseout="this.style.background='rgba(14,165,233,0.08)'">
-          💬
-          <span id="eld-chat-header-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;border-radius:99px;padding:2px 5px;min-width:16px;text-align:center;line-height:1.4;border:1.5px solid var(--bg)">0</span>
-        </button>
-
 
         <!-- ── ELDORADO BELL ─────────────────────────────── -->
         <div class="eld-bell-wrap" id="eld-bell-wrap">
@@ -1842,9 +1505,9 @@
         onmouseout="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(14,165,233,0.3)'">
         🌐 Browser Eldorado
       </button>
-      <button onclick="openModal()" style="background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;padding:0 16px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(16,185,129,0.3);transition:all .15s;white-space:nowrap"
-        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(16,185,129,0.5)'"
-        onmouseout="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(16,185,129,0.3)'">
+      <button onclick="openModal()" style="background:linear-gradient(135deg,#991b1b,#7f1d1d);border:none;color:#fff;padding:0 16px;height:34px;border-radius:var(--rad-sm);cursor:pointer;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(127,29,29,0.4);transition:all .15s;white-space:nowrap"
+        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(153,27,27,0.6)'"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 2px 10px rgba(127,29,29,0.4)'">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         nova conta
       </button>
@@ -3061,8 +2724,6 @@ auth.onAuthStateChanged(async function(user) {
     startEldPolling();
     pollEldorado();
     loadEldPerfil();
-    // Inicia listeners de chat em tempo real
-    try { initChatWhenReady(); } catch(_) {}
   } else {
     // Destroy presence on logout
     if (currentUser) destroyPresence(currentUser.uid);
@@ -3110,10 +2771,14 @@ async function loadData() {
     if (doc.exists && doc.data().data) {
       data = JSON.parse(doc.data().data);
     } else {
-      data = { accounts: [] };
+      // Só reseta se realmente não havia dados antes (evita flickar o painel de pendentes)
+      if (!data || !data.accounts || data.accounts.length === 0) {
+        data = { accounts: [] };
+      }
     }
   } catch(e) {
-    data = { accounts: [] };
+    // Mantém data atual em caso de erro de rede — não apaga brainrots da tela
+    if (!data || !data.accounts) data = { accounts: [] };
   }
   render();
   updateStats();
@@ -4118,55 +3783,84 @@ function setVdPeriodo(p) {
   renderVendasDia();
 }
 
+function _vdGetAll() {
+  // Une eld_historico + eld_vendas, deduplica por id, normaliza ts para ms
+  const hist   = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+  const vendas = JSON.parse(localStorage.getItem('eld_vendas')    || '[]');
+  const seen   = new Set();
+  return hist.concat(vendas).filter(v => {
+    const k = String(v.id);
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  }).map(v => {
+    // Normaliza ts: Firestore Timestamp, segundos ou ms
+    let ts = v.ts || 0;
+    if (typeof ts === 'object' && ts.seconds) ts = ts.seconds * 1000;
+    else if (ts > 0 && ts < 4102444800) ts = ts * 1000;
+    return { ...v, ts, _tsNorm: ts };
+  });
+}
+
+
 function _vdGetVendas() {
-  // Lê do histórico acumulado (eld_historico) — nunca perde dados de dias anteriores
-  const all = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-  // Filtra apenas a partir do momento em que a Eldorado foi vinculada
+  const all = _vdGetAll();
   const linkedAt = parseInt(localStorage.getItem('eld_linked_at') || '0');
-  const base = linkedAt > 0 ? all.filter(v => (v.ts || 0) >= linkedAt) : all;
+  // linkedAt filtra por início do DIA em que vinculou — não pela hora exata
+  // Evita cortar vendas que aconteceram antes do horário de vinculação mas no mesmo dia
+  const linkedAtDayStart = linkedAt > 0 ? (() => { const d = new Date(linkedAt); d.setHours(0,0,0,0); return d.getTime(); })() : 0;
+  const base = all
+    .filter(v => v._tipo !== 'cancelado' && v.status !== 'cancelled')
+    .filter(v => linkedAtDayStart <= 0 || v.ts >= linkedAtDayStart);
+
   const now = Date.now();
   if (_vdPeriodo === 'hoje') {
     const start = new Date(); start.setHours(0,0,0,0);
-    return base.filter(v => (v.ts || 0) >= start.getTime() && v._tipo !== 'cancelado');
+    const result = base.filter(v => v.ts >= start.getTime());
+    // Debug: log quando há divergência de contagem
+    if (base.length !== result.length || result.length < 15) {
+      console.log('[VD] total base:', base.length, '| hoje:', result.length,
+        '| linkedAt original:', linkedAt ? new Date(linkedAt).toLocaleString() : 'none',
+        '| linkedAt dia:', linkedAtDayStart ? new Date(linkedAtDayStart).toLocaleString() : 'none',
+        '| base ts range:', base.length ? new Date(Math.min(...base.map(v=>v.ts))).toLocaleString() + ' → ' + new Date(Math.max(...base.map(v=>v.ts))).toLocaleString() : 'vazio');
+    }
+    return result;
   }
   if (_vdPeriodo === 'ontem') {
-    const startOntem = new Date(); startOntem.setDate(startOntem.getDate()-1); startOntem.setHours(0,0,0,0);
-    const endOntem   = new Date(); endOntem.setHours(0,0,0,0);
-    return base.filter(v => (v.ts||0) >= startOntem.getTime() && (v.ts||0) < endOntem.getTime() && v._tipo !== 'cancelado');
+    const s = new Date(); s.setDate(s.getDate()-1); s.setHours(0,0,0,0);
+    const e = new Date(); e.setHours(0,0,0,0);
+    return base.filter(v => v.ts >= s.getTime() && v.ts < e.getTime());
   }
-  if (_vdPeriodo === '3dias') {
-    return base.filter(v => (v.ts||0) >= now - 3*86400000 && v._tipo !== 'cancelado');
-  }
-  if (_vdPeriodo === 'semana') {
-    return base.filter(v => (v.ts||0) >= now - 7*86400000 && v._tipo !== 'cancelado');
-  }
+  if (_vdPeriodo === '3dias')  return base.filter(v => v.ts >= now - 3*86400000);
+  if (_vdPeriodo === 'semana') return base.filter(v => v.ts >= now - 7*86400000);
   if (_vdPeriodo === 'mes') {
-    const startMes = new Date(); startMes.setDate(1); startMes.setHours(0,0,0,0);
-    return base.filter(v => (v.ts||0) >= startMes.getTime() && v._tipo !== 'cancelado');
+    const sm = new Date(); sm.setDate(1); sm.setHours(0,0,0,0);
+    return base.filter(v => v.ts >= sm.getTime());
   }
-  return base.filter(v => v._tipo !== 'cancelado');
+  return base;
 }
 
 function _vdGetCancelados() {
-  const all = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-  // Filtra apenas a partir do momento em que a Eldorado foi vinculada
+  const all = _vdGetAll();
   const linkedAt = parseInt(localStorage.getItem('eld_linked_at') || '0');
-  const base = linkedAt > 0 ? all.filter(v => (v.ts || 0) >= linkedAt) : all;
+  const linkedAtDayStart = linkedAt > 0 ? (() => { const d = new Date(linkedAt); d.setHours(0,0,0,0); return d.getTime(); })() : 0;
+  const base = all
+    .filter(v => v._tipo === 'cancelado' || v.status === 'cancelled')
+    .filter(v => linkedAtDayStart <= 0 || v.ts >= linkedAtDayStart);
+
   const now = Date.now();
-  const cancelled = base.filter(v => v._tipo === 'cancelado');
   if (_vdPeriodo === 'hoje') {
     const start = new Date(); start.setHours(0,0,0,0);
-    return cancelled.filter(v => (v.ts||0) >= start.getTime());
+    return base.filter(v => v.ts >= start.getTime());
   }
   if (_vdPeriodo === 'ontem') {
-    const startOntem = new Date(); startOntem.setDate(startOntem.getDate()-1); startOntem.setHours(0,0,0,0);
-    const endOntem   = new Date(); endOntem.setHours(0,0,0,0);
-    return cancelled.filter(v => (v.ts||0) >= startOntem.getTime() && (v.ts||0) < endOntem.getTime());
+    const s = new Date(); s.setDate(s.getDate()-1); s.setHours(0,0,0,0);
+    const e = new Date(); e.setHours(0,0,0,0);
+    return base.filter(v => v.ts >= s.getTime() && v.ts < e.getTime());
   }
-  if (_vdPeriodo === '3dias') return cancelled.filter(v => (v.ts||0) >= now - 3*86400000);
-  if (_vdPeriodo === 'semana') return cancelled.filter(v => (v.ts||0) >= now - 7*86400000);
-  if (_vdPeriodo === 'mes') { const sm=new Date(); sm.setDate(1); sm.setHours(0,0,0,0); return cancelled.filter(v=>(v.ts||0)>=sm.getTime()); }
-  return cancelled;
+  if (_vdPeriodo === '3dias')  return base.filter(v => v.ts >= now - 3*86400000);
+  if (_vdPeriodo === 'semana') return base.filter(v => v.ts >= now - 7*86400000);
+  if (_vdPeriodo === 'mes') { const sm=new Date(); sm.setDate(1); sm.setHours(0,0,0,0); return base.filter(v => v.ts >= sm.getTime()); }
+  return base;
 }
 
 function _vdParsePrice(priceStr) {
@@ -5028,7 +4722,7 @@ function renderDetailPanel() {
             <span class="br-icon">${brIcon}</span>
             <div style="flex:1;min-width:0">
               <div class="br-name" style="${nameStyle}">${wikiLink(b.name)}</div>
-              ${b.gen ? `<div style="font-family:'DM Sans',sans-serif;font-weight:700;color:#fde047;font-size:12px;margin-top:1px">${escHtml(b.gen)}</div>` : ''}
+              ${b.gen ? `<div onclick="editBrGen(${ai},${bi},this,event)" title="clique para editar" style="font-family:'DM Sans',sans-serif;font-weight:700;color:#fde047;font-size:12px;margin-top:1px;cursor:pointer;display:inline-block;border-bottom:1px dashed rgba(253,224,71,.25);transition:border-color .15s" onmouseover="this.style.borderBottomColor='rgba(253,224,71,.6)'" onmouseout="this.style.borderBottomColor='rgba(253,224,71,.25)'">${escHtml(b.gen)}</div>` : `<div onclick="editBrGen(${ai},${bi},this,event)" title="clique para adicionar M/s" style="font-size:11px;margin-top:1px;cursor:pointer;color:var(--muted);opacity:.5;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">+ add M/s</div>`}
             </div>
             <div style="display:flex;gap:3px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
               <span class="badge" style="background:${ms.bg};color:${ms.tc};border:0.5px solid ${ms.stroke};font-size:9.5px;padding:2px 6px">${mutLabel}</span>
@@ -5048,7 +4742,7 @@ function renderDetailPanel() {
       <div class="add-br" style="gap:5px">
         <input type="text" id="nb-${acc.id}" placeholder="nome do brainrot..." maxlength="50" style="flex:2;min-width:120px;height:32px;font-size:12px"
           onkeydown="if(event.key==='Enter')addBr('${acc.id}',${ai})"/>
-        <input type="text" id="ng-${acc.id}" placeholder="M/s ex: 300M" maxlength="12" style="width:80px;flex:none;height:32px;font-size:12px"
+        <input type="text" id="ng-${acc.id}" placeholder="ex: 1,8B/s" maxlength="20" style="width:90px;flex:none;height:32px;font-size:12px"
           onkeydown="if(event.key==='Enter')addBr('${acc.id}',${ai})"/>
         <select id="nc-${acc.id}" style="height:32px;font-size:12px;min-width:90px;background:var(--surface2);color:var(--text);border:0.5px solid var(--border2);border-radius:var(--rad-sm);padding:0 6px;cursor:pointer">${catOptions('none')}</select>
         <select id="nr-${acc.id}" style="min-width:90px;background:var(--surface2);color:var(--text);border:0.5px solid var(--border2);border-radius:var(--rad-sm);height:32px;font-size:12px;padding:0 6px;cursor:pointer">
@@ -5360,6 +5054,32 @@ function delBr(ai, bi) {
   playUiSound(); save(); render(); renderDetailPanel(); updateStats();
 }
 
+function editBrGen(ai, bi, el, ev) {
+  ev.stopPropagation();
+  const br = data.accounts[ai] && data.accounts[ai].brainrots[bi];
+  if (!br) return;
+  const oldVal = br.gen || '';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = oldVal;
+  inp.maxLength = 20;
+  inp.placeholder = 'ex: 1,8B/s';
+  inp.style.cssText = 'width:90px;height:24px;font-size:12px;font-weight:700;color:#fde047;background:rgba(253,224,71,.08);border:1px solid rgba(253,224,71,.4);border-radius:5px;padding:0 6px;outline:none;font-family:DM Sans,sans-serif;';
+  el.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  function commit() {
+    var v = inp.value.trim();
+    br.gen = v;
+    save(); renderDetailPanel(); updateStats();
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') { inp.value = oldVal; inp.blur(); }
+  });
+}
+
 // keyboard shortcut: N = nova conta
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
@@ -5621,9 +5341,12 @@ function previewPasteJson() {
 
 function parseTextList(raw) {
   // Suporta: vírgula, ponto e vírgula, nova linha, ou combinações
-  return raw
+  // Protege vírgulas decimais (ex: "1,8B/s") antes de fazer split
+  // Substitui vírgulas entre dígitos por placeholder, faz split, depois restaura
+  var protected_ = raw.replace(/(\d),(\d)/g, '$1\x00$2');
+  return protected_
     .split(/[\n,;]+/)
-    .map(s => s.trim())
+    .map(function(s) { return s.replace(/\x00/g, ',').trim(); })
     .filter(s => s.length > 1);
 }
 
@@ -6176,66 +5899,6 @@ function doImport() {
 <div class="eld-toast-container" id="eld-toast-container"></div>
 <button class="eld-dismiss-all-btn" id="eld-dismiss-all-btn" onclick="dismissAllToasts()">✕ Fechar tudo</button>
 
-<!-- ── CHAT ELDORADO PANEL ────────────────────────────────────────────────── -->
-<div id="eld-chat-panel">
-  <!-- Header -->
-  <div class="chat-panel-header">
-    <div class="chat-panel-header-icon">💬</div>
-    <div style="flex:1;min-width:0">
-      <div class="chat-panel-title">Chat Eldorado</div>
-      <div class="chat-panel-subtitle" id="chat-subtitle">
-        <span class="chat-online-dot"></span>
-        <span>tempo real</span>
-      </div>
-    </div>
-    <button onclick="toggleEldChat()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0"
-      onmouseover="this.style.background='rgba(255,255,255,.07)';this.style.color='var(--text)'"
-      onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">✕</button>
-  </div>
-
-  <!-- Carregando bar -->
-  <div class="chat-load-bar" id="chat-load-bar" style="display:none"></div>
-
-  <!-- Seletor de pedidos/conversas -->
-  <div class="chat-order-selector" id="chat-order-selector">
-    <div style="font-size:11px;color:var(--muted);padding:4px 2px;white-space:nowrap;align-self:center">carregando pedidos...</div>
-  </div>
-
-  <!-- Mensagens -->
-  <div class="chat-messages" id="chat-messages">
-    <div class="chat-empty-state" id="chat-empty-state">
-      <div style="font-size:28px">💬</div>
-      <div style="font-weight:500;color:var(--text)">Selecione um pedido</div>
-      <div style="opacity:.6">Escolha um pedido acima para ver e enviar mensagens</div>
-    </div>
-  </div>
-
-  <!-- Typing indicator -->
-  <div class="chat-typing-indicator" id="chat-typing-indicator">
-    <div class="chat-typing-dot"></div>
-    <div class="chat-typing-dot"></div>
-    <div class="chat-typing-dot"></div>
-    <span style="margin-left:4px;font-size:10.5px">comprador digitando...</span>
-  </div>
-
-  <!-- Input -->
-  <div class="chat-input-bar">
-    <textarea id="chat-input" placeholder="Mensagem..." rows="1"
-      onkeydown="chatInputKeydown(event)"
-      oninput="chatInputResize(this)"
-      disabled></textarea>
-    <button id="chat-send-btn" onclick="sendChatMsg()" disabled title="Enviar (Enter)">
-      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    </button>
-  </div>
-</div>
-
-<!-- FAB flutuante de chat (visível apenas quando painel fechado e há msgs novas) -->
-<button id="eld-chat-fab" onclick="toggleEldChat()" title="Chat Eldorado" style="display:none">
-  💬
-  <span id="eld-chat-fab-badge"></span>
-</button>
-
 
 <script>
 // ── ELECTRON TITLEBAR ────────────────────────────────────────────────────────
@@ -6508,6 +6171,7 @@ function processExtensionNotifs(notifs) {
     if (_eldSeenIds.includes(id)) continue;
     if (dismissed.includes(id)) continue;
     // Ignora notifs com mais de 1 hora (extensão reinjetando histórico antigo)
+    // Se n.ts não existir, trata como agora (não filtra por tempo, mas dupKey/dismissed já protegem)
     if (n.ts && (Date.now() - n.ts) > ONE_HOUR) continue;
     // Evita duplicatas por título+status (extensão pode mandar mesmo evento sem ID fixo)
     const dupKey = (n.title || '').trim() + '|' + (n.status || '') + '|' + (n.price || '');
@@ -6577,15 +6241,35 @@ function processExtensionNotifs(notifs) {
     return;
   }
 
+
+
   // Vendas concluídas ficam APENAS nas Notifs até você confirmar entrega
   // NÃO vão para _eldVendas automaticamente
 
   // Notifs recebem tudo EXCETO disputas abertas e status "other" (Atualização sem conteúdo)
   const forNotifsClean = forNotifs.filter(n => normalizeEldStatus(n.status) !== 'other');
   _eldNotifs  = [...forNotifsClean, ..._eldNotifs].slice(0, 50);
-  _eldSeenIds = _eldSeenIds.slice(-500);
+  _eldSeenIds = _eldSeenIds.slice(-2000);
   localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
   localStorage.setItem('eld_seen',   JSON.stringify(_eldSeenIds));
+
+  // ── Grava vendas concluídas no eld_historico (fonte do contador) ──────────
+  // Sem isso o número de vendas do dia fica errado até o worker rodar
+  const vendasConcluidasExt = forNotifsClean.filter(n => {
+    const st = normalizeEldStatus(n.status);
+    return st === 'completed' || st === 'venda';
+  });
+  if (vendasConcluidasExt.length > 0) {
+    let histExt = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+    const histExtIds = new Set(histExt.map(h => String(h.id)));
+    const clearedExt = new Set(JSON.parse(localStorage.getItem('eld_historico_cleared') || '[]'));
+    const novasNoHist = vendasConcluidasExt.filter(n => !histExtIds.has(String(n.id)) && !clearedExt.has(String(n.id)));
+    if (novasNoHist.length > 0) {
+      const mapeadasHist = novasNoHist.map(n => ({ ...n, _tipo: 'venda', _tsInserted: Date.now(), read: true }));
+      histExt = [...mapeadasHist, ...histExt].slice(0, 2000);
+      localStorage.setItem('eld_historico', JSON.stringify(histExt));
+    }
+  }
 
   // Salva cancelados em array separado para não sumirem ao marcar lidas
   const newCancelled = forNotifs.filter(n => normalizeEldStatus(n.status) === 'cancelled');
@@ -6622,6 +6306,31 @@ function processExtensionNotifs(notifs) {
 let _eldPendTimer = null;
 
 function startEldPolling() {
+  // ── Migração v4: adiciona _tsInserted correto a entradas existentes ──────────
+  // Regra: se ts da entrada é de hoje → _tsInserted = ts (chegou hoje pelo realtime)
+  //        se ts é de dias anteriores → _tsInserted = ts (é histórico, não conta hoje)
+  // Isso corrige tanto o problema de inflar o contador com entradas antigas
+  // quanto de perder vendas reais de hoje.
+  if (!localStorage.getItem('eld_historico_migrated_v4')) {
+    try {
+      var hist = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+      localStorage.removeItem('eld_historico_migrated_v2');
+      localStorage.removeItem('eld_historico_migrated_v3');
+      var migrado = hist.map(function(h) {
+        // Normaliza ts: Firestore pode ter gravado em segundos em vez de ms
+        var ts = h.ts || 0;
+        if (typeof ts === 'object' && ts.seconds) ts = ts.seconds * 1000;
+        else if (typeof ts === 'number' && ts < 4102444800) ts = ts * 1000; // segundos → ms
+        h.ts = ts;
+        if (!h._tsInserted) h._tsInserted = ts || Date.now();
+        return h;
+      });
+      localStorage.setItem('eld_historico', JSON.stringify(migrado));
+      localStorage.setItem('eld_historico_migrated_v4', '1');
+      console.log('[ELD] Migração v4 concluída:', migrado.length, 'entradas.');
+    } catch(e) { console.warn('[ELD] Erro na migração v4:', e); }
+  }
+
   // ── Realtime via Firestore onSnapshot (principal) ─────────────────────────
   const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
   if (uid && typeof db !== 'undefined') {
@@ -6634,13 +6343,26 @@ function startEldPolling() {
       .doc(uid)
       .collection('queue')
       .orderBy('ts', 'desc')
-      .limit(30)
+      .limit(50)
       .onSnapshot(snap => {
         snap.docChanges().forEach(change => {
-          if (change.type !== 'added') return;
+          // Processa 'added' E 'modified' — mudanças de status (pending→completed) chegam como modified
+          if (change.type === 'removed') return;
           const ev = change.doc.data();
-          // Evita duplicatas que o poll já processou
-          if (_eldSeenIds.includes(String(ev.id))) return;
+          const evId = String(ev.id || change.doc.id);
+
+          if (change.type === 'modified') {
+            // Para 'modified': reprocessa apenas se o status mudou para algo relevante
+            const st = normalizeEldStatus(ev.status || '');
+            if (st !== 'completed' && st !== 'cancelled' && st !== 'dispute_won' && st !== 'dispute_lost') return;
+            // Remove do seenIds para forçar reprocessamento com novo status
+            _eldSeenIds = _eldSeenIds.filter(s => s !== evId && s !== 'venda-' + evId);
+            localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
+            console.log('[ELD realtime] status modificado para', st, '— reprocessando', evId);
+          } else {
+            // 'added': evita duplicatas que o poll já processou
+            if (_eldSeenIds.includes(evId)) return;
+          }
           _processEldRealtimeEvent(ev, change.doc.id);
         });
       }, err => {
@@ -6685,15 +6407,25 @@ function _processEldRealtimeEvent(ev, docId) {
     if (dismissed.has(id)) return;
 
     // Monta objeto de notificação normalizado
+    // Normaliza ts do Firestore: pode ser objeto {seconds,nanoseconds}, número em segundos, ou ms
+    function _parseEvTs(evTs) {
+      if (!evTs) return Date.now();
+      if (typeof evTs === 'object' && evTs.seconds) return evTs.seconds * 1000; // Firestore Timestamp
+      var n = Number(evTs);
+      if (isNaN(n)) return Date.now();
+      // Se parece segundos (< ano 2100 em segundos = 4102444800), converte para ms
+      if (n < 4102444800) return n * 1000;
+      return n; // já em ms
+    }
     const notif = {
       id,
       icon:      ev.icon      || getStatusIcon(ev.status),
       label:     ev.label     || getStatusLabel(ev.status),
       title:     ev.title     || ev.produto || 'Produto',
-      price:     ev.price     || (ev.valor ? 'US$' + parseFloat(ev.valor).toFixed(2) : ''),
+      price:     ev.price     || (ev.valor ? 'US$' + parseFloat(String(ev.valor).replace(',','.')).toFixed(2) : ''),
       status:    ev.status    || 'other',
       comprador: ev.comprador || '',
-      ts:        ev.ts        || Date.now(),
+      ts:        _parseEvTs(ev.ts),
       read:      false,
     };
 
@@ -6723,9 +6455,11 @@ function _processEldRealtimeEvent(ev, docId) {
       // Adiciona ao histórico (respeitando cleared)
       const clearedRT = new Set(JSON.parse(localStorage.getItem('eld_historico_cleared') || '[]'));
       let hist = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+      let histChanged = false;
       if (!hist.find(h => String(h.id) === id) && !clearedRT.has(id)) {
-        hist = [{ ...notif, read: true, _tipo: 'venda' }, ...hist].slice(0, 2000);
+        hist = [{ ...notif, read: true, _tipo: 'venda', _tsInserted: Date.now() }, ...hist].slice(0, 2000);
         localStorage.setItem('eld_historico', JSON.stringify(hist));
+        histChanged = true;
       }
       if (!_eldSeenIds.includes('venda-' + id)) {
         _eldSeenIds.push('venda-' + id);
@@ -6737,15 +6471,22 @@ function _processEldRealtimeEvent(ev, docId) {
         showEldToast(notif);
         typeof playUiSound === 'function' && playUiSound();
       }
+      // Atualiza painel de Vendas do Dia em tempo real quando chega venda nova
+      if (histChanged) {
+        _atualizarStatsDoDia();
+        if (document.getElementById('vd-root')?.classList.contains('vd-open')) renderVendasDia();
+      }
 
     // ── Cancelamento ───────────────────────────────────────────────────────
     } else if (st === 'cancelled') {
       const prefId = 'c-' + id;
       const clearedRTC = new Set(JSON.parse(localStorage.getItem('eld_historico_cleared') || '[]'));
       let hist = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+      let cancHistChanged = false;
       if (!hist.find(h => String(h.id) === prefId) && !clearedRTC.has(prefId) && !clearedRTC.has(id)) {
-        hist = [{ ...notif, id: prefId, read: true, _tipo: 'cancelado' }, ...hist].slice(0, 2000);
+        hist = [{ ...notif, id: prefId, read: true, _tipo: 'cancelado', _tsInserted: Date.now() }, ...hist].slice(0, 2000);
         localStorage.setItem('eld_historico', JSON.stringify(hist));
+        cancHistChanged = true;
       }
       if (!_eldCancelled.find(c => String(c.id) === prefId || String(c.id) === id)) {
         _eldCancelled = [{ ...notif, id: prefId }, ..._eldCancelled].slice(0, 100);
@@ -6756,6 +6497,11 @@ function _processEldRealtimeEvent(ev, docId) {
           showEldToast(notif);
           typeof playUiSound === 'function' && playUiSound();
         }
+      }
+      // Atualiza painel de Vendas do Dia em tempo real quando chega cancelamento novo
+      if (cancHistChanged) {
+        _atualizarStatsDoDia();
+        if (document.getElementById('vd-root')?.classList.contains('vd-open')) renderVendasDia();
       }
 
     // ── Disputa aberta ─────────────────────────────────────────────────────
@@ -6771,11 +6517,26 @@ function _processEldRealtimeEvent(ev, docId) {
     } else if (st === 'dispute_won') {
       const wid = String(id).startsWith('won-') ? id : 'won-' + id;
       if (!_eldNotifs.find(n => n.id === wid)) {
-        const wonNotif = { ...notif, id: wid, icon: '🏆', label: 'Disputa vencida' };
+        const wonNotif = { ...notif, id: wid, icon: '🏆', label: 'Disputa vencida', status: 'dispute_won' };
         _eldNotifs = [wonNotif, ..._eldNotifs].slice(0, 50);
         localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
         showEldToast(wonNotif);
         typeof playUiSound === 'function' && playUiSound();
+        // Adiciona em _eldVendas (aba Concluídos) se ainda não estiver
+        const vendasSeenWon = new Set(JSON.parse(localStorage.getItem('eld_won_seen') || '[]'));
+        if (!vendasSeenWon.has(String(id)) && !_eldVendas.find(v => String(v.id) === wid)) {
+          const vendaWon = { ...wonNotif, read: true };
+          _eldVendas = [vendaWon, ..._eldVendas].slice(0, 200);
+          localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
+          // Historico persistente
+          let histW = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+          if (!histW.find(h => String(h.id) === wid)) {
+            histW = [{ ...vendaWon, _tipo: 'venda', _tsInserted: Date.now() }, ...histW].slice(0, 2000);
+            localStorage.setItem('eld_historico', JSON.stringify(histW));
+          }
+          vendasSeenWon.add(String(id));
+          localStorage.setItem('eld_won_seen', JSON.stringify([...vendasSeenWon].slice(-200)));
+        }
       }
       _eldDisputes = _eldDisputes.filter(d => String(d.id) !== String(id));
       localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
@@ -6784,11 +6545,26 @@ function _processEldRealtimeEvent(ev, docId) {
     } else if (st === 'dispute_lost') {
       const lid = String(id).startsWith('lost-') ? id : 'lost-' + id;
       if (!_eldNotifs.find(n => n.id === lid)) {
-        const lostNotif = { ...notif, id: lid, icon: '💸', label: 'Disputa perdida' };
+        const lostNotif = { ...notif, id: lid, icon: '💸', label: 'Disputa perdida', status: 'dispute_lost' };
         _eldNotifs = [lostNotif, ..._eldNotifs].slice(0, 50);
         localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
         showEldToast(lostNotif);
         typeof playUiSound === 'function' && playUiSound();
+        // Adiciona em _eldCancelled (aba Cancelados) se ainda não estiver
+        const lostSeenSet = new Set(JSON.parse(localStorage.getItem('eld_lost_seen') || '[]'));
+        if (!lostSeenSet.has(String(id)) && !_eldCancelled.find(c => String(c.id) === lid)) {
+          const cancLost = { ...lostNotif, read: true };
+          _eldCancelled = [cancLost, ..._eldCancelled].slice(0, 100);
+          localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
+          // Historico persistente
+          let histL = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+          if (!histL.find(h => String(h.id) === lid)) {
+            histL = [{ ...cancLost, _tipo: 'cancelado', _tsInserted: Date.now() }, ...histL].slice(0, 2000);
+            localStorage.setItem('eld_historico', JSON.stringify(histL));
+          }
+          lostSeenSet.add(String(id));
+          localStorage.setItem('eld_lost_seen', JSON.stringify([...lostSeenSet].slice(-200)));
+        }
       }
       _eldDisputes = _eldDisputes.filter(d => String(d.id) !== String(id));
       localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
@@ -6827,7 +6603,7 @@ async function pollPendentes() {
         icon:      '⏳',
         label:     'Entrega pendente',
         title:     p.produto || (existing && existing.title) || 'Produto',
-        price:     p.valor ? 'US$' + parseFloat(p.valor).toFixed(2) : ((existing && existing.price) || ''),
+        price:     p.valor ? 'US$' + parseFloat(String(p.valor).replace(',','.')).toFixed(2) : ((existing && existing.price) || ''),
         status:    'pending',
         comprador: p.comprador || (existing && existing.comprador) || '',
         ts:        new Date(p.data || Date.now()).getTime(),
@@ -6839,8 +6615,12 @@ async function pollPendentes() {
     const existingIds = new Set(_eldPending.map(p => String(p.id)));
     const novos = mapped.filter(p => !existingIds.has(String(p.id)) && !pollSeen.has(String(p.id)));
 
-    _eldPending = mapped.slice(0, 100);
-    localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    // Só sobrescreve _eldPending se a API retornou dados reais.
+    // Se retornou vazio mas havia itens locais, pode ser falha de rede — mantém o que temos.
+    if (mapped.length > 0 || pendentesApi.length === 0) {
+      _eldPending = mapped.slice(0, 100);
+      localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    }
 
     // Notifica novos pendentes
     if (novos.length > 0) {
@@ -6919,6 +6699,7 @@ async function pollEldorado() {
     const dCancel = rCancel.ok ? await rCancel.json() : { total: 0, canceladas: [] };
     const dVendas = rVendas.ok ? await rVendas.json() : { total: 0, vendas: [] };
     const dHistorico = rHistorico.ok ? await rHistorico.json() : { historico: [] };
+    console.log('[ELD poll] vendas endpoint:', (dVendas.vendas||dVendas.orders||[]).length, 'itens | historico:', (dHistorico.historico||[]).length, 'itens');
 
 
 
@@ -6934,18 +6715,26 @@ async function pollEldorado() {
         return !hIds.has(id) && !cleared.has(id) && !dismissed.has(id);
       });
       if (novosDoHistorico.length > 0) {
-        const mapeados = novosDoHistorico.map(v => ({
-          id:        String(v.id),
-          icon:      v._tipo === 'cancelado' ? '❌' : '✅',
-          label:     v._tipo === 'cancelado' ? 'Pedido cancelado' : 'Venda concluída',
-          title:     (v.produto || 'Produto') || v.produto || 'Produto',
-          price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
-          status:    v.status || (v._tipo === 'cancelado' ? 'cancelled' : 'completed'),
-          comprador: v.comprador || '',
-          ts:        new Date(v.data || Date.now()).getTime(),
-          read:      true,
-          _tipo:     v._tipo || 'venda',
-        }));
+        const mapeados = novosDoHistorico
+          .map(v => {
+            const dataStr = v.data || v.date || v.created_at || v.createdAt || null;
+            const ts = dataStr ? new Date(dataStr).getTime() : Date.now();
+            const tsValido = isNaN(ts) ? Date.now() : ts;
+            if (!dataStr) console.warn('[ELD historico] entrada sem data:', v.id, v);
+            return {
+              id:          String(v.id),
+              icon:        v._tipo === 'cancelado' ? '❌' : '✅',
+              label:       v._tipo === 'cancelado' ? 'Pedido cancelado' : 'Venda concluída',
+              title:       v.produto || v.title || v.product || 'Produto',
+              price:       v.valor ? 'US$' + parseFloat(String(v.valor).replace(',','.')).toFixed(2) : (v.price || ''),
+              status:      v.status || (v._tipo === 'cancelado' ? 'cancelled' : 'completed'),
+              comprador:   v.comprador || v.buyer || v.username || '',
+              ts:          tsValido,
+              _tsInserted: tsValido,
+              read:        true,
+              _tipo:       v._tipo || 'venda',
+            };
+          });
         historico = [...mapeados, ...historico].slice(0, 2000);
         localStorage.setItem('eld_historico', JSON.stringify(historico));
       }
@@ -6974,18 +6763,25 @@ async function pollEldorado() {
       
       // Adiciona ao histórico com _tipo = 'cancelado'
       if (novosCancelamentos.length > 0) {
-        const novosMapeados = novosCancelamentos.map(c => ({
-          id:        'c-' + String(c.id),
-          icon:      normalizeEldStatus(c.status) === 'dispute' ? '⚠️' : '❌',
-          label:     normalizeEldStatus(c.status) === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
-          title:     c.produto || 'Produto',
-          price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
-          status:    c.status || 'cancelled',
-          comprador: c.comprador || '',
-          ts:        new Date(c.data || Date.now()).getTime(),
-          read:      true,
-          _tipo:     'cancelado',
-        }));
+        const novosMapeados = novosCancelamentos
+          .map(c => {
+            const dataStr = c.data || c.date || c.created_at || c.createdAt || null;
+            const ts = dataStr ? new Date(dataStr).getTime() : Date.now();
+            const tsValido = isNaN(ts) ? Date.now() : ts;
+            return ({
+            id:          'c-' + String(c.id),
+            icon:        normalizeEldStatus(c.status) === 'dispute' ? '⚠️' : '❌',
+            label:       normalizeEldStatus(c.status) === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
+            title:       c.produto || c.title || c.product || 'Produto',
+            price:       c.valor ? 'US$' + parseFloat(String(c.valor).replace(',','.')).toFixed(2) : (c.price || ''),
+            status:      c.status || 'cancelled',
+            comprador:   c.comprador || c.buyer || c.username || '',
+            ts:          tsValido,
+            _tsInserted: tsValido,
+            read:        true,
+            _tipo:       'cancelado',
+          });
+          });
         historico = [...novosMapeados, ...historico].slice(0, 2000);
         localStorage.setItem('eld_historico', JSON.stringify(historico));
       }
@@ -6997,7 +6793,7 @@ async function pollEldorado() {
           icon:      normalizeEldStatus(c.status) === 'dispute' ? '⚠️' : '❌',
           label:     normalizeEldStatus(c.status) === 'dispute' ? 'Em disputa' : 'Pedido cancelado',
           title:     c.produto || 'Produto',
-          price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+          price:     c.valor ? 'US$' + parseFloat(String(c.valor).replace(',','.')).toFixed(2) : '',
           status:    c.status || 'cancelled',
           comprador: c.comprador || '',
           ts:        new Date(c.data || Date.now()).getTime(),
@@ -7016,22 +6812,26 @@ async function pollEldorado() {
       // Respeita dismissed tanto com prefixo "c-" quanto sem
       // Exclui itens que estão em disputa ativa (_eldDisputes)
       const activeDisputeIdsSet = new Set(_eldDisputes.map(d => String(d.id)));
+      // Também lê eld_historico_cleared para excluir cancelamentos que o usuário já descartou
+      const clearedCancSet = new Set(JSON.parse(localStorage.getItem('eld_historico_cleared') || '[]'));
       _eldCancelled = canceladasApi
         .filter(c => {
           const rawId  = String(c.id);
           const prefId = 'c-' + rawId;
-          return !dismissed.includes(rawId) &&
-                 !dismissed.includes(prefId) &&
-                 !activeDisputeIdsSet.has(rawId) &&
-                 c.status !== 'dispute' &&
-                 normalizeEldStatus(c.status) !== 'dispute';
+          // Verifica dismissed com e sem prefixo "c-"
+          if (dismissed.includes(rawId) || dismissed.includes(prefId)) return false;
+          // Verifica cleared (usuário já descartou definitivamente)
+          if (clearedCancSet.has(rawId) || clearedCancSet.has(prefId)) return false;
+          if (activeDisputeIdsSet.has(rawId)) return false;
+          if (c.status === 'dispute' || normalizeEldStatus(c.status) === 'dispute') return false;
+          return true;
         })
         .map(c => ({
           id:        'c-' + String(c.id),
           icon:      '❌',
           label:     'Pedido cancelado',
           title:     c.produto || 'Produto',
-          price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+          price:     c.valor ? 'US$' + parseFloat(String(c.valor).replace(',','.')).toFixed(2) : '',
           status:    c.status || 'cancelled',
           comprador: c.comprador || '',
           ts:        new Date(c.data || Date.now()).getTime(),
@@ -7052,7 +6852,7 @@ async function pollEldorado() {
             icon:      '💸',
             label:     'Disputa perdida',
             title:     c.produto || 'Produto',
-            price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+            price:     c.valor ? 'US$' + parseFloat(String(c.valor).replace(',','.')).toFixed(2) : '',
             status:    'dispute_lost',
             comprador: c.comprador || '',
             ts:        Date.now(),
@@ -7064,10 +6864,22 @@ async function pollEldorado() {
             showEldToast(lostNotif);
             typeof playUiSound === 'function' && playUiSound();
           }
+          // Adiciona em _eldCancelled (aba Cancelados) se ainda não estiver
+          if (!_eldCancelled.find(cc => String(cc.id) === lid)) {
+            const cancLost = { ...lostNotif, read: true };
+            _eldCancelled = [cancLost, ..._eldCancelled].slice(0, 100);
+            // Historico persistente
+            let histL = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+            if (!histL.find(h => String(h.id) === lid)) {
+              histL = [{ ...cancLost, _tipo: 'cancelado', _tsInserted: Date.now() }, ...histL].slice(0, 2000);
+              localStorage.setItem('eld_historico', JSON.stringify(histL));
+            }
+          }
           seenLost.add(String(c.id));
         });
         localStorage.setItem('eld_lost_seen', JSON.stringify([...seenLost].slice(-200)));
         localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+        localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
         // Remove disputas perdidas do painel de disputas e das notifs (entrada de disputa ativa)
         const lostIdsSet = new Set(disputasPerdidasApi.map(c => String(c.id)));
         _eldDisputes = _eldDisputes.filter(d => !lostIdsSet.has(String(d.id)));
@@ -7094,7 +6906,7 @@ async function pollEldorado() {
             icon:      '🏆',
             label:     'Disputa vencida',
             title:     cachedDispute?.title || c.produto || 'Produto',
-            price:     cachedDispute?.price || (c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : ''),
+            price:     cachedDispute?.price || (c.valor ? 'US$' + parseFloat(String(c.valor).replace(',','.')).toFixed(2) : ''),
             status:    'dispute_won',
             comprador: c.comprador || '',
             ts:        Date.now(),
@@ -7106,10 +6918,22 @@ async function pollEldorado() {
             showEldToast(wonNotif);
             typeof playUiSound === 'function' && playUiSound();
           }
+          // Adiciona em _eldVendas (aba Concluídos) se ainda não estiver
+          if (!_eldVendas.find(v => String(v.id) === wid)) {
+            const vendaWon = { ...wonNotif, read: true };
+            _eldVendas = [vendaWon, ..._eldVendas].slice(0, 200);
+            // Historico persistente
+            let histW = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+            if (!histW.find(h => String(h.id) === wid)) {
+              histW = [{ ...vendaWon, _tipo: 'venda', _tsInserted: Date.now() }, ...histW].slice(0, 2000);
+              localStorage.setItem('eld_historico', JSON.stringify(histW));
+            }
+          }
           seenWon.add(String(c.id));
         });
         localStorage.setItem('eld_won_seen', JSON.stringify([...seenWon].slice(-200)));
         localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
+        localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
         const wonIdsSet = new Set(disputasVencidasApi.map(c => String(c.id)));
         _eldDisputes = _eldDisputes.filter(d => !wonIdsSet.has(String(d.id)));
         _eldNotifs   = _eldNotifs.filter(n => !(n.status === 'dispute' && wonIdsSet.has(String(n.id))));
@@ -7128,7 +6952,7 @@ async function pollEldorado() {
             icon:      '⚠️',
             label:     'Em disputa',
             title:     c.produto || 'Produto',
-            price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+            price:     c.valor ? 'US$' + parseFloat(String(c.valor).replace(',','.')).toFixed(2) : '',
             status:    'dispute',
             comprador: c.comprador || '',
             ts:        new Date(c.data || Date.now()).getTime(),
@@ -7149,7 +6973,7 @@ async function pollEldorado() {
               icon:      '⚠️',
               label:     'Em disputa',
               title:     c.produto || 'Produto',
-              price:     c.valor ? 'US$' + parseFloat(c.valor).toFixed(2) : '',
+              price:     c.valor ? 'US$' + parseFloat(String(c.valor).replace(',','.')).toFixed(2) : '',
               status:    'dispute',
               comprador: c.comprador || '',
               ts:        new Date(c.data || Date.now()).getTime(),
@@ -7193,18 +7017,27 @@ async function pollEldorado() {
     
     // Adiciona novas vendas ao histórico com _tipo = 'venda'
     if (novasVendas.length > 0) {
-      const novasMapeadas = novasVendas.map(v => ({
-        id:        String(v.id),
-        icon:      '✅',
-        label:     'Venda concluída',
-        title:     (v.produto || 'Produto') || v.produto || 'Produto',
-        price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
-        status:    'completed',
-        comprador: v.comprador || '',
-        ts:        new Date(v.data || Date.now()).getTime(),
-        read:      true,
-        _tipo:     'venda',
-      }));
+      const novasMapeadas = novasVendas
+        .map(v => {
+          // Aceita qualquer campo de data que o worker possa retornar
+          const dataStr = v.data || v.date || v.created_at || v.createdAt || v.updatedAt || null;
+          const ts = dataStr ? new Date(dataStr).getTime() : Date.now();
+          const tsValido = isNaN(ts) ? Date.now() : ts;
+          if (!dataStr) console.warn('[ELD poll] venda sem data:', v.id, v);
+          return {
+            id:          String(v.id),
+            icon:        '✅',
+            label:       'Venda concluída',
+            title:       v.produto || v.title || v.product || 'Produto',
+            price:       v.valor ? 'US$' + parseFloat(String(v.valor).replace(',','.')).toFixed(2) : (v.price || ''),
+            status:      'completed',
+            comprador:   v.comprador || v.buyer || v.username || '',
+            ts:          tsValido,
+            _tsInserted: tsValido,
+            read:        true,
+            _tipo:       'venda',
+          };
+        });
       historico = [...novasMapeadas, ...historico].slice(0, 2000);
       localStorage.setItem('eld_historico', JSON.stringify(historico));
       // Marca imediatamente no _eldSeenIds para não re-processar no próximo poll
@@ -7227,7 +7060,7 @@ async function pollEldorado() {
           icon:      '✅',
           label:     'Venda concluída',
           title:     v.produto || 'Produto',
-          price:     v.valor ? 'US$' + parseFloat(v.valor).toFixed(2) : '',
+          price:     v.valor ? 'US$' + parseFloat(String(v.valor).replace(',','.')).toFixed(2) : '',
           status:    'completed',
           comprador: v.comprador || '',
           ts:        new Date(v.data || Date.now()).getTime(),
@@ -7245,20 +7078,8 @@ async function pollEldorado() {
       }
     }
 
-    // Atualiza stat de vendas do dia — lê do eld_historico (fonte real, persistente)
-    const today = new Date(); today.setHours(0,0,0,0);
-    const _historicoAll = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-    const vendasHoje = _historicoAll.filter(v => (v.ts||0) >= today.getTime() && v._tipo !== 'cancelado');
-    let revenue = 0;
-    vendasHoje.forEach(v => {
-      const m = (v.price || '').replace(/[^0-9,.]/g,'').replace(',','.');
-      const val = parseFloat(m);
-      if (!isNaN(val)) revenue += val;
-    });
-    const rEl = document.getElementById('eld-stat-revenue');
-    const tEl = document.getElementById('eld-stat-total');
-    if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
-    if (tEl) tEl.textContent = vendasHoje.length;
+    // Atualiza stat de vendas do dia — fonte única centralizada
+    _atualizarStatsDoDia();
     // Atualiza também o painel de Vendas do Dia se estiver aberto
     if (document.getElementById('vd-root')?.classList.contains('vd-open')) renderVendasDia();
 
@@ -7277,7 +7098,7 @@ async function pollEldorado() {
           icon:      '⏳',
           label:     'Entrega pendente',
           title:     p.produto || (existing && existing.title) || 'Produto',
-          price:     p.valor ? 'US$' + parseFloat(p.valor).toFixed(2) : ((existing && existing.price) || ''),
+          price:     p.valor ? 'US$' + parseFloat(String(p.valor).replace(',','.')).toFixed(2) : ((existing && existing.price) || ''),
           status:    'pending',
           comprador: p.comprador || (existing && existing.comprador) || '',
           ts:        new Date(p.data || Date.now()).getTime(),
@@ -7292,10 +7113,14 @@ async function pollEldorado() {
 
     // Substitui pelo estado atual da API — mas exclui itens já confirmados/dismissed pelo usuário
     // (a API pode ainda retornar itens que o usuário confirmou localmente)
-    _eldPending = pendentesApiMapped
+    // Se a API retornou vazio mas havia pendentes locais, pode ser falha de rede — mantém o que temos
+    const _mappedFinal = pendentesApiMapped
       .filter(p => !pollDismissedForPend.has(String(p.id)))
       .slice(0, 100);
-    localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    if (_mappedFinal.length > 0 || pendentesApi.length > 0) {
+      _eldPending = _mappedFinal;
+      localStorage.setItem('eld_pending', JSON.stringify(_eldPending));
+    }
 
     const novosItemsPend = pendentesApiMapped.filter(p =>
       !existingPendIds.has(String(p.id)) &&
@@ -7367,7 +7192,7 @@ async function pollEldorado() {
         icon:      ev.icon,
         label:     ev.label,
         title:     n.produto || ev.label,
-        price:     n.valor ? 'US$' + parseFloat(n.valor).toFixed(2) : '',
+        price:     n.valor ? 'US$' + parseFloat(String(n.valor).replace(',','.')).toFixed(2) : '',
         status:    ev.status,
         comprador: n.comprador || '',
         ts:        new Date(n.data || Date.now()).getTime(),
@@ -7397,7 +7222,7 @@ async function pollEldorado() {
         localStorage.setItem('eld_notifs', JSON.stringify(_eldNotifs));
       }
 
-      _eldSeenIds = _eldSeenIds.slice(-500);
+      _eldSeenIds = _eldSeenIds.slice(-2000);
       localStorage.setItem('eld_seen', JSON.stringify(_eldSeenIds));
 
       // Cancelados em array separado
@@ -7573,30 +7398,15 @@ function renderEldPanel() {
 }
 
 function renderEldStats() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const linkedAt = parseInt(localStorage.getItem('eld_linked_at') || '0');
-  
-  // Busca vendas de HOJE em _eldVendas, respeitando a data de vinculação
-  const vendasHoje = _eldVendas.filter(v => v.ts >= today.getTime() && (linkedAt === 0 || v.ts >= linkedAt));
-  
-  let revenue = 0;
-  vendasHoje.forEach(v => {
-    const m = (v.price || '').replace(/[^0-9,.]/g,'').replace(',','.');
-    const val = parseFloat(m);
-    if (!isNaN(val)) revenue += val;
-  });
+  // Usa fonte única centralizada para vendas/receita do dia
+  _atualizarStatsDoDia();
 
-  const rEl = document.getElementById('eld-stat-revenue');
-  const tEl = document.getElementById('eld-stat-total');
   const pEl = document.getElementById('eld-stat-pending');
   const dEl = document.getElementById('eld-stat-disputes');
   const dWrap = document.getElementById('eld-stat-disputes-wrap');
-  if (rEl) rEl.textContent = 'US$' + revenue.toFixed(2);
-  if (tEl) tEl.textContent = vendasHoje.length;
   if (pEl) pEl.textContent = _eldPending.length;
   if (dEl) dEl.textContent = _eldDisputes.length;
   if (dWrap) dWrap.style.display = _eldDisputes.length > 0 ? '' : 'none';
-  // Destaca a aba de Disputas quando tiver itens
   const disputeTabBtn = document.querySelector('.eld-tab-btn[data-tab="disputes"]');
   if (disputeTabBtn) disputeTabBtn.classList.toggle('has-items', _eldDisputes.length > 0);
 }
@@ -7752,16 +7562,8 @@ function updateEldBell() {
   if (pbadge) { pbadge.textContent = `${unread} nova${unread !== 1 ? 's' : ''}`; pbadge.classList.toggle('visible', unread > 0); }
   if (penbadge) { penbadge.textContent = pending > 9 ? '9+' : String(pending); penbadge.classList.toggle('visible', pending > 0); }
   if (penbtn) { penbtn.style.opacity = pending > 0 ? '1' : '0.5'; }
-  // Atualiza badge do botão Vendas do Dia — usa eld_historico (mesma fonte da tela)
-  const vdBadge = document.getElementById('vendas-dia-badge');
-  if (vdBadge) {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const linkedAt = parseInt(localStorage.getItem('eld_linked_at') || '0');
-    const hist = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-    const cnt = hist.filter(v => (v.ts||0) >= today.getTime() && v._tipo !== 'cancelado' && (linkedAt === 0 || (v.ts||0) >= linkedAt)).length;
-    vdBadge.textContent = cnt;
-    vdBadge.style.display = cnt > 0 ? 'inline-block' : 'none';
-  }
+  // Atualiza stats de vendas/receita/badge — fonte única centralizada
+  _atualizarStatsDoDia();
 }
 
 // ── CONFIRMAR ENTREGA ─────────────────────────────────────────────────────────
@@ -7829,7 +7631,7 @@ async function confirmEldDelivery(id) {
       ? '\n\n💡 Confirme diretamente em: eldorado.gg → Pedidos → Pendentes'
       : '';
     const msg = `⚠️ Não foi possível confirmar na Eldorado.\n${eldMsg}${linkSite}\n\nDeseja marcar como entregue apenas no painel?`;
-    if (!confirm(msg)) return;
+    console.warn('[confirmDelivery] marcando como entregue apenas no painel. Motivo:', eldMsg);
   } else {
     setBtnState('✅ Confirmado!', true, '1');
     if (btn) {
@@ -7851,7 +7653,7 @@ async function confirmEldDelivery(id) {
   const dismissedConf = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
   if (!dismissedConf.includes(String(id))) {
     dismissedConf.push(String(id));
-    localStorage.setItem('eld_dismissed', JSON.stringify(dismissedConf.slice(-500)));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissedConf.slice(-2000)));
   }
   // Marca como visto permanentemente no seen_pend também
   const seenPendConf = JSON.parse(localStorage.getItem('eld_seen_pend') || '[]');
@@ -7866,7 +7668,15 @@ async function confirmEldDelivery(id) {
   if (existing) {
     _eldVendas = _eldVendas.map(v => String(v.id) === String(id) ? {...v, delivered: true} : v);
   } else if (source) {
-    _eldVendas = [{...source, delivered: true, status: 'completed', icon: '✅', label: 'Venda concluída', ts: source.ts || Date.now()}, ..._eldVendas].slice(0, 100);
+    const now = Date.now();
+    const vendaConf = {...source, delivered: true, status: 'completed', icon: '✅', label: 'Venda concluída', ts: source.ts || now, _tsInserted: now};
+    _eldVendas = [vendaConf, ..._eldVendas].slice(0, 100);
+    // Garante que entra no historico com _tsInserted = agora (é uma venda confirmada hoje)
+    let histConf = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+    if (!histConf.find(h => String(h.id) === String(id))) {
+      histConf = [{ ...vendaConf, read: true, _tipo: 'venda' }, ...histConf].slice(0, 2000);
+      localStorage.setItem('eld_historico', JSON.stringify(histConf));
+    }
   }
   localStorage.setItem('eld_vendas', JSON.stringify(_eldVendas));
 
@@ -7976,28 +7786,41 @@ function _tryAutoRemoveBrainrot(soldTitle) {
 // ── CANCELAR PEDIDO ───────────────────────────────────────────────────────────
 async function cancelEldOrder(id) {
   openEldPanel(); // garante que o painel permanece aberto
-  if (!confirm('Tem certeza que deseja cancelar este pedido na Eldorado?')) return;
+
 
   const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
   const btn = document.querySelector(`[data-cancel="${id}"]`);
   if (btn) { btn.disabled = true; btn.textContent = '⟳ Cancelando...'; }
 
   let ok = false;
-  if (uid) {
+  let cancelErr = '';
+  if (!uid) {
+    cancelErr = 'Usuário não autenticado (uid nulo). Faça login novamente.';
+  } else {
     try {
       const resp = await fetch(ELD_WORKER + '/cancelar-pedido', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
         body:    JSON.stringify({ orderId: id }),
       });
-      const data = await resp.json();
-      if (resp.ok && data.ok) ok = true;
-    } catch(e) {}
+      let data = {};
+      try { data = await resp.json(); } catch(_) {}
+      if (resp.ok && data.ok) {
+        ok = true;
+      } else {
+        cancelErr = `HTTP ${resp.status}${data.error ? ' — ' + data.error : ''}${data.message ? ' — ' + data.message : ''}`;
+        console.error('[cancelEldOrder] falhou:', cancelErr, data);
+      }
+    } catch(e) {
+      cancelErr = e.message || String(e);
+      console.error('[cancelEldOrder] erro de rede/fetch:', e);
+    }
   }
 
   if (!ok) {
     if (btn) { btn.disabled = false; btn.textContent = '✕ CANCELAR'; }
-    if (!confirm('Não foi possível cancelar na Eldorado.\nDeseja remover apenas do painel?')) return;
+    const motivo = cancelErr ? cancelErr : 'erro desconhecido';
+    console.warn('[cancelEldOrder] removendo apenas do painel. Motivo:', motivo);
   }
 
   // Remove dos pendentes localmente
@@ -8009,7 +7832,7 @@ async function cancelEldOrder(id) {
   const dismissedCanc = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
   if (!dismissedCanc.includes(String(id))) {
     dismissedCanc.push(String(id));
-    localStorage.setItem('eld_dismissed', JSON.stringify(dismissedCanc.slice(-500)));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissedCanc.slice(-2000)));
   }
   // Marca como visto permanentemente no seen_pend também
   const seenPendCanc = JSON.parse(localStorage.getItem('eld_seen_pend') || '[]');
@@ -8038,7 +7861,7 @@ function dismissEldNotif(id) {
     if (!isPendingId) {
       const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
       if (!dismissed.includes(String(id))) dismissed.push(String(id));
-      localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+      localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-2000)));
     }
   } else if (_eldTab === 'completed') {
     _eldVendas = _eldVendas.filter(n => String(n.id) !== String(id));
@@ -8048,14 +7871,23 @@ function dismissEldNotif(id) {
     localStorage.setItem('eld_disputes', JSON.stringify(_eldDisputes));
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
     if (!dismissed.includes(String(id))) dismissed.push(String(id));
-    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-2000)));
   } else if (_eldTab === 'cancelled') {
     _eldCancelled = _eldCancelled.filter(n => String(n.id) !== String(id));
     localStorage.setItem('eld_cancelled', JSON.stringify(_eldCancelled));
     if (!isPendingId) {
       const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
-      if (!dismissed.includes(String(id))) dismissed.push(String(id));
-      localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+      const rawId  = String(id).replace(/^c-/, '');
+      const prefId = 'c-' + rawId;
+      // Salva AMBOS (com e sem prefixo) para o poll não re-inserir
+      if (!dismissed.includes(rawId))  dismissed.push(rawId);
+      if (!dismissed.includes(prefId)) dismissed.push(prefId);
+      localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-2000)));
+      // Também salva no cleared para persistência permanente
+      const cleared = JSON.parse(localStorage.getItem('eld_historico_cleared') || '[]');
+      if (!cleared.includes(rawId))  cleared.push(rawId);
+      if (!cleared.includes(prefId)) cleared.push(prefId);
+      localStorage.setItem('eld_historico_cleared', JSON.stringify(cleared.slice(-3000)));
     }
   } else if (_eldTab === 'pending') {
     _eldPending = _eldPending.filter(n => String(n.id) !== String(id));
@@ -8064,7 +7896,7 @@ function dismissEldNotif(id) {
     localStorage.setItem('eld_notifs',  JSON.stringify(_eldNotifs));
     const dismissed = JSON.parse(localStorage.getItem('eld_dismissed') || '[]');
     if (!dismissed.includes(String(id))) dismissed.push(String(id));
-    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-500)));
+    localStorage.setItem('eld_dismissed', JSON.stringify(dismissed.slice(-2000)));
   }
   renderEldPanel();
   updateEldBell();
@@ -8079,7 +7911,7 @@ function eldMarkAllRead() {
     if (!n.id || pendingIdSet.has(String(n.id))) return;
     if (!dismissedIds.includes(n.id)) dismissedIds.push(n.id);
   });
-  localStorage.setItem('eld_dismissed', JSON.stringify(dismissedIds.slice(-500)));
+  localStorage.setItem('eld_dismissed', JSON.stringify(dismissedIds.slice(-2000)));
   // Remove das notifs tudo exceto pendentes ativos, e marca eles como lidos
   _eldNotifs = _eldNotifs
     .filter(n => pendingIdSet.has(String(n.id)))
@@ -8481,6 +8313,105 @@ function _syncDismissBtn() {
   btn.classList.toggle('visible', count > 0);
 }
 
+// ── FONTE ÚNICA: vendas do dia ────────────────────────────────────────────────
+// TODOS os lugares que mostram o número de vendas do dia usam ESTA função.
+// Nunca leia _eldVendas nem aplique filtro linkedAt para contar vendas do dia.
+function _getVendasDoDiaCount() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var todayMs = today.getTime();
+
+  // Lê de ambas as fontes: eld_historico (novas) e eld_vendas (confirmadas manualmente)
+  var hist    = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+  var vendas  = JSON.parse(localStorage.getItem('eld_vendas')    || '[]');
+
+  // Une e deduplica por id
+  var visto   = new Set();
+  var todos   = hist.concat(vendas).filter(function(v) {
+    if (visto.has(String(v.id))) return false;
+    visto.add(String(v.id));
+    return v._tipo !== 'cancelado' && v.status !== 'cancelled';
+  });
+
+  return todos.filter(function(v) {
+    var inserted = v._tsInserted || v.ts || 0;
+    if (typeof inserted === 'object' && inserted.seconds) inserted = inserted.seconds * 1000;
+    else if (inserted > 0 && inserted < 4102444800) inserted *= 1000;
+    return inserted >= todayMs;
+  }).length;
+}
+function _getRevenueDoDia() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var todayMs = today.getTime();
+
+  var hist   = JSON.parse(localStorage.getItem('eld_historico') || '[]');
+  var vendas = JSON.parse(localStorage.getItem('eld_vendas')    || '[]');
+
+  var visto  = new Set();
+  var todos  = hist.concat(vendas).filter(function(v) {
+    if (visto.has(String(v.id))) return false;
+    visto.add(String(v.id));
+    return v._tipo !== 'cancelado' && v.status !== 'cancelled';
+  });
+
+  var rev = 0;
+  todos.filter(function(v) {
+    var inserted = v._tsInserted || v.ts || 0;
+    if (typeof inserted === 'object' && inserted.seconds) inserted = inserted.seconds * 1000;
+    else if (inserted > 0 && inserted < 4102444800) inserted *= 1000;
+    return inserted >= todayMs;
+  }).forEach(function(v) {
+    var val = parseFloat((v.price||'').replace(/[^0-9,.]/g,'').replace(',','.'));
+    if (!isNaN(val)) rev += val;
+  });
+  return rev;
+}
+function _atualizarStatsDoDia() {
+  var cnt = _getVendasDoDiaCount();
+  var rev = _getRevenueDoDia();
+  var rEl = document.getElementById('eld-stat-revenue');
+  var tEl = document.getElementById('eld-stat-total');
+  if (rEl) rEl.textContent = 'US$' + rev.toFixed(2);
+  if (tEl) animateCounter(tEl, cnt);
+  // Badge do botão Vendas do Dia
+  var vdBadge = document.getElementById('vendas-dia-badge');
+  if (vdBadge) {
+    vdBadge.textContent = cnt;
+    vdBadge.style.display = cnt > 0 ? 'inline-block' : 'none';
+  }
+}
+
+// ── ANIMATE COUNTER (roll effect) ────────────────────────────────────────────
+var _animCounterTimers = {};
+function animateCounter(el, toVal) {
+  if (!el) return;
+  // parseInt('—') = NaN → trata como 0; garante que sempre escreve o valor
+  var raw = parseInt(el.textContent);
+  var fromVal = isNaN(raw) ? 0 : raw;
+  // Sempre escreve imediatamente se valor mudou OU se o elemento ainda mostra '—'
+  var isDash = (el.textContent === '—' || el.textContent.trim() === '');
+  if (!isDash && fromVal === toVal) return;
+  // Se não tem animação pra fazer, escreve direto
+  if (isDash || fromVal === toVal) { el.textContent = toVal; return; }
+  var id = el.id || 'anon';
+  if (_animCounterTimers[id]) clearInterval(_animCounterTimers[id]);
+  var steps = 18;
+  var duration = 520; // ms
+  var step = 0;
+  var diff = toVal - fromVal;
+  _animCounterTimers[id] = setInterval(function() {
+    step++;
+    var progress = step / steps;
+    // ease out cubic
+    var ease = 1 - Math.pow(1 - progress, 3);
+    var cur = Math.round(fromVal + diff * ease);
+    el.textContent = cur;
+    if (step >= steps) {
+      clearInterval(_animCounterTimers[id]);
+      el.textContent = toVal;
+    }
+  }, duration / steps);
+}
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function eldTimeAgo(ts) {
   const diff = Date.now() - ts;
@@ -8503,494 +8434,9 @@ setInterval(() => {
 setInterval(function() {
   var vd = document.getElementById('vd-root');
   if (vd && vd.classList.contains('vd-open')) { try { renderVendasDia(); } catch(e){} }
-  // Atualiza stats de receita/total no header usando historico real
-  try {
-    var hist = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-    var linkedAtR = parseInt(localStorage.getItem('eld_linked_at') || '0');
-    var td = new Date(); td.setHours(0,0,0,0);
-    var vh = hist.filter(function(v){ return (v.ts||0) >= td.getTime() && v._tipo !== 'cancelado' && (linkedAtR === 0 || (v.ts||0) >= linkedAtR); });
-    var rev = 0;
-    vh.forEach(function(v){
-      var val = parseFloat((v.price||'').replace(/[^0-9,.]/g,'').replace(',','.'));
-      if(!isNaN(val)) rev += val;
-    });
-    var rEl = document.getElementById('eld-stat-revenue');
-    var tEl = document.getElementById('eld-stat-total');
-    if (rEl) rEl.textContent = 'US$' + rev.toFixed(2);
-    if (tEl) tEl.textContent = vh.length;
-  } catch(e) {}
-}, 10000);
-
-// ── CHAT ELDORADO ─────────────────────────────────────────────────────────────
-
-let _chatOpen       = false;
-let _chatOrderId    = null;   // pedido selecionado atualmente
-let _chatOrders     = [];     // lista de pedidos disponíveis para chat
-let _chatMessages   = {};     // { orderId: [ {sender, text, ts} ] }
-let _chatUnread     = {};     // { orderId: count }
-let _chatPollTimer  = null;
-let _chatLastTs     = {};     // { orderId: lastTs } para polling incremental
-let _chatSending    = false;
-
-const CHAT_POLL_MS  = 5000;   // poll a cada 5s quando painel aberto
-
-function toggleEldChat() {
-  _chatOpen = !_chatOpen;
-  const panel = document.getElementById('eld-chat-panel');
-  const fab   = document.getElementById('eld-chat-fab');
-  if (_chatOpen) {
-    panel.classList.add('open');
-    // Mostra FAB somente quando painel fechado
-    if (fab) fab.style.display = 'none';
-    _loadChatOrders();
-    _startChatPoll();
-  } else {
-    panel.classList.remove('open');
-    _stopChatPoll();
-  }
-}
-
-// Carrega lista de pedidos pendentes para usar como conversas
-async function _loadChatOrders() {
-  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-  if (!uid) {
-    _renderChatOrderSelector([]);
-    return;
-  }
-
-  _setChatLoading(true);
-
-  try {
-    // Usa os pedidos pendentes já carregados (sem novo fetch)
-    const pendentes = JSON.parse(localStorage.getItem('eld_pending') || '[]');
-    const historico  = JSON.parse(localStorage.getItem('eld_historico') || '[]');
-
-    // Combina pendentes + últimos 10 do histórico para ter mais conversas disponíveis
-    const recentHist = historico.slice(0, 10);
-    const seen = new Set();
-    const orders = [];
-
-    [...pendentes, ...recentHist].forEach(p => {
-      const id = String(p.id).replace(/^c-/, '');
-      if (!seen.has(id)) {
-        seen.add(id);
-        orders.push({
-          id,
-          title:     p.title || p.produto || 'Pedido',
-          price:     p.price || '',
-          status:    p.status || 'pending',
-          comprador: p.comprador || '',
-          ts:        p.ts || 0,
-        });
-      }
-    });
-
-    _chatOrders = orders;
-    _renderChatOrderSelector(orders);
-
-    // Auto-seleciona o primeiro se ainda não tem seleção
-    if (!_chatOrderId && orders.length > 0) {
-      _selectChatOrder(orders[0].id);
-    }
-
-  } catch(e) {
-    console.warn('[Chat] erro ao carregar pedidos:', e);
-    _renderChatOrderSelector([]);
-  } finally {
-    _setChatLoading(false);
-  }
-}
-
-function _renderChatOrderSelector(orders) {
-  const sel = document.getElementById('chat-order-selector');
-  if (!sel) return;
-
-  if (orders.length === 0) {
-    sel.innerHTML = `<div style="font-size:11px;color:var(--muted);padding:4px 6px;white-space:nowrap;align-self:center">Nenhum pedido disponível</div>`;
-    return;
-  }
-
-  const statusColors = {
-    pending:   '#f59e0b',
-    completed: '#22c55e',
-    cancelled: '#f87171',
-    dispute:   '#a78bfa',
-  };
-
-  sel.innerHTML = orders.map(o => {
-    const unread = _chatUnread[o.id] || 0;
-    const active = o.id === _chatOrderId ? 'active' : '';
-    const dotColor = statusColors[o.status] || '#888890';
-    const label = (o.title || 'Pedido').length > 18
-      ? (o.title || 'Pedido').slice(0, 18) + '…'
-      : (o.title || 'Pedido');
-    return `<div class="chat-order-chip ${active}" onclick="selectChatOrderById('${escHtml(o.id)}')" title="${escHtml(o.title)}">
-      <div class="chat-order-chip-dot" style="background:${dotColor}"></div>
-      <span>${escHtml(label)}</span>
-      ${unread > 0 ? `<span class="chat-order-chip-unread">${unread}</span>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function selectChatOrderById(id) {
-  _selectChatOrder(id);
-}
-
-function _selectChatOrder(id) {
-  _chatOrderId = id;
-  // Zera não-lidos deste pedido
-  _chatUnread[id] = 0;
-  _updateChatBadge();
-  _renderChatOrderSelector(_chatOrders);
-  _renderMessages(id);
-  _fetchChatMessages(id);
-  // Habilita input
-  const inp = document.getElementById('chat-input');
-  const btn = document.getElementById('chat-send-btn');
-  if (inp) { inp.disabled = false; inp.focus(); }
-  if (btn) btn.disabled = false;
-}
-
-function _renderMessages(orderId) {
-  const container = document.getElementById('chat-messages');
-  const empty     = document.getElementById('chat-empty-state');
-  if (!container) return;
-
-  const msgs = _chatMessages[orderId] || [];
-
-  if (!orderId) {
-    if (empty) empty.style.display = 'flex';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-
-  if (msgs.length === 0) {
-    container.innerHTML = `
-      <div class="chat-empty-state" style="display:flex">
-        <div style="font-size:26px">🤝</div>
-        <div style="font-weight:500;color:var(--text)">Nenhuma mensagem ainda</div>
-        <div style="opacity:.6">Envie a primeira mensagem para o comprador!</div>
-      </div>`;
-    return;
-  }
-
-  const myUid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-
-  container.innerHTML = msgs.map(m => {
-    const isMine = m.sender === 'seller' || m.sender === myUid || m.isMine === true;
-    const side   = isMine ? 'mine' : 'theirs';
-    const time   = m.ts ? _chatFmtTime(m.ts) : '';
-    return `<div class="chat-msg ${side}">
-      <div class="chat-msg-bubble">${escHtml(m.text || '')}</div>
-      <div class="chat-msg-meta">${isMine ? '✓ ' : ''}${time}</div>
-    </div>`;
-  }).join('');
-
-  // Rola para o fim
-  container.scrollTop = container.scrollHeight;
-}
-
-function _chatFmtTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) {
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  }
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
-         ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
-
-// Busca mensagens do worker para um pedido específico
-async function _fetchChatMessages(orderId) {
-  if (!orderId) return;
-  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-  if (!uid) return;
-
-  try {
-    // Tenta buscar via Firestore (mais rápido, já conectado)
-    if (typeof db !== 'undefined') {
-      const snap = await db
-        .collection('eld_chat')
-        .doc(uid)
-        .collection('orders')
-        .doc(String(orderId))
-        .collection('messages')
-        .orderBy('ts', 'asc')
-        .limit(100)
-        .get();
-
-      if (!snap.empty) {
-        const msgs = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          msgs.push({ id: doc.id, sender: d.sender, text: d.text, ts: d.ts, isMine: d.sender === 'seller' });
-        });
-        _chatMessages[orderId] = msgs;
-        if (orderId === _chatOrderId) _renderMessages(orderId);
-        return;
-      }
-    }
-
-    // Fallback: worker
-    const resp = await fetch(ELD_WORKER + '/chat/' + encodeURIComponent(orderId), {
-      headers: { 'x-user-id': uid }
-    });
-    if (!resp.ok) return;
-    const data = await resp.json();
-    const msgs = (data.messages || data.msgs || []).map(m => ({
-      id:     String(m.id || m._id || Math.random()),
-      sender: m.sender || m.from || 'buyer',
-      text:   m.text || m.message || m.content || '',
-      ts:     m.ts || m.timestamp || m.created_at || Date.now(),
-      isMine: m.sender === 'seller' || m.isMine === true,
-    }));
-    _chatMessages[orderId] = msgs;
-    if (orderId === _chatOrderId) _renderMessages(orderId);
-
-  } catch(e) {
-    // Falha silenciosa — não quebra a UI
-    console.warn('[Chat] erro ao buscar msgs:', e.message);
-  }
-}
-
-// Poll em tempo real (Firestore listener por pedido)
-let _chatFirestoreUnsubs = {};
-
-function _startChatPoll() {
-  if (_chatPollTimer) return;
-  // Inicia listener Firestore para o pedido atual
-  _subscribeChatOrder(_chatOrderId);
-  // Polling de fallback a cada 5s para recarregar pedidos e msgs novas
-  _chatPollTimer = setInterval(_chatPollTick, CHAT_POLL_MS);
-}
-
-function _stopChatPoll() {
-  if (_chatPollTimer) { clearInterval(_chatPollTimer); _chatPollTimer = null; }
-  // Cancela listeners do Firestore
-  Object.values(_chatFirestoreUnsubs).forEach(unsub => { try { unsub(); } catch(_){} });
-  _chatFirestoreUnsubs = {};
-}
-
-function _subscribeChatOrder(orderId) {
-  if (!orderId) return;
-  if (_chatFirestoreUnsubs[orderId]) return; // já inscrito
-  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-  if (!uid || typeof db === 'undefined') return;
-
-  try {
-    const unsub = db
-      .collection('eld_chat')
-      .doc(uid)
-      .collection('orders')
-      .doc(String(orderId))
-      .collection('messages')
-      .orderBy('ts', 'asc')
-      .limit(100)
-      .onSnapshot(snap => {
-        const msgs = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          msgs.push({ id: doc.id, sender: d.sender, text: d.text, ts: d.ts, isMine: d.sender === 'seller' });
-        });
-
-        const prevLen = (_chatMessages[orderId] || []).length;
-        _chatMessages[orderId] = msgs;
-
-        // Detecta msg nova do comprador (não nossa)
-        const newMsgs = msgs.slice(prevLen);
-        const hasNewBuyer = newMsgs.some(m => m.sender !== 'seller');
-        if (hasNewBuyer && orderId !== _chatOrderId) {
-          _chatUnread[orderId] = (_chatUnread[orderId] || 0) + newMsgs.filter(m => m.sender !== 'seller').length;
-          _updateChatBadge();
-          _renderChatOrderSelector(_chatOrders);
-          // Notifica com toast
-          const lastNew = newMsgs.filter(m => m.sender !== 'seller').pop();
-          if (lastNew) _showChatToast(orderId, lastNew.text);
-        }
-
-        if (orderId === _chatOrderId) _renderMessages(orderId);
-      }, err => {
-        console.warn('[Chat realtime]', err.message);
-      });
-
-    _chatFirestoreUnsubs[orderId] = unsub;
-  } catch(e) {
-    console.warn('[Chat subscribe]', e.message);
-  }
-}
-
-async function _chatPollTick() {
-  // Recarrega lista de pedidos (pode ter novos)
-  if (!_chatOpen) return;
-  await _loadChatOrders();
-  // Reconecta listener do pedido atual se necessário
-  if (_chatOrderId) _subscribeChatOrder(_chatOrderId);
-}
-
-// Enviar mensagem
-async function sendChatMsg() {
-  if (_chatSending) return;
-  const inp = document.getElementById('chat-input');
-  const btn = document.getElementById('chat-send-btn');
-  if (!inp || !_chatOrderId) return;
-
-  const text = inp.value.trim();
-  if (!text) return;
-
-  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-  if (!uid) return;
-
-  _chatSending = true;
-  inp.value = '';
-  chatInputResize(inp);
-  if (btn) btn.disabled = true;
-
-  // Adiciona mensagem otimisticamente
-  const tempMsg = {
-    id:     'temp-' + Date.now(),
-    sender: 'seller',
-    text,
-    ts:     Date.now(),
-    isMine: true,
-  };
-  if (!_chatMessages[_chatOrderId]) _chatMessages[_chatOrderId] = [];
-  _chatMessages[_chatOrderId].push(tempMsg);
-  _renderMessages(_chatOrderId);
-
-  try {
-    // 1) Salva no Firestore (persiste em tempo real)
-    if (typeof db !== 'undefined') {
-      await db
-        .collection('eld_chat')
-        .doc(uid)
-        .collection('orders')
-        .doc(String(_chatOrderId))
-        .collection('messages')
-        .add({
-          sender: 'seller',
-          text,
-          ts:     Date.now(),
-          uid,
-          orderId: String(_chatOrderId),
-        });
-    }
-
-    // 2) Tenta enviar via worker (para chegar à API da Eldorado)
-    try {
-      await fetch(ELD_WORKER + '/chat/' + encodeURIComponent(_chatOrderId) + '/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': uid },
-        body: JSON.stringify({ text, orderId: _chatOrderId }),
-      });
-    } catch(e2) {
-      // Worker pode não ter o endpoint — não é crítico, Firestore já salvou
-    }
-
-    // Remove a msg temporária (o listener Firestore vai trazer a real)
-    _chatMessages[_chatOrderId] = (_chatMessages[_chatOrderId] || []).filter(m => m.id !== tempMsg.id);
-
-  } catch(e) {
-    console.warn('[Chat send]', e.message);
-    // Em caso de erro, mantém a msg temporária na tela para o usuário não perder
-  } finally {
-    _chatSending = false;
-    if (btn) btn.disabled = false;
-    if (inp) inp.focus();
-  }
-}
-
-function chatInputKeydown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendChatMsg();
-  }
-}
-
-function chatInputResize(el) {
-  el.style.height = '36px';
-  const sh = el.scrollHeight;
-  el.style.height = Math.min(sh, 90) + 'px';
-}
-
-function _setChatLoading(on) {
-  const bar = document.getElementById('chat-load-bar');
-  if (bar) bar.style.display = on ? 'block' : 'none';
-}
-
-function _updateChatBadge() {
-  const total = Object.values(_chatUnread).reduce((s, n) => s + n, 0);
-  const hBadge = document.getElementById('eld-chat-header-badge');
-  const fBadge = document.getElementById('eld-chat-fab-badge');
-  const fab    = document.getElementById('eld-chat-fab');
-
-  if (hBadge) {
-    hBadge.textContent = total > 9 ? '9+' : String(total);
-    hBadge.style.display = total > 0 ? 'block' : 'none';
-  }
-  if (fBadge) {
-    fBadge.textContent = total > 9 ? '9+' : String(total);
-    fBadge.classList.toggle('visible', total > 0);
-  }
-  if (fab) {
-    // Mostra FAB quando há msgs não lidas e painel fechado
-    fab.style.display = (total > 0 && !_chatOpen) ? 'flex' : 'none';
-  }
-}
-
-function _showChatToast(orderId, text) {
-  const order = _chatOrders.find(o => o.id === orderId);
-  const label = order ? (order.title || 'Pedido').slice(0, 24) : 'Chat';
-  const container = document.getElementById('eld-toast-container');
-  if (!container) return;
-  const id  = 'chat-toast-' + Date.now();
-  const div = document.createElement('div');
-  div.id = id;
-  div.className = 'eld-toast pending';
-  div.innerHTML = `
-    <div class="eld-toast-icon">💬</div>
-    <div class="eld-toast-body">
-      <div class="eld-toast-title">${escHtml(label)}</div>
-      <div class="eld-toast-sub">${escHtml(text.slice(0, 60))}${text.length > 60 ? '…' : ''}</div>
-    </div>
-    <button class="eld-toast-close" onclick="dismissEldToast('${id}')">✕</button>`;
-  container.appendChild(div);
-  setTimeout(() => dismissEldToast(id), 7000);
-  typeof playUiSound === 'function' && playUiSound();
-}
-
-// Fecha chat ao clicar fora
-document.addEventListener('click', function(e) {
-  if (!_chatOpen) return;
-  const panel = document.getElementById('eld-chat-panel');
-  const fab   = document.getElementById('eld-chat-fab');
-  const hbtn  = document.getElementById('eld-chat-header-btn');
-  if (panel && !panel.contains(e.target) &&
-      fab   && !fab.contains(e.target) &&
-      hbtn  && !hbtn.contains(e.target)) {
-    // Não fecha automaticamente para não atrapalhar uso normal
-    // toggleEldChat();
-  }
-});
-
-// Inicia listeners assim que auth estiver pronto (chamado após onAuthStateChanged)
-function initChatWhenReady() {
-  // Escuta novos eventos de chat no Firestore em tempo real para TODOS os pedidos
-  const uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
-  if (!uid || typeof db === 'undefined') return;
-
-  // Listener global: detecta qualquer nova mensagem mesmo com painel fechado
-  db.collection('eld_chat').doc(uid).collection('orders')
-    .onSnapshot(snap => {
-      snap.docChanges().forEach(change => {
-        const orderId = change.doc.id;
-        // Para cada pedido novo no Firestore, inscreve listener de mensagens
-        if (!_chatFirestoreUnsubs[orderId]) {
-          _subscribeChatOrder(orderId);
-        }
-      });
-    }, () => {});
-}
+  // Atualiza stats usando fonte única centralizada
+  try { _atualizarStatsDoDia(); } catch(e) {}
+}, 5000);
 
 </script>
 
